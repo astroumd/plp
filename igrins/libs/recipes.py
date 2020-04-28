@@ -1,6 +1,12 @@
+from __future__ import print_function
+
+import re
+import fnmatch
+
 import numpy as np
+import pandas as pd
 
-
+from collections import OrderedDict
 
 def load_recipe_list_numpy(fn, allow_duplicate_groups=False):
     dtype=[('OBJNAME', 'S128'), ('OBJTYPE', 'S128'),
@@ -32,7 +38,7 @@ def load_recipe_list_pandas(fn, allow_duplicate_groups=False):
     update_group1 = True
 
     if update_group1:
-        msk = (df["GROUP1"] == "1")
+        msk = df["GROUP1"] == b"1"
         s_obsids = [(r.split()[0] if m else g) for r,g, m
                     in zip(df["OBSIDS"], df["GROUP1"], msk)]
 
@@ -43,7 +49,7 @@ def load_recipe_list_pandas(fn, allow_duplicate_groups=False):
             df["GROUP1"] = s_obsids
 
     for i, row in df.iterrows(): 
-        if row["OBJTYPE"] != "TAR":
+        if row["OBJTYPE"] != b"TAR":
             if row["GROUP1"] != row["OBSIDS"].split()[0]:
                 raise ValueError("GROUP1 should be identical to "
                                  "1st OBSIDS unless the OBJTYPE is "
@@ -64,7 +70,7 @@ def load_recipe_list_pandas(fn, allow_duplicate_groups=False):
     recipe_list = []
     for row in d:
         recipe_name = row["RECIPE"].strip()
-        obsids  = map(int, row["OBSIDS"].strip().split())
+        obsids  = list(map(int, row["OBSIDS"].strip().split()))
         frametypes  = row["FRAMETYPES"].strip().split()
         recipe_list.append((recipe_name, obsids, frametypes, row))
 
@@ -80,7 +86,6 @@ def make_recipe_dict(recipe_list):
 
 def get_multi_fnmatch_pattern(fnmatch_list):
 
-    import re, fnmatch
     p_list = []
     for fnmatch1 in fnmatch_list:
         p = re.compile(fnmatch.translate(fnmatch1))
@@ -139,12 +144,12 @@ class Recipes(object):
 
         _ = []
         for recipe_item in self.recipe_list:
-            for recipe_name in recipe_item[0].split("|"):
+            for recipe_name in recipe_item[0].split(b"|"):
+                recipe_name = recipe_name.decode('UTF-8')
                 if p_match(recipe_name):
                     recipe_item_new = (recipe_name, ) + recipe_item[1:]
                     _.append((recipe_item[-1]["GROUP1"], recipe_item_new))
 
-        from collections import OrderedDict
         dict_by_group = OrderedDict(_)
 
         if groups is None:
@@ -153,8 +158,6 @@ class Recipes(object):
         selected = [dict_by_group[s1] for s1 in groups]
 
         return selected
-
-import pandas as pd
 
 def load_recipe_as_dict_numpy(fn):
     dtype=[('OBJNAME', 'S128'), ('OBJTYPE', 'S128'), ('GROUP1', 'S128'), ('GROUP2', 'S128'), ('EXPTIME', 'f'), ('RECIPE', 'S128'), ('OBSIDS', 'S1024'),  ('FRAMETYPES', 'S1024')]
@@ -289,7 +292,7 @@ def _test3():
     groups_parsed = None
     selected = recipes.select_fnmatch_by_groups(recipe_name,
                                                 groups_parsed)
-    print selected
+    print(selected)
 
 
 if __name__ == "__main__":

@@ -4,3 +4,5 @@
 *.recipes
 *.tmp
 html_*
+*.swp
+*.swo

@@ -1,16 +1,19 @@
+from __future__ import print_function
+
 # import Libs.manual as m
 # reload(m)
 # import Libs.ap_tracing as m2
 # reload(m2)
+import itertools
 import os
-import numpy as np
 
 import astropy.io.fits as pyfits
+import numpy as np
 import scipy.ndimage as ni
 
-import badpixel as bp
+import igrins.libs.badpixel as bp
+from .trace_aperture import trace_aperture_chebyshev
 
-import itertools
 
 def get_flat_normalization(flat_on_off, bg_std, bpix_mask):
 
@@ -183,7 +186,10 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None):
     label_indx = np.arange(1, label_max+1, dtype="i")
     objects_found = ni.find_objects(im_labeled)
 
-    from itertools import izip, compress
+    try:
+        izip = itertools.izip
+    except:
+        izip = zip
 
     slice_map = dict(izip(label_indx, objects_found))
 
@@ -193,7 +199,7 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None):
                                 index=label_indx)
         tiny_traces = s < 10. # 0.1 * s.max()
         mmp2 = im_labeled.copy()
-        for label_num in compress(label_indx, tiny_traces):
+        for label_num in itertools.compress(label_indx, tiny_traces):
             sl = slice_map[label_num]
             mmp_sl = mmp2[sl]
             mmp_sl[mmp_sl == label_num] = 0
@@ -207,7 +213,7 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None):
     # labels_center_column = [i for i, _ in groupby(im_labeled[:,nx/2]) if i>0]
 
     thre_dx = 30
-    center_cut = im_labeled[:,nx/2-thre_dx:nx/2+thre_dx]
+    center_cut = im_labeled[:,nx//2-thre_dx:nx//2+thre_dx]
     labels_ = list(set(np.unique(center_cut)) - set([0]))
 
     if True:  # remove flase detections
@@ -242,7 +248,7 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None):
         ob_id = find_nearest_object(mmp, im_labeled,
                                     slice_map, i, labels_center_column)
         if ob_id:
-            print i, ob_id
+            print(i, ob_id)
             im_labeled[im_labeled == i] = ob_id
             slice_map_update_required = True
 
@@ -331,8 +337,6 @@ def get_matched_slices(yc_down_list, yc_up_list):
 def trace_centroids_chevyshev(centroid_bottom_list,
                               centroid_up_list,
                               domain, ref_x=None):
-    from trace_aperture import trace_aperture_chebyshev
-
     if ref_x is None:
         ref_x = 0.5 * (domain[0] + domain[-1])
 
@@ -563,12 +567,12 @@ def plot_solutions1(flat,
     ax.imshow(flat, origin="lower") #, cmap="gray_r")
     #ax.set_autoscale_on(False)
 
-    next_color = itertools.cycle("rg").next
+    color_cycle = itertools.cycle("rg")
     for bottom_sol, up_sol in bottom_up_solutions:
         y_bottom = bottom_sol(x_indices)
         y_up = up_sol(x_indices)
 
-        c = next_color()
+        c = next(color_cycle)
         ax.plot(x_indices, y_bottom, "-", color=c)
         ax.plot(x_indices, y_up, "-", color=c)
 
@@ -1043,7 +1047,7 @@ if 0:
 
     #plot(s1)
 
-    print i1, i2
+    print(i1, i2)
     ax.plot(x, s)
     ax.plot(x, p(x))
     ax.plot(np.array(x)[[i1, i2]], np.array(s)[[i1,i2]], "o")

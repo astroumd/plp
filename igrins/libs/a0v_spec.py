@@ -1,12 +1,12 @@
-import numpy as np
-
 import astropy.io.fits as pyfits
-from scipy.interpolate import interp1d
-from master_calib import get_master_calib_abspath
-
-import scipy.ndimage as ni
-
 from astropy.modeling import models, fitting
+import numpy as np
+import scipy.ndimage as ni
+from scipy.interpolate import interp1d
+
+from .master_calib import get_master_calib_abspath
+
+
 
 class TelluricTransmission(object):
     def __init__(self):

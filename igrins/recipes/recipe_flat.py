@@ -1,24 +1,33 @@
-from igrins.libs.recipe_helper import RecipeHelper
+from __future__ import print_function
+
+from astropy.io.fits import Card
 import numpy as np
 import scipy.ndimage as ni
 
-from astropy.io.fits import Card
-
-from igrins.libs.process_flat import FlatOff, FlatOn
-
+from igrins.libs.apertures import Apertures
+import igrins.libs.badpixel as bp
+from igrins.libs.destriper import destriper
+from igrins.libs.igrins_detector import IGRINSDetector
 from igrins.libs.load_fits import load_fits_data
+from igrins.libs.process_flat import FlatOff, FlatOn
+from igrins.libs.recipe_helper import RecipeHelper
+from igrins.libs.simple_hdu import SimpleHDU
+from igrins.libs.stsci_helper import stsci_median
+from igrins.libs.trace_flat import (get_flat_normalization, get_flat_mask,
+                                    get_flat_mask_auto,
+                                    estimate_bg_mean_std,
+                                    get_y_derivativemap,
+                                    identify_horizontal_line,
+                                    trace_centroids_chevyshev)
 
 def get_combined_image(data_list, destripe=True):
     # destripe=True):
 
-
-    from igrins.libs.stsci_helper import stsci_median
     flat_off = stsci_median(data_list)
 
     flat_off_cards = []
 
     if destripe:
-        from igrins.libs.destriper import destriper
         flat_off = destriper.get_destriped(flat_off)
 
         flat_off_cards.append(Card("HISTORY",
@@ -55,7 +64,6 @@ def make_hotpix_mask(obsset,
     flat_off_hdu = obsset.load_item("flat_off")[0]
     flat_off = flat_off_hdu.data
 
-    import igrins.libs.badpixel as bp
     hotpix_mask = bp.badpixel_mask(flat_off,
                                    sigma_clip1=sigma_clip1,
                                    sigma_clip2=sigma_clip2,
@@ -88,7 +96,6 @@ def process_flat_off(obsset):
 
 #from collections import namedtuple
 #SimpleHDU = namedtuple('SimpleHDU', ['header', 'data'])
-from igrins.libs.simple_hdu import SimpleHDU
 
 def combine_flat_on(obsset_on):
 
@@ -147,9 +154,6 @@ def make_deadpix_mask(obsset_on, #helper, band, obsids,
     if 1:
 
         # normalize it
-        from igrins.libs.trace_flat import (get_flat_normalization, get_flat_mask,
-                                     get_flat_mask_auto,
-                                     estimate_bg_mean_std)
         bg_mean, bg_fwhm = estimate_bg_mean_std(flat_on_off)
         norm_factor = get_flat_normalization(flat_on_off,
                                              bg_fwhm, hotpix_mask)
@@ -282,11 +286,6 @@ def make_deadpix_mask(obsset_on, #helper, band, obsids,
 #         return r
 
 
-
-from igrins.libs.trace_flat import (get_y_derivativemap,
-                             identify_horizontal_line,
-                             trace_centroids_chevyshev)
-
 def identify_order_boundaries(obsset_on):
 
     # flat_normed=flaton_products["flat_normed"]
@@ -318,7 +317,6 @@ def identify_order_boundaries(obsset_on):
     flaton_info = obsset_on.load_item("flaton_json")
     bg_fwhm_normed = flaton_info["bg_fwhm_norm"]
 
-    from igrins.libs.trace_flat import get_y_derivativemap
     flat_deriv_ = get_y_derivativemap(flat_normed, flat_bpixed,
                                       bg_fwhm_normed,
                                       max_sep_order=150, pad=10,
@@ -368,7 +366,6 @@ def trace_order_boundaries(obsset_on):
     bg_fwhm_normed = flaton_info["bg_fwhm_norm"]
 
     ny, nx = flat_deriv.shape
-    from igrins.libs.trace_flat import identify_horizontal_line
 
     cent_bottom_list = identify_horizontal_line(flat_deriv,
                                                 flat_deriv_pos_msk,
@@ -399,22 +396,20 @@ def stitch_up_traces(obsset_on):
     bottom_centroids = centroids_dict["bottom_centroids"]
     up_centroids = centroids_dict["up_centroids"]
 
-    from igrins.libs.igrins_detector import IGRINSDetector
     nx = IGRINSDetector.nx
 
-    from igrins.libs.trace_flat import trace_centroids_chevyshev
     _ = trace_centroids_chevyshev(bottom_centroids,
                                   up_centroids,
                                   domain=[0, nx],
-                                  ref_x=nx/2)
+                                  ref_x=nx//2)
 
     bottom_up_solutions_full, bottom_up_solutions, bottom_up_centroids = _
 
     assert len(bottom_up_solutions_full) != 0
 
-    from numpy.polynomial import Polynomial
-
     bottom_up_solutions_as_list = []
+
+    Polynomial = np.polynomial.Polynomial
 
     for b, d in bottom_up_solutions_full:
 
@@ -462,7 +457,6 @@ def trace_aperture(obsset_on):
 
     stitch_up_traces(obsset_on)
 
-
 def process_flat_on(obsset_on):
 
     combine_flat_on(obsset_on)
@@ -486,7 +480,6 @@ def store_aux_data(obsset_on):
 
         orders = range(len(bottomup_solutions))
 
-        from igrins.libs.apertures import Apertures
         ap =  Apertures(orders, bottomup_solutions)
 
         order_map2 = ap.make_order_map(mask_top_bottom=True)
@@ -520,7 +513,7 @@ def store_qa(obsset_on, obsset_off):
     # plot qa figures.
 
     if 1:
-        from igrins.libs.process_flat import plot_trace_solutions
+        #from igrins.libs.process_flat import plot_trace_solutions
         from matplotlib.figure import Figure
 
         fig1 = Figure(figsize=[9, 4])
@@ -619,23 +612,23 @@ def process_band(utdate, recipe_name, band,
     obsset = get_obsset(caldb, band, recipe_name, obsids, frametypes)
 
     obsids_off = [obsid for obsid, frametype \
-                  in zip(obsids, frametypes) if frametype == "OFF"]
+                  in zip(obsids, frametypes) if frametype == b"OFF"]
     obsids_on = [obsid for obsid, frametype \
-                 in zip(obsids, frametypes) if frametype == "ON"]
+                 in zip(obsids, frametypes) if frametype == b"ON"]
 
 
     # STEP 1 :
     ## make combined image
-
-    obsset_off = obsset.get_subset("OFF")
-    obsset_on = obsset.get_subset("ON")
+    
+    obsset_off = obsset.get_subset(b"OFF")
+    obsset_on = obsset.get_subset(b"ON")
 
     process_flat_off(obsset_off)
-
+    
     process_aux_off(obsset_off)
-
+    
     process_flat_on(obsset_on)
-
+    
     process_aux(obsset_on, obsset_off) #, helper, band, obsids_off, obsids_on)
 
     # make_combined_image(helper, band, obsids, mode=None)
@@ -647,7 +640,7 @@ class RecipeFlat(RecipeBase):
     RECIPE_NAME = "FLAT"
 
     def run_selected_bands(self, utdate, selected, bands):
-        print self.config
+        print(self.config)
         for s in selected:
             obsids = s[0]
             frametypes = s[1]

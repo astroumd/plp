@@ -1,6 +1,7 @@
 import astropy.io.fits as pyfits
-from stsci_helper import stsci_median
 import numpy as np
+
+from .stsci_helper import stsci_median
 
 def make_combined_image_sky_deprecated(helper, band, obsids):
     """

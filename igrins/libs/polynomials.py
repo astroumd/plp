@@ -1,11 +1,18 @@
+from __future__ import print_function
+
 import numpy.polynomial as P
 import numpy.polynomial.chebyshev as cheb
 
 
 def check_string(s):
-    if isinstance(s, str):
+    try:
+        strtype = basestring
+    except:
+        strtype = str
+
+    if isinstance(s, strtype):
         return True
-    elif isinstance(s, unicode):
+    elif isinstance(s, bytes):
         return True
     else:
         return False
@@ -58,9 +65,9 @@ def nested_convert_to_poly(l, level=0):
     #     bottom_up_solutions.append((bp, dp))
 
 if __name__ == "__main__":
-    print nested_convert_to_poly([["poly", [1, 2, 3]]])
-    print nested_convert_to_poly([["poly", [1, 2, 3]],
-                                  ["poly", [1, 2, 3]]])
+    print(nested_convert_to_poly([["poly", [1, 2, 3]]]))
+    print(nested_convert_to_poly([["poly", [1, 2, 3]],
+                                  ["poly", [1, 2, 3]]]))
 
     # l = ('Chebyshev([-38.58445754, -50.0196254 , -47.7578578 ,   0.62804902,  -1.06017566], [    0.,  2048.], [-1.,  1.])',
     #      array([-38.58445754, -50.0196254 , -47.7578578 ,   0.62804902,  -1.06017566]),
@@ -82,4 +89,4 @@ if __name__ == "__main__":
            5.241888065536226e-09,
            -1.8583550163003756e-12]]]
 
-    print nested_convert_to_poly(l)
+    print(nested_convert_to_poly(l))

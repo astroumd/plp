@@ -1,3 +1,12 @@
+from __future__ import print_function
+    
+from igrins.libs.get_destripe_mask import get_destripe_mask
+from igrins.libs.image_combine import destripe_sky
+from igrins.libs.load_fits import get_hdus, get_combined_image
+from igrins.libs.products import PipelineImage as Image
+from igrins.libs.products import PipelineImages
+from igrins.libs.recipe_base import RecipeBase
+from igrins.libs.recipe_helper import RecipeHelper
 
 def process_band(utdate, recipe_name, band,
                  obsids, frametypes,
@@ -5,11 +14,9 @@ def process_band(utdate, recipe_name, band,
 
     # utdate, recipe_name, band, obsids, config = "20150525", "A0V", "H", [63, 64], "recipe.config"
 
-    from igrins.libs.recipe_helper import RecipeHelper
     helper = RecipeHelper(config, utdate, recipe_name)
     caldb = helper.get_caldb()
 
-    from igrins.libs.load_fits import get_hdus, get_combined_image
     hdus = get_hdus(helper, band, obsids)
 
     a_and_b = dict()
@@ -22,12 +29,9 @@ def process_band(utdate, recipe_name, band,
     b = get_combined_image(a_and_b["B"]) / len(a_and_b["B"])
 
     sky_data_ = a+b - abs(a-b)
-
-    
-    from igrins.libs.get_destripe_mask import get_destripe_mask
+ 
     destripe_mask = get_destripe_mask(helper, band, obsids)
 
-    from igrins.libs.image_combine import destripe_sky
     sky_data = destripe_sky(sky_data_, destripe_mask, subtract_bg=False)
 
     # from igrins.libs.destriper import destriper
@@ -48,9 +52,6 @@ def process_band(utdate, recipe_name, band,
 
 def store_output(caldb, basename, master_hdu, sky_data):
 
-    from igrins.libs.products import PipelineImage as Image
-    from igrins.libs.products import PipelineImages
-
     image_list = [Image([("EXTNAME", "SKY")], sky_data)]
 
     product = PipelineImages(image_list, masterhdu=master_hdu)
@@ -58,9 +59,6 @@ def store_output(caldb, basename, master_hdu, sky_data):
     item_desc = caldb.DESC_DICT[item_type]
     caldb.helper.igr_storage.store_item(item_desc, basename,
                                         product)
-
-
-from igrins.libs.recipe_base import RecipeBase
 
 class RecipeSkyMaker(RecipeBase):
 
@@ -79,7 +77,7 @@ class RecipeSkyMaker(RecipeBase):
                 exptime = float(aux_infos[4])
 
                 if recipe_name.endswith("_AB"):
-                    print recipe_name, obsids, frametypes, exptime
+                    print(recipe_name, obsids, frametypes, exptime)
 
                     process_band(utdate, recipe_name, band, 
                                  obsids, frametypes, aux_infos,

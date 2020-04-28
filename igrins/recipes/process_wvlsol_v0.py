@@ -1,12 +1,15 @@
 """ WVLSOL_V0
 """
+from __future__ import print_function
 
 import os
 import numpy as np
 # import numpy as np
 
-from igrins.libs.products import PipelineProducts, PipelineImageBase
 from igrins.libs.logger import logger
+from igrins.libs.products import PipelineProducts, PipelineImageBase
+from igrins.libs.products import ProductDB
+from igrins.libs.recipe_helper import RecipeHelper
 
 # from igrins.libs.apertures import Apertures
 
@@ -52,12 +55,6 @@ from igrins.libs.logger import logger
 
 # #         for band in bands:
 # #             process_thar_band(utdate, refdate, band, obsids)
-
-
-from igrins.libs.products import ProductDB
-
-from igrins.libs.recipe_helper import RecipeHelper
-
 
 
 def make_combined_image(obsset):
@@ -235,7 +232,7 @@ def identify_orders(obsset):
     from igrins.libs.process_thar import match_order
     new_orders = match_order(src_spectra, ref_spectra)
 
-    print  new_orders
+    print(new_orders)
 
     src_spectra["orders"] = new_orders
     obsset.store_dict(item_type="ONED_SPEC_JSON",
@@ -380,7 +377,7 @@ def test_identify_lines(helper, band, obsids):
     from igrins.libs.process_thar import get_offset_treanform_between_2spec
     d = get_offset_treanform_between_2spec(ref_spec, tgt_spec)
 
-    print d
+    print(d)
 
 # def find_initial_wvlsol(helper, band, obsids,
 #                         thar_products,

@@ -1,7 +1,5 @@
-from argh_helper import argh
-
-from process_divide_a0v import process_band
-
+from .argh_helper import argh
+from .process_divide_a0v import process_band
 from igrins.libs.recipe_factory import new_recipe_class, new_recipe_func
 
 _recipe_class_divide_a0v = new_recipe_class("RecipeDivideA0V",

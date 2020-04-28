@@ -1,8 +1,10 @@
+import itertools
+
 import numpy as np
 import numpy.polynomial as P
 import scipy.ndimage as ni
 
-from stsci_helper import stsci_median
+from .stsci_helper import stsci_median
 
 
 class ApCoeff(object):
@@ -61,12 +63,15 @@ class Apertures(object):
     def make_order_map(self, frac1=0., frac2=1.,
                        mask_top_bottom=False):
 
-        from itertools import izip
-
         xx, yy = self.xi, self.yi
 
         bottom_list = [self.apcoeffs[o](xx, frac1) for o in self.orders]
         top_list = [self.apcoeffs[o](xx, frac2) for o in self.orders]
+
+        try:
+            izip = itertools.izip
+        except:
+            izip = zip
 
         if mask_top_bottom is False:
             def _g(i1):

@@ -5,6 +5,9 @@
 import numpy as np
 import pandas as pd
 
+from igrins.libs.recipe_helper import RecipeHelper
+from .process_wvlsol_v0 import extract_spectra_multi, make_combined_image
+
 def save_qa(obsset):
 
 
@@ -142,14 +145,6 @@ def save_wavelength_map(obsset):
     wvlmap[msk] = wvl
 
     obsset.store_image("WAVELENGTHMAP_FITS", wvlmap)
-
-
-
-from igrins.libs.recipe_helper import RecipeHelper
-
-from process_wvlsol_v0 import extract_spectra_multi
-from process_wvlsol_v0 import make_combined_image
-
 
 def process_band(utdate, recipe_name, band, 
                  groupname,

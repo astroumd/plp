@@ -1,11 +1,14 @@
-from products import ProductDB
+from collections import OrderedDict
+        
+import pandas as pd
 
-from storage_descriptions import (load_resource_def,
-                                  load_descriptions,
-                                  DB_Specs)
-
-from load_fits import get_first_science_hdu, open_fits
-from cal_db_resources import ResourceManager
+from .products import ProductDB, PipelineImageBase, PipelineImages
+from .products import PipelineDict
+from .storage_descriptions import (load_resource_def,
+                                   load_descriptions,
+                                   DB_Specs)
+from .load_fits import get_first_science_hdu, open_fits
+from .cal_db_resources import ResourceManager
 
 class CalDB(object):
 
@@ -27,7 +30,6 @@ class CalDB(object):
         self.resource_manager = ResourceManager(self)
 
     def _repr_html_(self):
-        import pandas as pd
 
         d = self.get_config_dict()
         s = pd.DataFrame(dict(key=d.keys(), value=d.values()))
@@ -41,7 +43,6 @@ class CalDB(object):
 
         config = self.get_config()
 
-        from collections import OrderedDict
         d = OrderedDict()
 
         for k, v in config.config.defaults().iteritems():
@@ -56,7 +57,6 @@ class CalDB(object):
 
         config = self.get_config()
 
-        from collections import OrderedDict
         d = OrderedDict()
 
         refdate = config.config.get("MASTER_CAL", "refdate")
@@ -213,8 +213,6 @@ class CalDB(object):
     def store_image(self, basename, item_type, data,
                     master_hdu=None,
                     header=None, card_list=None):
-        from products import PipelineImageBase
-
         item_desc = self.DESC_DICT[item_type.upper()]
 
         # band, master_obsid = self._get_band_masterobsid(basename)
@@ -248,7 +246,6 @@ class CalDB(object):
 
         master_hdu = self._get_master_hdu(basename, master_hdu)
 
-        from products import PipelineImages
         pipeline_image = PipelineImages(hdu_list,
                                         masterhdu=master_hdu)
 
@@ -260,7 +257,6 @@ class CalDB(object):
         basename = self._get_basename(basename)
         item_desc = self.DESC_DICT[item_type.upper()]
 
-        from products import PipelineDict
         pipeline_dict = PipelineDict(**data)
         self.helper.store_item(item_desc, basename,
                                pipeline_dict)

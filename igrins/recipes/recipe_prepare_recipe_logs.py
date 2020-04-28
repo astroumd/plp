@@ -1,4 +1,7 @@
+from __future__ import print_function
+
 import os
+
 import numpy as np
 import pandas as pd
 
@@ -123,7 +126,7 @@ def prepare_recipe_logs(utdate, config_file="recipe.config",
     import glob
     fn_list = glob.glob(os.path.join(fn0, "IGRINS_DT_Log_*-1_H.txt"))
     fn_list.sort()
-    print "loading DT log files:", fn_list
+    print("loading DT log files:", fn_list)
 
     #fn = os.path.join(fn0, "IGRINS_DT_Log_%s-1_H.txt" % (utdate,))
 
@@ -176,7 +179,7 @@ def prepare_recipe_logs(utdate, config_file="recipe.config",
 
 
     if obsid_map:
-        print "trying to make soft links for files of different utdates"
+        print("trying to make soft links for files of different utdates")
         from igrins.libs.load_fits import find_fits
         old_new_list = []
 
@@ -250,8 +253,8 @@ def prepare_recipe_logs(utdate, config_file="recipe.config",
     fout.writelines(s_list)
     fout.close()
 
-    print "A draft version of the recipe log is written to '%s'." % (fn_out,)
-    print "Make an adjusment and rename it to '%s'." % (recipe_log_name,)
+    print("A draft version of the recipe log is written to '%s'." % (fn_out,))
+    print("Make an adjusment and rename it to '%s'." % (recipe_log_name,))
 
 if __name__ == "__main__":
     fn = "/home/jjlee/annex/igrins/20170315/IGRINS_DT_Log_20170315-1_H.txt"
