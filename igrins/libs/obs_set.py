@@ -7,7 +7,6 @@ class ObsSet(object):
         self.obsids = obsids
         self.frametypes = frametypes
         if groupname is None:
-            print("TTT:", self.obsids)
             groupname = str(self.obsids[0])
         self.basename = self.caldb._get_basename((self.band, groupname))
         # this is for query
