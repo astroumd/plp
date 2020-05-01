@@ -1,11 +1,11 @@
-import numpy as np
-import pandas as pd
 import json
 
-from nd_poly import NdPolyNamed
-
+import numpy as np
 from numpy.linalg import lstsq
+import pandas as pd
 
+from igrins.libs.recipe_helper import RecipeHelper
+from .nd_poly import NdPolyNamed
 
 def _get_center(key_list):
     key_list = sorted(key_list)
@@ -151,11 +151,7 @@ def generate_slitoffsetmap(obsset):
 
     obsset.store_image("slitoffset_fits", offset_map)
                      
-
-from igrins.libs.recipe_helper import RecipeHelper
-
 def process_band_make_offset_map(utdate, recipe_name, band,
                                  obsids, config_name):
 
-    from igrins.libs.recipe_helper import RecipeHelper
     helper = RecipeHelper(config_name, utdate, recipe_name)

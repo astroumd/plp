@@ -1,13 +1,17 @@
+import itertools
+
 import numpy as np
 import pandas as pd
-
 from scipy.interpolate import interp1d
 
-from utils import flatten
-
+from igrins.libs.igrins_config import get_config
+import igrins.libs.hitran as hitran
+from igrins.libs.master_calib import load_sky_ref_data, load_ref_data
+from igrins.libs.recipe_helper import RecipeHelper
+from igrins.libs.reidentify import reidentify
+from igrins.libs.utils import flatten
 
 def get_group_flag_generator():
-    import itertools
     p = itertools.chain([1], itertools.repeat(0))
     return p
 
@@ -159,7 +163,6 @@ def fitted_lines_reidentify(fitted_lines, ref_lines, s, x,
     else:
         ref_sigma = 1.5
 
-    from reidentify import reidentify
     res = reidentify(s, ref_pixels, x=x, sigma_init=ref_sigma)
 
     params = [p for p, _, _ in res]
@@ -194,7 +197,6 @@ def fitted_lines_reidentify(fitted_lines, ref_lines, s, x,
 class RefLinesDBBase:
     def __init__(self, config):
         self._refdata = {}
-        from igrins_config import get_config
         self.config = get_config(config)
 
     def _get_refdata(self, band):
@@ -277,7 +279,6 @@ class RefLinesDBBase:
 
 class SkyLinesDB(RefLinesDBBase):
     def _load_refdata(self, band):
-        from master_calib import load_sky_ref_data
         sky_refdata = load_sky_ref_data(self.config, band)
 
         return sky_refdata
@@ -309,7 +310,6 @@ class HitranSkyLinesDB(RefLinesDBBase):
         if band != "K":
             raise ValueError("only K band is supported")
 
-        from master_calib import load_ref_data
         refdata0 = load_ref_data(self.config, band="K",
                                  kind="HITRAN_BOOTSTRAP_K")
 
@@ -351,12 +351,10 @@ class Test:
         # import json
         # bootstrap = json.load(open(bootstrap_name))
 
-        from master_calib import load_ref_data
         bootstrap = load_ref_data(config, band="K",
                                   kind="HITRAN_BOOTSTRAP_K")
 
 
-        import hitran
         r, ref_pixel_list = hitran.reidentify(orders_w_solutions,
                                               wvl_solutions, s_list,
                                               bootstrap)
@@ -503,10 +501,6 @@ class RefLinesCollection:
 #         fitted_lines_master = pd.concat(fitted_lines_list)
 
 #         return ref_lines_master, fitted_lines_master
-
-
-from recipe_helper import RecipeHelper
-
 
 def helper_load_spec(helper, band, obsid):
 

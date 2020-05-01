@@ -1,5 +1,6 @@
 import astropy.modeling.polynomial as P
-
+import numpy as np
+    
 Model_dict = dict((T.__name__, T) for T in [P.Chebyshev2D, P.Chebyshev1D])
 
 def serialize_poly_model(p):
@@ -38,7 +39,8 @@ def deserialize_poly_model(module_name, klass_name, serialized):
 
     assert issubclass(T, P.PolynomialBase)
 
-    inputs = T.inputs
+    inputs = T(0, 0).inputs
+    #inputs = T.inputs
     if len(inputs) == 1:
         prefixes = [""]
     elif len(inputs) == 2:
@@ -65,7 +67,6 @@ def test():
 
     p2 = deserialize_poly_model(module_name, klass_name, serialized)
 
-    import numpy as np
     assert np.all(p1.parameters == p2.parameters)
 
 if __name__ == "__main__":

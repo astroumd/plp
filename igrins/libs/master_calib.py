@@ -1,8 +1,9 @@
-import os
-import numpy as np
 import json
+import os
 
-
+import numpy as np
+    
+from igrins.libs.oh_lines import OHLines
 
 def get_master_calib_abspath(fn):
     return os.path.join("master_calib", fn)
@@ -49,7 +50,6 @@ def load_sky_ref_data(config, band):
     ref_ohline_indices = dict((int(k), v) for k, v \
                               in ref_ohline_indices.items())
 
-    from oh_lines import OHLines
     fn = get_ref_data_path(config, band, kind="OHLINES_JSON")
     #fn = get_master_calib_abspath("ohlines.dat")
     ohlines = OHLines(fn)

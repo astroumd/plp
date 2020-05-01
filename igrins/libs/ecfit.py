@@ -1,9 +1,13 @@
 import numpy as np
+from scipy.interpolate import griddata as griddata_s
+try:
+    from matplotlib.mlab import griddata as griddata_m
+except:
+    pass
 
 igrins_orders = {}
 igrins_orders["H"] = range(99, 122)
 igrins_orders["K"] = range(72, 94)
-
 
 def get_ordered_line_data(identified_lines, orders=None):
     """
@@ -51,12 +55,11 @@ class GridInterpolator(object):
 
 
     def _grid_scipy(self, xl, yl, zl):
-        from scipy.interpolate import griddata
         x_sample = 256
-        z_gridded = griddata(np.array([yl*x_sample, xl]).T,
-                             np.array(zl),
-                             (self.yy*x_sample, self.xx),
-                             method="linear")
+        z_gridded = griddata_s(np.array([yl*x_sample, xl]).T,
+                               np.array(zl),
+                               (self.yy*x_sample, self.xx),
+                               method="linear")
         return z_gridded
 
 
@@ -64,9 +67,8 @@ class GridInterpolator(object):
         if self._interpolator == "scipy":
             z_gridded = self._grid_scipy(xl, yl, zl)
         elif self._interpolator == "mlab":
-            from matplotlib.mlab import griddata
             try:
-                z_gridded = griddata(xl, yl, zl, self.xi, self.yi)
+                z_gridded = griddata_m(xl, yl, zl, self.xi, self.yi)
             except Exception:
                 z_gridded = self._grid_scipy(xl, yl, zl)
 

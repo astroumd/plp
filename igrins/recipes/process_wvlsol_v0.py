@@ -149,8 +149,6 @@ def extract_spectra_multi(obsset):
     n_slice_one_direction = 2
     slice_center, slice_up, slice_down = _get_slices(n_slice_one_direction)
 
-    from aperture_helper import get_simple_aperture_from_obsset
-
     data = obsset.load_image(item_type="stacked")
 
     # just to retrieve order information

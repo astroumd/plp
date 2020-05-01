@@ -2,14 +2,22 @@
 # between emission spectra (e.g., sky, UNe, etc.)
 
 #import os
+from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
 
+from igrins.libs.astropy_poly_helper import deserialize_poly_model
+from igrins.libs.ecfit import check_fit
+from igrins.libs.qa_helper import figlist_to_pngs
 from igrins.libs.recipe_helper import RecipeHelper
+from .aperture_helper import get_simple_aperture_from_obsset
 from .process_wvlsol_v0 import extract_spectra_multi, make_combined_image
+from .process_identify_multiline import identify_multiline
+from .process_derive_wvlsol import derive_wvlsol
+from .process_wvlsol_volume_fit import volume_fit, generate_slitoffsetmap
+from .process_save_wat_header import save_wat_header
 
 def save_qa(obsset):
-
 
     df = obsset.load_data_frame("SKY_FITTED_PIXELS_JSON", orient="split")
 
@@ -21,9 +29,6 @@ def save_qa(obsset):
 
     lines_map = dict((o, (_["pixels"].values, _["wavelength"].values))
                      for o, _ in dfm.groupby("order"))
-
-    from matplotlib.figure import Figure
-    from igrins.libs.ecfit import check_fit
 
     d = obsset.load_item("SKY_WVLSOL_JSON")
 
@@ -48,7 +53,6 @@ def save_qa(obsset):
                               for o, _ in dfm[m].groupby("order"))
 
     modeul_name, class_name, serialized = fit_results["fitted_model"]
-    from igrins.libs.astropy_poly_helper import deserialize_poly_model
    
     p = deserialize_poly_model(modeul_name, class_name, serialized)
 
@@ -65,7 +69,6 @@ def save_qa(obsset):
                   lines_map_filtered)
         fig2.tight_layout()
 
-    from igrins.libs.qa_helper import figlist_to_pngs
     dest_dir = obsset.query_item_path("qa_sky_fit2d_dir",
                                       subdir="sky_fit2d")
     figlist_to_pngs(dest_dir, [fig1, fig2])
@@ -97,12 +100,7 @@ def save_wvlsol_db(obsset):
 # not finished. Initial solution part is done, but the distortion part
 # is not.
 
-
-
-
 def save_ordermap_slitposmap(obsset):
-
-    from aperture_helper import get_simple_aperture_from_obsset
 
     wvlsol_v0 = obsset.load_resource_for("wvlsol_v0")
     orders = wvlsol_v0["orders"]
@@ -164,11 +162,7 @@ def process_band(utdate, recipe_name, band,
 
     extract_spectra_multi(obsset)
 
-    from process_identify_multiline import identify_multiline
-
     identify_multiline(obsset)
-
-    from process_wvlsol_volume_fit import volume_fit, generate_slitoffsetmap
 
     volume_fit(obsset)
 
@@ -178,14 +172,12 @@ def process_band(utdate, recipe_name, band,
 
     generate_slitoffsetmap(obsset)
 
-    from process_derive_wvlsol import derive_wvlsol
     derive_wvlsol(obsset)
 
     save_wvlsol_db(obsset)
 
     save_wavelength_map(obsset)
 
-    from process_save_wat_header import save_wat_header
     save_wat_header(obsset)
 
     # save_wavelength_map(helper, band, obsids)
