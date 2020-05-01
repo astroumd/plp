@@ -1,15 +1,20 @@
 import numpy as np
 import scipy.ndimage as ni
 
-from .destriper import destriper
 import igrins.libs.badpixel as bp
+from .destriper import destriper
 from .igrins_detector import IGRINSDetector
 from .products import PipelineImageBase, PipelineDict, PipelineProducts
+from igrins.libs.smooth_continuum import get_smooth_continuum
 from .stsci_helper import stsci_median
 from .trace_flat import (get_flat_normalization, get_flat_mask,
-                        get_flat_mask_auto, get_y_derivativemap,
-                        identify_horizontal_line,
-                        trace_centroids_chevyshev)
+                         get_flat_mask_auto, get_y_derivativemap,
+                         identify_horizontal_line,
+                         trace_centroids_chevyshev,
+                         get_smoothed_order_spec,
+                         get_order_boundary_indices,
+                         get_order_flat1d, prepare_order_trace_plot,
+                         check_order_trace1, check_order_trace2)
 
 Card = tuple
 
@@ -304,8 +309,6 @@ def trace_solutions(trace_products):
 
     return r, r2
 
-
-
 def make_order_flat(flat_normed, flat_mask, orders, order_map):
 
     # from storage_descriptions import (FLAT_NORMED_DESC,
@@ -314,7 +317,6 @@ def make_order_flat(flat_normed, flat_mask, orders, order_map):
     # flat_normed  = flaton_products[FLAT_NORMED_DESC][0].data
     # flat_mask = flaton_products[FLAT_MASK_DESC].data
 
-    import scipy.ndimage as ni
     slices = ni.find_objects(order_map)
 
     mean_order_specs = []
@@ -336,23 +338,17 @@ def make_order_flat(flat_normed, flat_mask, orders, order_map):
               for i in range(2048)]
         mean_order_specs.append(ss)
 
-
-    from trace_flat import (get_smoothed_order_spec,
-                            get_order_boundary_indices,
-                            get_order_flat1d)
-
     s_list = [get_smoothed_order_spec(s) for s in mean_order_specs]
     i1i2_list = [get_order_boundary_indices(s, s0) \
                  for s, s0 in zip(mean_order_specs, s_list)]
     #p_list = [get_order_flat1d(s, i1, i2) for s, (i1, i2) \
     #          in zip(s_list, i1i2_list)]
-    from smooth_continuum import get_smooth_continuum
     s2_list = [get_smooth_continuum(s) for s, (i1, i2) \
                in zip(s_list, i1i2_list)]
 
 
     # make flat
-    x = np.arange(len(s))
+    x = np.arange(len(s_list[-1]))
     flat_im = np.ones(flat_normed.shape, "d")
     #flat_im.fill(np.nan)
 
@@ -394,16 +390,10 @@ def make_order_flat(flat_normed, flat_mask, orders, order_map):
 
 def check_order_flat(order_flat_json):
 
-    from trace_flat import (prepare_order_trace_plot,
-                            check_order_trace1, check_order_trace2)
 
     # from storage_descriptions import ORDER_FLAT_JSON_DESC
 
     mean_order_specs = order_flat_json["mean_order_specs"]
-
-    from trace_flat import (get_smoothed_order_spec,
-                            get_order_boundary_indices,
-                            get_order_flat1d)
 
     # these are duplicated from make_order_flat
     s_list = [get_smoothed_order_spec(s) for s in mean_order_specs]
@@ -412,7 +402,6 @@ def check_order_flat(order_flat_json):
     # p_list = [get_order_flat1d(s, i1, i2) for s, (i1, i2) \
     #           in zip(s_list, i1i2_list)]
 
-    from smooth_continuum import get_smooth_continuum
     s2_list = [get_smooth_continuum(s) for s, (i1, i2) \
                in zip(s_list, i1i2_list)]
 

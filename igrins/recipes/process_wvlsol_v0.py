@@ -2,14 +2,19 @@
 """
 from __future__ import print_function
 
+from collections import namedtuple
 import os
 import numpy as np
 # import numpy as np
 
 from igrins.libs.logger import logger
+from igrins.libs.process_flat import make_order_flat
 from igrins.libs.products import PipelineProducts, PipelineImageBase
 from igrins.libs.products import ProductDB
 from igrins.libs.recipe_helper import RecipeHelper
+from igrins.libs.transform_wvlsol import transform_wavelength_solutions
+from igrins.recipes.aperture_helper import get_simple_aperture_from_obsset
+from igrins.recipes.find_affine_transform import find_affine_transform
 
 # from igrins.libs.apertures import Apertures
 
@@ -101,8 +106,6 @@ def make_combined_image_thar(obsset):
 def extract_spectra(obsset):
     "extract spectra"
 
-    from aperture_helper import get_simple_aperture_from_obsset
-
     # caldb = helper.get_caldb()
     # master_obsid = obsids[0]
 
@@ -138,7 +141,6 @@ def _get_slices(n_slice_one_direction):
     return slice_center, slice_up, slice_down
 
 
-from collections import namedtuple
 SimpleHDU = namedtuple('SimpleHDU', ['header', 'data'])
 
 
@@ -445,8 +447,6 @@ def test_identify_lines(helper, band, obsids):
 def save_orderflat(obsset):
     orders = obsset.load_item("orders_json")["orders"]
 
-    from aperture_helper import get_simple_aperture_from_obsset
-
     ap = get_simple_aperture_from_obsset(obsset, orders=orders)
 
     order_map = ap.make_order_map()
@@ -456,7 +456,6 @@ def save_orderflat(obsset):
     flat_mask = obsset.load_resource_for(("flat_on", "flat_mask"),
                                          get_science_hdu=True).data > 0
 
-    from igrins.libs.process_flat import make_order_flat
     order_flat_im, order_flat_json = make_order_flat(flat_normed, 
                                                      flat_mask,
                                                      orders, order_map)
@@ -555,10 +554,8 @@ def process_band(utdate, recipe_name, band,
     ## load the reference echellogram, and find the transform using
     ## the identified lines.
 
-    from find_affine_transform import find_affine_transform
     find_affine_transform(obsset)
 
-    from igrins.libs.transform_wvlsol import transform_wavelength_solutions
     transform_wavelength_solutions(obsset)
 
     # Step 8:

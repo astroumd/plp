@@ -1,5 +1,10 @@
 import numpy as np
+from scipy import signal
 import scipy.ndimage as ni
+from scipy.optimize import fmin_tnc
+
+from igrins.libs.stddev_filter import window_stdev
+from igrins.libs.fit_gaussian import fit_gaussian_simple
 
 def find_feature_mask_simple(s_msk, sigma=1, ax=None, x_values=None):
     """
@@ -38,12 +43,10 @@ def find_peaks(s, sigma=3, ax=None):
 
         emission_feature_msk = find_feature_mask_simple(s, sigma=sigma, ax=ax)
 
-        import scipy.ndimage as ni
         emission_feature_label, label_max = ni.label(emission_feature_msk)
         com_list = ni.center_of_mass(s, emission_feature_label,
                                      range(1, label_max+1))
 
-        from fit_gaussian import fit_gaussian_simple
         x = np.arange(len(s))
         sol_list = []
         for com in com_list:
@@ -100,7 +103,6 @@ def fitgaussian(s, lines, sigma_init=1.5, do_plot=False):
     params0 = np.array([lines[0], sigma_init, 1., 0.])
     params_min = np.array([xmin, 0., 0, 0.])
     params_max = np.array([xmax, 2*sigma_init, 2., 1.])
-    from scipy.optimize import fmin_tnc
     sol_ = fmin_tnc(_gauss, params0,
                     bounds=zip(params_min, params_max),
                     approx_grad=True, disp=0,
@@ -115,15 +117,8 @@ def fitgaussian(s, lines, sigma_init=1.5, do_plot=False):
         ax.plot(xx, yy)
         ax.plot(xx, _gauss0(sol_[0]))
         ax.vlines(sol_[0][0]+d_centers0, 0, 1)
-        print d_centers0
+        print(d_centers0)
     return sol_
-
-
-
-# standard deviation filter
-from stddev_filter import window_stdev
-
-import scipy.ndimage as ni
 
 def get_smoothed_std(smoothed, rad=3, smooth_length=25):
     windowed_stddev = window_stdev(smoothed, rad)
@@ -138,7 +133,6 @@ def get_smoothed_std(smoothed, rad=3, smooth_length=25):
 
 
 def find_emission_features(s):
-    from scipy import signal
     #kernel = signal.ricker(19, 2)
     #smoothed = np.convolve(s[msk1], kernel, mode="same")
 

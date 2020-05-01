@@ -1,5 +1,7 @@
 import os
-import astropy.io.fits as pyfits
+from astropy.io import fits
+
+from .stsci_helper import stsci_median
 
 def get_first_science_hdu(hdu_list):
     if hdu_list[0].data is None:
@@ -8,7 +10,7 @@ def get_first_science_hdu(hdu_list):
         return hdu_list[0]
 
 candidate_generators = [(lambda x: os.path.extsep.join([x, "gz"]),
-                         pyfits.open)]
+                         fits.open)]
 
 def find_fits(fn):
 
@@ -30,7 +32,7 @@ def find_fits(fn):
 def open_fits(fn):
 
     if os.path.exists(fn):
-        return pyfits.open(fn)
+        return fits.open(fn)
 
     fn_search_list = [fn]
 
@@ -53,7 +55,6 @@ def load_fits_data(fn):
 
 # Below are helper funtions
 
-from astropy.io.fits import Card
 
 def get_hdus(helper, band, obsids):
     _ = helper.get_base_info(band, obsids)
@@ -73,7 +74,6 @@ def get_combined_image(hdus): #, destripe=True):
 
     data_list = [hdu.data for hdu in hdus]
 
-    from stsci_helper import stsci_median
     im = stsci_median(data_list)
 
     return im
@@ -85,7 +85,7 @@ if 0:
         from destriper import destriper
         im = destriper.get_destriped(im)
 
-        cards.append(Card("HISTORY", "IGR: image destriped."))
+        cards.append(fits.Card("HISTORY", "IGR: image destriped."))
 
     return im, cards
 

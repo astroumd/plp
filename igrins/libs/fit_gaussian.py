@@ -1,4 +1,6 @@
 import numpy as np
+from astropy.io import fits
+from scipy.optimize import fmin_tnc
 
 def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
                         do_plot=False):
@@ -50,9 +52,8 @@ def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
     params0 = np.array([lines[0], sigma_init, ymax, 0])
     params_min = np.array([xmin, 0., 0, -ymax])
     params_max = np.array([xmax, 6*sigma_init, 2*ymax, ymax])
-    from scipy.optimize import fmin_tnc
     sol_ = fmin_tnc(_gauss, params0,
-                    bounds=zip(params_min, params_max),
+                    bounds=list(zip(params_min, params_max)),
                     approx_grad=True, disp=0,
                     )
 
@@ -112,7 +113,6 @@ def fit_gaussian(s, lines, sigma_init=1.5, do_plot=False):
     params0 = np.array([lines[0], sigma_init, 1., 0])
     params_min = np.array([xmin, 0., 0, -1.])
     params_max = np.array([xmax, 2*sigma_init, 2., 1.])
-    from scipy.optimize import fmin_tnc
     sol_ = fmin_tnc(_gauss, params0,
                     bounds=zip(params_min, params_max),
                     approx_grad=True, disp=0,
@@ -130,12 +130,11 @@ def plot_sol(ax, sol):
         ax.plot(xx, yy)
         ax.plot(xx, _gauss0(sol_[0]))
         ax.vlines(sol_[0][0]+d_centers0, 0, 1)
-        print d_centers0
+        print(d_centers0)
 
 if __name__ == "__main__":
 
-    import astropy.io.fits as pyfits
-    f = pyfits.open("crires/CR_GCAT_061130A_lines_hitran.fits")
+    f = fits.open("crires/CR_GCAT_061130A_lines_hitran.fits")
     d = f[1].data
 
     wvl, s = np.array(d["Wavelength"]*1.e-3), np.array(d["Emission"]/.5e-11)

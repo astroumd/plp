@@ -1,10 +1,11 @@
+from itertools import groupby, count, repeat
+import operator
+
 import numpy as np
 import scipy.spatial as spatial
 
-from itertools import izip, repeat
-
-from fit_gaussian import fit_gaussian_simple
-from find_peak import find_peaks
+from .fit_gaussian import fit_gaussian_simple
+from .find_peak import find_peaks
 
 
 def reidentify(s, x_list, x=None, sigma_init=1.5):
@@ -25,7 +26,7 @@ def reidentify(s, x_list, x=None, sigma_init=1.5):
 
     fit_results = []
 
-    for lines_pixel, sigma in izip(x_list, sigma_iter):
+    for lines_pixel, sigma in zip(x_list, sigma_iter):
 
         sol_ = fit_gaussian_simple(x, s, lines_pixel,
                                    sigma_init=sigma,
@@ -53,11 +54,8 @@ def reidentify2(s, ref_x_list, sigma=3):
     dists, indices = kdtree.query(ref_x_list.reshape([-1,1]))
 
     # filter out multiple hits. Only the nearest one remains.
-    import operator
-    from itertools import izip, groupby, count
-
     identified_lines = [None] * len(ref_x_list)
-    for k, l in groupby(izip(dists, count(), indices),
+    for k, l in groupby(zip(dists, count(), indices),
                         operator.itemgetter(-1)):
         l = list(l)
         d, ref_i, i = min(l) #i = np.argmin([l1[-1] for l1 in l])

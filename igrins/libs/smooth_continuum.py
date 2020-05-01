@@ -1,9 +1,11 @@
 import json
-import scipy.ndimage as ni
 
 import numpy as np
-
+from scipy.interpolate import interp1d
+import scipy.ndimage as ni
 from scipy.signal import savgol_filter
+    
+from igrins.libs.trace_flat import get_finite_boundary_indices
 
 def sg_filter(s1, winsize1=15, winsize2=11):
     s1m = ni.median_filter(s1, 11)
@@ -63,7 +65,6 @@ def sv_iter(s1m, maxiter=30, pad=8, winsize1=15, winsize2=11,
             return_mask=False):
     xi = np.arange(len(s1m))
 
-    from scipy.interpolate import interp1d
     mm_old = None
 
     s1m_orig = s1m
@@ -126,7 +127,6 @@ def get_smooth_continuum(s, wvl=None):
     wvl : required for masking our some absorption features
     """
 
-    from trace_flat import get_finite_boundary_indices
     k1, k2 = get_finite_boundary_indices(s)
     if k1 == k2:
         r = np.empty(len(s), dtype="d")

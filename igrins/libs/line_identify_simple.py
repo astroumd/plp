@@ -1,11 +1,15 @@
-import numpy as np
+from __future__ import print_function
+
 import itertools
-from scipy.interpolate import interp1d
-import scipy.spatial as spatial
-import operator
 import json
+import operator
 import os
 
+import numpy as np
+from scipy.interpolate import interp1d
+import scipy.spatial as spatial
+    
+from igrins.libs.find_peak import find_peaks
 
 def match_lines1_pixel(cent_list, ref_pix_list):
     """
@@ -41,7 +45,6 @@ def match_lines1_pix(s, ref_pix_list):
     """
 
     # find centroids of s
-    from find_peak import find_peaks
     sol_list = find_peaks(s, sigma=3)
     cent_list = np.array([sol[0] for sol in sol_list])
 
@@ -205,4 +208,4 @@ if 0:
     ax.vlines(wvl_thar[matched_indices],
               ymin=0, ymax=-s_thar[matched_indices], color="r")
     ax.set_ylim(-30, 30)
-    print matched_indices
+    print(matched_indices)

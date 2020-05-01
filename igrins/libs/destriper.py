@@ -47,7 +47,7 @@ class Destriper(object):
 
 
         if concatenate:
-            return np.concatenate([ddm, ddm[::-1]] * (n_dy/2))
+            return np.concatenate([ddm, ddm[::-1]] * (n_dy//2))
         else:
             return ddm
 
@@ -133,7 +133,7 @@ class Destriper(object):
         if hori:
             d_ddm_masked = np.ma.array(d_ddm, mask=mask)
             s_hori = np.ma.median(d_ddm_masked, axis=1)
-            d_ddm = d_ddm - s_hori[:,np.newaxis]
+            d_ddm = d_ddm - s_hori[:, np.newaxis]
 
 
         return np.array(d_ddm)
@@ -144,10 +144,10 @@ class Destriper(object):
         Otherwise, 128x2048 array.
         """
         s_vert = np.median(d, axis=0)
-        d_vert = d - s_vert[ np.newaxis,:]
+        d_vert = d - s_vert[np.newaxis, :]
 
         s_hori = np.median(d_vert, axis=1)
-        d_hori = d_vert - s_hori[:,np.newaxis]
+        d_hori = d_vert - s_hori[:, np.newaxis]
 
         return d_hori
 

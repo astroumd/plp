@@ -1,3 +1,8 @@
+import json
+
+from igrins.libs.json_helper import json_dump
+from igrins.libs.utils import compress_list
+
 class IdentifiedLines(object):
     def __init__(self, json=None):
         self.data = dict(wvl_list=[], ref_indices_list=[],
@@ -8,7 +13,6 @@ class IdentifiedLines(object):
     @classmethod
     def load(klass, fn):
         k = klass()
-        import json
         j = json.load(open(fn))
         k.update(j)
 
@@ -33,7 +37,6 @@ class IdentifiedLines(object):
         return ref_map
 
     def save(self, fn):
-        from json_helper import json_dump
         json_dump(self.data, open(fn,"w"))
 
 
@@ -48,7 +51,6 @@ class IdentifiedLines(object):
         pixpos_list = self.data["pixpos_list"]
         msk_list = self._get_msk_list()
 
-        from utils import compress_list
         pixpos_list2 = [compress_list(msk, pl) for (msk, pl) in zip(msk_list,
                                                                     pixpos_list)]
 
@@ -60,8 +62,6 @@ class IdentifiedLines(object):
     def get_xy_list_from_wvllist(self, echellogram):
 
         msk_list = self._get_msk_list()
-
-        from utils import compress_list
 
         wvl_list = self.data["wvl_list"]
         wvl_list2 = [compress_list(msk, wl) for (msk, wl) in zip(msk_list,

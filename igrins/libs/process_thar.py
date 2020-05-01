@@ -1,12 +1,15 @@
 import os
+
 import numpy as np
 
-import astropy.io.fits as pyfits
-from stsci_helper import stsci_median
-
-#from products import PipelineProducts
-from products import PipelineImageBase, PipelineDict, PipelineProducts
-
+from igrins.libs.destriper import destriper
+from igrins.libs.load_fits import load_fits_data
+from igrins.libs.master_calib import get_master_calib_abspath
+from igrins.libs.products import PipelineImageBase, PipelineDict, PipelineProducts
+from igrins.libs.reidentify_thar_lines import match_orders, get_offset_transform
+from igrins.libs.storage_descriptions import (COMBINED_IMAGE_DESC,
+                                              ONED_SPEC_JSON_DESC)
+from igrins.libs.stsci_helper import stsci_median
 
 # FLAT_BPIXED_DESC = ("PRIMARY_CALIB_PATH", "FLAT_", ".flat_bpixed.fits")
 # FLAT_MASK_DESC = ("PRIMARY_CALIB_PATH", "FLAT_", ".flat_mask.fits")
@@ -32,17 +35,12 @@ class ThAr(object):
 
 def get_1d_median_specs(fits_names, ap):
     #hdu_list = [pyfits.open(fn)[0] for fn in fits_names]
-    from load_fits import load_fits_data
     hdu_list = [load_fits_data(fn) for fn in fits_names]
     _data = stsci_median([hdu.data for hdu in hdu_list])
 
-    from destriper import destriper
     data = destriper.get_destriped(_data)
 
     s = ap.extract_spectra_v2(data)
-
-    from storage_descriptions import (COMBINED_IMAGE_DESC,
-                                      ONED_SPEC_JSON_DESC)
 
     r = PipelineProducts("1d median specs")
     r.add(COMBINED_IMAGE_DESC,
@@ -55,15 +53,11 @@ def get_1d_median_specs(fits_names, ap):
 
 
 def match_order_thar(thar_products, thar_ref_data):
-    import numpy as np
-
     orders_src = thar_ref_data["orders"]
     s_list_src = thar_ref_data["ref_s_list"]
 
     # load spec
     #s_list_ = json.load(open("arc_spec_thar_%s_%s.json" % (band, date)))
-
-    from storage_descriptions import ONED_SPEC_JSON_DESC
 
     s_list_ = thar_products[ONED_SPEC_JSON_DESC]["specs"]
     s_list_dst = [np.array(s) for s in s_list_]
@@ -86,7 +80,6 @@ def match_order(src_spectra, ref_spectra):
     s_list = [np.array(s) for s in s_list_]
 
     # match the orders of s_list_src & s_list_dst
-    from reidentify_thar_lines import match_orders
     delta_indx, orders = match_orders(orders_ref, s_list_ref,
                                       s_list)
 
@@ -117,7 +110,6 @@ def get_offset_treanform_between_2spec(ref_spec, tgt_spec):
     s_list_tgt_filtered = filter_order(orders_tgt, s_list_tgt,
                                        orders_intersection)
 
-    from reidentify_thar_lines import get_offset_transform
     offset_transform = get_offset_transform(s_list_ref_filtered,
                                             s_list_tgt_filtered)
 
@@ -181,10 +173,6 @@ def reidentify_ThAr_lines(thar_products, thar_ref_data):
                        ref_id_file=thar_ref_data["ref_id_file"]))
 
     return r
-
-
-from master_calib import get_master_calib_abspath
-
 
 def load_echelogram(ref_date, band):
     from echellogram import Echellogram

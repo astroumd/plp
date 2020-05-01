@@ -12,6 +12,7 @@ import numpy as np
 import scipy.ndimage as ni
 
 import igrins.libs.badpixel as bp
+from .axes_grid_patched import Grid
 from .trace_aperture import trace_aperture_chebyshev
 
 
@@ -944,7 +945,6 @@ def prepare_order_trace_plot(s_list, row_col=(3, 2)):
 
     from matplotlib.figure import Figure
     #from mpl_toolkits.axes_grid1 import Grid
-    from axes_grid_patched import Grid
 
     row, col = row_col
 

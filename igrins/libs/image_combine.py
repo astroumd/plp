@@ -1,6 +1,9 @@
 import astropy.io.fits as pyfits
 import numpy as np
 
+from .destriper import destriper
+from .estimate_sky import estimate_background, get_interpolated_cubic
+from .load_fits import get_combined_image
 from .stsci_helper import stsci_median
 
 def make_combined_image_sky_deprecated(helper, band, obsids):
@@ -50,8 +53,6 @@ def make_combined_sky(hdus, frametypes=None):
     # from load_fits import get_hdus, get_combined_image
     # hdus = get_hdus(helper, band, obsids)
 
-    from load_fits import get_combined_image
-
     if frametypes is None: # do A-B
         sky_data = get_combined_image(hdus) / len(hdus)
     else:
@@ -67,8 +68,6 @@ def make_combined_sky(hdus, frametypes=None):
     return sky_data
 
 def make_combined_thar(hdus):
-
-    from load_fits import get_combined_image
 
     thar_data = get_combined_image(hdus) / len(hdus)
     
@@ -88,9 +87,6 @@ def destripe_sky(data, destripe_mask, subtract_bg=True):
     """
     simple destripping. Suitable for sky.
     """
-
-    from destriper import destriper
-    from estimate_sky import estimate_background, get_interpolated_cubic
 
     if subtract_bg:
         xc, yc, v, std = estimate_background(data, destripe_mask,
