@@ -4,8 +4,10 @@ import os
 import logging as igr_log
 import numpy as np
 
-from .argh_helper import argh
+from igrins.libs.igrins_config import IGRINSConfig
 from igrins.libs.recipe_base import filter_a0v, get_selected
+from .argh_helper import argh
+from .recipe_extract_base import RecipeExtractPR
 
 @argh.arg("-b", "--bands", default="HK", choices=["H", "K", "HK"])
 @argh.arg("-s", "--starting-obsids", default=None)
@@ -26,7 +28,6 @@ def plot_spec(utdate, refdate="20140316", bands="HK",
               a0v=None,
               basename_postfix=None):
 
-    from igrins.libs.igrins_config import IGRINSConfig
     config = IGRINSConfig(config_file)
 
     if not bands in ["H", "K", "HK"]:
@@ -46,7 +47,11 @@ def plot_spec(utdate, refdate="20140316", bands="HK",
     a0v_obsid0 = a0v_obsid
 
     for recipe_name, obsids, frametypes, row in selected:
-        objname = row["OBJNAME"].strip()
+        if row["OBJNAME"] is np.NaN:
+            tmp = ''
+        else:
+            tmp = row["OBJNAME"]
+        objname = tmp.strip()
         groupname = row["GROUP1"]
 
         target_type = recipe_name.split("_")[0]
@@ -91,8 +96,6 @@ def process_abba_band(recipe, utdate, refdate, band,
     else:
         raise ValueError("Unknown recipe : %s" % recipe)
 
-
-    from recipe_extract_base import RecipeExtractPR
     extractor = RecipeExtractPR(utdate, band,
                                 obsids, config)
 

@@ -1,3 +1,7 @@
+from igrins.libs.storage_descriptions import (SPEC_FITS_DESC,
+                                              SN_FITS_DESC,
+                                              SPEC_FITS_FLATTENED_DESC)
+
 def lazyprop(fn):
     attr_name = '_lazy_' + fn.__name__
     @property
@@ -15,7 +19,6 @@ class OnedSpecHelper(object):
 
     @lazyprop
     def _spec_hdu_list(self):
-        from storage_descriptions import SPEC_FITS_DESC
         spec_hdu_list = self.igr_storage.load1(SPEC_FITS_DESC,
                                                self.basename,
                                                return_hdu_list=True,
@@ -34,7 +37,6 @@ class OnedSpecHelper(object):
 
     @lazyprop
     def sn(self):
-        from storage_descriptions import SN_FITS_DESC
         sn_ = self.igr_storage.load1(SN_FITS_DESC,
                                      self.basename,
                                      prevent_split=True)
@@ -43,8 +45,6 @@ class OnedSpecHelper(object):
 
     @lazyprop
     def flattened(self):
-
-        from storage_descriptions import SPEC_FITS_FLATTENED_DESC
         telluric_cor_ = self.igr_storage.load1(SPEC_FITS_FLATTENED_DESC,
                                                self.basename,
                                                prevent_split=True)
