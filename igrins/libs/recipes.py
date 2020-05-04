@@ -25,20 +25,20 @@ def load_recipe_list_numpy(fn, allow_duplicate_groups=False):
     return recipe_list
 
 def load_recipe_list_pandas(fn, allow_duplicate_groups=False):
-    dtypes= [('OBJNAME', 'S128'), ('OBJTYPE', 'S128'),
-             ('GROUP1', 'S128'), ('GROUP2', 'S128'),
-             ('EXPTIME', 'f'), ('RECIPE', 'S128'),
-             ('OBSIDS', 'S1024'),  ('FRAMETYPES', 'S1024')]
+    dtypes= [('OBJNAME', 'U128'), ('OBJTYPE', 'U128'),
+             ('GROUP1', 'U128'), ('GROUP2', 'U128'),
+             ('EXPTIME', 'f'), ('RECIPE', 'U128'),
+             ('OBSIDS', 'U1024'),  ('FRAMETYPES', 'U1024')]
 
-    names = [_[0] for _ in dtypes]
-    df = pd.read_csv(fn, skiprows=0, dtype=dtypes, comment="#", 
-                     # names=names, 
-                     escapechar="\\", skipinitialspace=True)
+    #names = [_[0] for _ in dtypes]
+    df = pd.read_csv(fn, skiprows=0, dtype=dict(dtypes), comment="#", 
+                     escapechar="\\", skipinitialspace=True,
+                     engine="python")
 
     update_group1 = True
 
     if update_group1:
-        msk = df["GROUP1"] == b"1"
+        msk = df["GROUP1"] == "1"
         s_obsids = [(r.split()[0] if m else g) for r,g, m
                     in zip(df["OBSIDS"], df["GROUP1"], msk)]
 
@@ -49,7 +49,7 @@ def load_recipe_list_pandas(fn, allow_duplicate_groups=False):
             df["GROUP1"] = s_obsids
 
     for i, row in df.iterrows(): 
-        if row["OBJTYPE"] != b"TAR":
+        if row["OBJTYPE"] != "TAR":
             if row["GROUP1"] != row["OBSIDS"].split()[0]:
                 raise ValueError("GROUP1 should be identical to "
                                  "1st OBSIDS unless the OBJTYPE is "
@@ -144,8 +144,7 @@ class Recipes(object):
 
         _ = []
         for recipe_item in self.recipe_list:
-            for recipe_name in recipe_item[0].split(b"|"):
-                recipe_name = recipe_name.decode('UTF-8')
+            for recipe_name in recipe_item[0].split("|"):
                 if p_match(recipe_name):
                     recipe_item_new = (recipe_name, ) + recipe_item[1:]
                     _.append((recipe_item[-1]["GROUP1"], recipe_item_new))

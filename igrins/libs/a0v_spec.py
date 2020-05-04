@@ -1,12 +1,10 @@
 import astropy.io.fits as pyfits
 from astropy.modeling import models, fitting
 import numpy as np
-import scipy.ndimage as ni
 from scipy.interpolate import interp1d
+import scipy.ndimage as ni
 
-from .master_calib import get_master_calib_abspath
-
-
+from igrins.libs.master_calib import get_master_calib_abspath, load_ref_data
 
 class TelluricTransmission(object):
     def __init__(self):
@@ -22,8 +20,7 @@ class TelluricTransmission(object):
         #                        k=1,s=0)
 
         if gw is not None:
-            from scipy.ndimage import gaussian_filter1d
-            trans = gaussian_filter1d(self.trans[mask], gw)
+            trans = ni.gaussian_filter1d(self.trans[mask], gw)
         else:
             trans = self.trans[mask]
         spl = interp1d(self.wvl[mask],
@@ -41,7 +38,6 @@ class TelluricTransmission(object):
 class A0VSpec(object):
     def __init__(self, config):
 
-        from master_calib import load_ref_data
         d = load_ref_data(config, "", "VEGA_SPEC")
 
         wvl, flux, cont = (d[:,i] for i in [0, 1, 2])

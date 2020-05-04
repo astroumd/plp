@@ -5,7 +5,7 @@ import numpy.polynomial as P
 import scipy.ndimage as ni
 
 from .stsci_helper import stsci_median
-
+from igrins.libs.correct_distortion import ShiftX
 
 class ApCoeff(object):
     """
@@ -187,7 +187,6 @@ class Apertures(object):
 
         # it would be easier if shift data before all this?
         if slitoffset_map is not None:
-            from correct_distortion import ShiftX
             shiftx = ShiftX(slitoffset_map)
 
             data, variance_map = data.copy(), variance_map.copy()

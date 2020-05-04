@@ -10,6 +10,7 @@ from igrins.libs.destriper import destriper
 from igrins.libs.igrins_detector import IGRINSDetector
 from igrins.libs.load_fits import load_fits_data
 from igrins.libs.process_flat import FlatOff, FlatOn
+from igrins.libs.recipe_base import RecipeBase
 from igrins.libs.recipe_helper import RecipeHelper
 from igrins.libs.simple_hdu import SimpleHDU
 from igrins.libs.stsci_helper import stsci_median
@@ -19,6 +20,7 @@ from igrins.libs.trace_flat import (get_flat_normalization, get_flat_mask,
                                     get_y_derivativemap,
                                     identify_horizontal_line,
                                     trace_centroids_chevyshev)
+from igrins import get_caldb, get_obsset
 
 def get_combined_image(data_list, destripe=True):
     # destripe=True):
@@ -607,21 +609,20 @@ def process_aux(obsset_on, obsset_off):
 def process_band(utdate, recipe_name, band,
                  obsids, frametypes, config_name):
 
-    from igrins import get_caldb, get_obsset
     caldb = get_caldb(config_name, utdate, ensure_dir=True)
     obsset = get_obsset(caldb, band, recipe_name, obsids, frametypes)
 
     obsids_off = [obsid for obsid, frametype \
-                  in zip(obsids, frametypes) if frametype == b"OFF"]
+                  in zip(obsids, frametypes) if frametype == "OFF"]
     obsids_on = [obsid for obsid, frametype \
-                 in zip(obsids, frametypes) if frametype == b"ON"]
+                 in zip(obsids, frametypes) if frametype == "ON"]
 
 
     # STEP 1 :
     ## make combined image
     
-    obsset_off = obsset.get_subset(b"OFF")
-    obsset_on = obsset.get_subset(b"ON")
+    obsset_off = obsset.get_subset("OFF")
+    obsset_on = obsset.get_subset("ON")
 
     process_flat_off(obsset_off)
     
@@ -632,9 +633,6 @@ def process_band(utdate, recipe_name, band,
     process_aux(obsset_on, obsset_off) #, helper, band, obsids_off, obsids_on)
 
     # make_combined_image(helper, band, obsids, mode=None)
-
-
-from igrins.libs.recipe_base import RecipeBase
 
 class RecipeFlat(RecipeBase):
     RECIPE_NAME = "FLAT"

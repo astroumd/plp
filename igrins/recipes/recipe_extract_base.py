@@ -1,11 +1,16 @@
-import numpy as np
-import astropy.io.fits as pyfits
-import scipy.ndimage as ni
-
-from igrins.libs.lazyprop import lazyprop
-
+from itertools import cycle
 import os
+
+import astropy.io.fits as pyfits
+import numpy as np
+import scipy.ndimage as ni
+from scipy.interpolate import UnivariateSpline
+
+from igrins.libs.igrins_config import IGRINSConfig
+from igrins.libs.lazyprop import lazyprop
 from igrins.libs.products import ProductDB, PipelineStorage
+import igrins.libs.storage_descriptions as storage_descriptions
+from igrins.recipes.recipe_wvlsol_sky import load_aperture_wvlsol
 
 class ProcessBase(object):
     def __init__(self, utdate, refdate, config):
@@ -66,7 +71,6 @@ class ProcessBase(object):
                                                                  self.master_obsid)
 
 def get_pr(utdate, config_file="recipe.config"):
-    from igrins.libs.igrins_config import IGRINSConfig
     #from jj_recipe_base import ProcessBase
     config = IGRINSConfig(config_file)
     #refdate = config.get_value("REFDATE", None)
@@ -75,11 +79,8 @@ def get_pr(utdate, config_file="recipe.config"):
 
     return pr
 
-
-
 class RecipeExtractPR(object):
     def load1(self, db_name, description):
-        import igrins.libs.storage_descriptions as storage_descriptions
         master_obsid = self.pr.master_obsid
         basename = self.db[db_name].query(self.band, master_obsid)
         desc = getattr(storage_descriptions,
@@ -126,7 +127,7 @@ class RecipeExtractPR(object):
                                                  sky_basename)
 
         orders_w_solutions = wvlsol_products["orders"]
-        wvl_solutions = map(np.array, wvlsol_products["wvl_sol"])
+        wvl_solutions = list(map(np.array, wvlsol_products["wvl_sol"]))
 
         return orders_w_solutions, wvl_solutions
 
@@ -472,9 +473,6 @@ class RecipeExtractBase(RecipeExtractPR):
         return old_orders
 
     def get_aperture(self):
-
-        from recipe_wvlsol_sky import load_aperture_wvlsol
-
         # ap = load_aperture2(self.igr_storage, self.band,
         #                     self.pr.master_obsid,
         #                     self.db["flat_on"],
@@ -519,17 +517,15 @@ class RecipeExtractBase(RecipeExtractPR):
         return profile_x, profile_y
 
     def get_profile_func_ab(self, profile_x, profile_y):
-        from scipy.interpolate import UnivariateSpline
         profile_ = UnivariateSpline(profile_x, profile_y, k=3, s=0,
                                     bbox=[0, 1])
 
         roots = list(profile_.roots())
         #assert(len(roots) == 1)
         integ_list = []
-        from itertools import izip, cycle
-        for ss, int_r1, int_r2 in izip(cycle([1, -1]),
-                                       [0] + roots,
-                                       roots + [1]):
+        for ss, int_r1, int_r2 in zip(cycle([1, -1]),
+                                      [0] + roots,
+                                      roots + [1]):
             #print ss, int_r1, int_r2
             integ_list.append(profile_.integral(int_r1, int_r2))
 

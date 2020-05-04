@@ -1,18 +1,14 @@
+from __future__ import print_function
+
 import os
 import numpy as np
 
-#from igrins.libs.process_flat import FlatOff, FlatOn
-
-from igrins.libs.path_info import IGRINSPath
-#import astropy.io.fits as pyfits
-
-from igrins.libs.products import PipelineProducts
 from igrins.libs.apertures import Apertures
-
-#from igrins.libs.products import PipelineProducts
-
+from igrins.libs.path_info import IGRINSPath
+from igrins.libs.products import PipelineProducts
 from igrins.libs.recipe_base import RecipeBase
-
+from igrins.libs.recipe_helper import RecipeHelper
+from igrins.recipes.process_wvlsol_v0 import extract_spectra, make_combined_image
 
 class RecipeSkyWvlsol(RecipeBase):
     #RECIPE_NAME = "SKY_WVLSOL"
@@ -21,7 +17,7 @@ class RecipeSkyWvlsol(RecipeBase):
     def run_selected_bands(self, utdate, selected, bands):
         for s in selected:
             obsids = s[0]
-            print obsids
+            print(obsids)
             # frametypes = s[1]
 
             p = ProcessSkyBand(utdate, self.refdate,
@@ -117,7 +113,7 @@ def load_aperture_wvlsol2(extractor, band):
     #orders, orders_w_solutions):
 
     orders = get_orders_for_flat(extractor, band)
-    print "flat orders", orders
+    print("flat orders", orders)
     bottomup_solutions = get_bottomup_solutions(extractor, band)
 
     _o_s = dict(zip(orders, bottomup_solutions))
@@ -268,7 +264,7 @@ class ProcessSkyBand(object):
 
         _ = self.get_sky_spectra(extractor, ap, band, master_obsid)
         orders_w_solutions, wvl_solutions, s_list = _
-        print "orders", orders_w_solutions
+        print("orders", orders_w_solutions)
 
 
         fitter = SkyFitter(self.config, self.refdate)
@@ -684,7 +680,7 @@ class ProcessSkyBand(object):
         sky_figs = igr_path.get_section_filename_base("QA_PATH",
                                                       "oh_distortion",
                                                       "oh_distortion_"+sky_basename)
-        print fig_list
+        print(fig_list)
         figlist_to_pngs(sky_figs, fig_list)
 
         return fig_list
@@ -1221,10 +1217,7 @@ def fit_oh_spectra(refdate, band,
 # not finished. Initial solution part is done, but the distortion part
 # is not.
 
-from igrins.libs.recipe_helper import RecipeHelper
-
 #from recipe_wvlsol_v0 import extract_spectra
-from process_wvlsol_v0 import extract_spectra, make_combined_image
 #from recipe_wvlsol_v0 import make_combined_image
 
 def fit_wvl_sol(helper, band, obsids):

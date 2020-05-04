@@ -2,16 +2,14 @@ from __future__ import print_function
 
 import os
 import json
-try:
-    from itertools import izip
-except ImportError:
-    izip = zip
 
 import numpy as np
 import astropy.io.fits as pyfits
 
+from .igrins_config import IGRINSConfig
 from .json_helper import json_dump
 from .load_fits import get_first_science_hdu, open_fits
+from .path_info import IGRINSPath
 
 #from astropy.io.fits import Card
 
@@ -75,7 +73,7 @@ class PipelineImageBase(object):
         hdu_rest = [get_image_hdu(d_) for d_ in d_list2[1:]]
 
         hdu = pyfits.HDUList([hdu0] + hdu_rest)
-        for hdu1, (h, d) in izip(hdu, self.iter_header_data()):
+        for hdu1, (h, d) in zip(hdu, self.iter_header_data()):
             hdu1.header.extend(h)
 
         #fn0 = "".join([fn, ".fits"])
@@ -118,10 +116,7 @@ class PipelineStorage(object):
 
     @classmethod
     def from_utdate(cls, utdate, config=None):
-        from path_info import IGRINSPath
-
         if config is None:
-            from igrins_config import IGRINSConfig
             config = IGRINSConfig()
 
         igr_path = IGRINSPath(config, utdate)

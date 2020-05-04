@@ -1,11 +1,14 @@
+from astropy.io import fits
 import numpy as np
+import scipy.ndimage as ni
+    
+from igrins.libs.destriper import destriper
 
 def get_variance_map0(a_minus_b, bias_mask2, pix_mask):
     #variance0 = a_minus_b
     #a_minus_b = a-b
     msk = bias_mask2 | pix_mask | ~np.isfinite(a_minus_b)
 
-    from destriper import destriper
     variance0 = destriper.get_destriped(a_minus_b,
                                         msk,
                                         pattern=64,
@@ -26,7 +29,6 @@ def get_variance_map0(a_minus_b, bias_mask2, pix_mask):
 
     variance_[np.abs(variance_-ss) > 3*st] = np.nan
 
-    import scipy.ndimage as ni
     x_std = ni.median_filter(np.nanstd(variance_, axis=0), 11)
 
     variance_map0 = np.zeros_like(variance_) + x_std**2
@@ -59,7 +61,6 @@ def get_variance_map2(a_plus_b, a_minus_b, bias_mask2, pix_mask, gain):
     #a_minus_b = a-b
     msk = bias_mask2 | pix_mask | ~np.isfinite(a_minus_b)
 
-    from destriper import destriper
     variance0 = destriper.get_destriped(a_minus_b,
                                         msk,
                                         pattern=64,
@@ -80,27 +81,24 @@ def get_variance_map2(a_plus_b, a_minus_b, bias_mask2, pix_mask, gain):
 
     variance_[np.abs(variance_-ss) > 3*st] = np.nan
 
-    import scipy.ndimage as ni
     x_std = ni.median_filter(np.nanstd(variance_, axis=0), 11)
 
     variance_map0 = np.zeros_like(variance_) + x_std**2
 
     variance_map = variance_map0 + np.abs(a_plus_b)/gain # add poison noise in ADU
+    
     return variance_map
 
-
 if __name__ == "__main__":
-    import astropy.io.fits as pyfits
-    a = pyfits.open("../indata/20140525/SDCH_20140525_0016.fits")[0].data
-    b = pyfits.open("../indata/20140525/SDCH_20140525_0017.fits")[0].data
+    a = fits.open("../indata/20140525/SDCH_20140525_0016.fits")[0].data
+    b = fits.open("../indata/20140525/SDCH_20140525_0017.fits")[0].data
 
-    flat_mask = pyfits.open("../calib/primary/20140525/FLAT_SDCH_20140525_0074.flat_mask.fits")[0].data > 0
-    order_map2 = pyfits.open("../calib/primary/20140525/SKY_SDCH_20140525_0029.order_map_masked.fits")[0].data
+    flat_mask = fits.open("../calib/primary/20140525/FLAT_SDCH_20140525_0074.flat_mask.fits")[0].data > 0
+    order_map2 = fits.open("../calib/primary/20140525/SKY_SDCH_20140525_0029.order_map_masked.fits")[0].data
 
     bias_mask2 = flat_mask & (order_map2 > 0)
 
-    pix_mask0 = pyfits.open("../calib/primary/20140525/FLAT_SDCH_20140525_0074.flat_bpixed.fits")[0].data
+    pix_mask0 = fits.open("../calib/primary/20140525/FLAT_SDCH_20140525_0074.flat_bpixed.fits")[0].data
     pix_mask = ~np.isfinite(pix_mask0)
-
 
     v = get_variance_map(a+b, a-b, bias_mask2, pix_mask, gain=2)
