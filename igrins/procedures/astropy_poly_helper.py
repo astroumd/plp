@@ -38,7 +38,7 @@ def deserialize_poly_model(module_name, klass_name, serialized):
 
     assert issubclass(T, P.PolynomialBase)
 
-    inputs = T.inputs
+    inputs = T(0, 0).inputs
     if len(inputs) == 1:
         prefixes = [""]
     elif len(inputs) == 2:
