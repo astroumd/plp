@@ -1,3 +1,5 @@
+import os
+
 from .products import ProductDB
 
 from .storage_descriptions import (load_resource_def,
@@ -347,7 +349,7 @@ if __name__ == "__main__":
     master_obsid = obsids[0]
 
     from recipe_helper import RecipeHelper
-    helper = RecipeHelper("../recipe.config", utdate)
+    helper = RecipeHelper("../recipe.config".replace('/', os.path.sep), utdate)
 
     caldb = helper.get_caldb()
     resource = caldb.load_resource_for((band, master_obsid),

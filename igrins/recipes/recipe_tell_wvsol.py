@@ -271,7 +271,7 @@ def get_tell_model(tell_file):
 
 
 def run(filename, outfilename,
-        plot_dir=None, tell_file='data/TelluricModel.dat',
+        plot_dir=None, tell_file=os.path.join('data', 'TelluricModel.dat'),
         blaze_corrected=False):
 
     # prepare figures and axes

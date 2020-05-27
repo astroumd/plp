@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 
@@ -185,7 +187,7 @@ class Test:
     def __init__(self):
 
         from igrins_config import IGRINSConfig
-        config = IGRINSConfig("../recipe.config")
+        config = IGRINSConfig("../recipe.config".replace("/", os.path.sep))
 
         def get_refdata(band):
             from master_calib import load_sky_ref_data
@@ -200,12 +202,12 @@ class Test:
         self.ohlines_db = sky_ref_data["ohlines_db"]
 
         import json
-        fn = "../calib/primary/20140525/SDCH_20140525_0003.wvlsol_v0.json"
+        fn = "../calib/primary/20140525/SDCH_20140525_0003.wvlsol_v0.json".replace("/", os.path.sep)
         wvl_solution = json.load(open(fn))
         self.wvl_map = dict(zip(wvl_solution["orders"],
                                 wvl_solution["wvl_sol"]))
 
-        fn = "../calib/primary/20140525/SDCH_20140525_0029.oned_spec.json"
+        fn = "../calib/primary/20140525/SDCH_20140525_0029.oned_spec.json".replace("/", os.path.sep)
         s_list = json.load(open(fn))
         self.s_map = dict(zip(s_list["orders"],
                               s_list["specs"]))

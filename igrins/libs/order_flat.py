@@ -1,4 +1,4 @@
-import numpt as np
+import numpy as np
 import scipy.ndimage as ni
 
 def get_order_boundary_indices(s, s0=None):

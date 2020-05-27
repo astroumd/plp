@@ -1,3 +1,4 @@
+import os
 from __future__ import print_function
 
 import astropy.io.fits as pyfits
@@ -602,14 +603,14 @@ if __name__ == "__main__":
 
     band = "H"
 
-    f = pyfits.open("outdata/20140525/SDC%s_20140525_0016.spec.fits" % band)
+    f = pyfits.open(os.path.join("outdata", "20140525", "SDC%s_20140525_0016.spec.fits" % band))
     # f_flattened = pyfits.open("outdata/20140525/SDC%s_20140525_0016.spec_flattened.fits" % band)
     w = f[1].data
     s_orig = f[0].data
     #s_flattened = f_flattened[0].data
 
     import json
-    orderflat = json.load(open("calib/primary/20140525/ORDERFLAT_SDC%s_20140525_0074.json" % band))
+    orderflat = json.load(open(os.path.join("calib", "primary", "20140525", "ORDERFLAT_SDC%s_20140525_0074.json" % band)))
 
     telfit_outname = "transmission-795.20-288.30-41.9-45.0-368.50-3.90-1.80-1.40.%s" % band
     telfit_outname_npy = telfit_outname+".npy"

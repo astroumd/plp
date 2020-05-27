@@ -1,3 +1,4 @@
+import os
 
 import numpy as np
 import astropy.io.fits as pyfits
@@ -29,7 +30,7 @@ class Hitran(object):
 
     def load_cires(self):
 
-        f = pyfits.open("crires/CR_GCAT_061130A_lines_hitran.fits")
+        f = pyfits.open("crires/CR_GCAT_061130A_lines_hitran.fits".replace("/", os.path.sep))
         d = f[1].data
 
         wvl = d["Wavelength"]*1.e-3
@@ -139,7 +140,7 @@ def bootstrap(utdate):
 
     import json
     s_list = json.load(open("arc_spec_sky_%s_%s.json" % (band, utdate)))
-    wvl_sol = json.load(open("ecfit/wvl_sol_ohlines_%s_%s.json" \
+    wvl_sol = json.load(open(os.path.join("ecfit", "wvl_sol_ohlines_%s_%s.json" \
                              % (band, utdate)))
 
 

@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 # fit the spectrum with multiple gaussian lines with their separation fixed.
@@ -165,7 +167,7 @@ def plot_sol(ax, sol):
 if __name__ == "__main__":
 
     import astropy.io.fits as pyfits
-    f = pyfits.open("crires/CR_GCAT_061130A_lines_hitran.fits")
+    f = pyfits.open("crires/CR_GCAT_061130A_lines_hitran.fits".replace("/", os.path.sep))
     d = f[1].data
 
     wvl, s = np.array(d["Wavelength"]*1.e-3), np.array(d["Emission"]/.5e-11)

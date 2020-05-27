@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 import astropy.io.fits as pyfits
@@ -194,7 +196,7 @@ if __name__ == "__main__":
     if 1:
 
         import json
-        wvlsol_products = json.load(open("calib/primary/20140525/SKY_SDCH_20140525_0029.wvlsol_v1.json"))
+        wvlsol_products = json.load(open("calib/primary/20140525/SKY_SDCH_20140525_0029.wvlsol_v1.json".replace("/", os.path.sep)))
 
         orders_w_solutions = wvlsol_products["orders"]
         wvl_solutions = map(np.array, wvlsol_products["wvl_sol"])
@@ -208,7 +210,7 @@ if __name__ == "__main__":
         wvl1 = min(wvl_limits) - dwvl
         wvl2 = max(wvl_limits) + dwvl
 
-        of_prod = json.load(open("calib/primary/20140525/ORDERFLAT_SDCH_20140525_0074.json"))
+        of_prod = json.load(open("calib/primary/20140525/ORDERFLAT_SDCH_20140525_0074.json".replace("/", os.path.sep)))
 
         new_orders = of_prod["orders"]
         i1i2_list_ = of_prod["i1i2_list"]
@@ -228,7 +230,7 @@ if __name__ == "__main__":
                                                            wvl1, wvl2,
                                                            tel_trans)
 
-    s_list = list(pyfits.open("outdata/20140525/SDCH_20140525_0016.spec.fits")[0].data)
+    s_list = list(pyfits.open("outdata/20140525/SDCH_20140525_0016.spec.fits".replace("/", os.path.sep))[0].data)
 
     order_flat_meanspec = np.array(of_prod["mean_order_specs"])
 

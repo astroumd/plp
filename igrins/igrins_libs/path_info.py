@@ -57,7 +57,7 @@ class IGRINSPath(object):
                       "QA_PATH",
                       "HTML_PATH"]
 
-    default_paths = dict(QL_PATH="{OUTDATA_PATH}/quicklook")
+    default_paths = dict(QL_PATH="{OUTDATA_PATH}/quicklook".replace('/', os.path.sep))
 
     sections_names_no_ensuredir = ["INDATA_PATH"]
 

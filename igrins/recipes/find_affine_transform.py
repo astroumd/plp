@@ -62,6 +62,6 @@ if __name__ == "__main__":
     master_obsid = obsids[0]
 
     #helper = RecipeHelper("../recipe.config", utdate)
-    config_name = "../recipe.config"
+    config_name = "../recipe.config".replace("/", os.path.sep)
 
     main(utdate, band, obsids, config_name)

@@ -1307,7 +1307,7 @@ if __name__ == "__main__":
     band = "K"
 
     #helper = RecipeHelper("../recipe.config", utdate)
-    config_name = "../recipe.config"
+    config_name = os.path.join("..", "recipe.config")
 
     process_band(utdate, recipe_name, band, obsids, config_name)
 

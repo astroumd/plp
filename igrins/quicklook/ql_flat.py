@@ -1,5 +1,7 @@
 from __future__ import division
 
+import os.path
+
 import numpy as np
 
 from igrins.procedures import destripe_helper as dh
@@ -87,7 +89,7 @@ if __name__ == "__main__":
 
     frametype = "ON"
     # fn = "/media/igrins128/jjlee/annex/igrins/20170414/SDCK_20170414_0014.fits.gz"
-    fn = "/data/IGRINS_OBSDATA/20180406/SDCH_20180406_0042.fits"
+    fn = "/data/IGRINS_OBSDATA/20180406/SDCH_20180406_0042.fits".replace("/", os.path.sep)
     f = pyfits.open(fn)
 
     jo = do_ql_flat(f[0], frametype)

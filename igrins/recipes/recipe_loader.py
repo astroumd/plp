@@ -12,7 +12,7 @@ def _from_config(config):
 
 
 def _from_current():
-    return "./recipes"
+    return os.path.join(".", "recipes")
 
 
 def _import_from_path(module_name, path,

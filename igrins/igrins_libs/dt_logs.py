@@ -222,6 +222,7 @@ def test():
     dirname = '2017T1/20170312'
     dirname = '2017T1/20170314'
     dirname = '2017T1/20170315'
+    dirname.replace('/', os.path.sep)
     obsdate = os.path.basename(dirname)
     d3 = load_from_dir(obsdate, dirname)
     d3.to_json("test.json", orient="records")

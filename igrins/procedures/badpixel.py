@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 
@@ -55,7 +57,7 @@ def estimate_normalization_percentile(d, lower_limit, bpix_mask,
 if __name__ == "__main__":
     def get_file(i):
         import astropy.io.fits as pyfits
-        f = pyfits.open("../20140526/SDCH_20140526_%04d.fits" % i)
+        f = pyfits.open(os.path.join("..", "20140526", "SDCH_20140526_%04d.fits" % i))
         f[0].data -= np.median(f[0].data, axis=1)
         return f
 

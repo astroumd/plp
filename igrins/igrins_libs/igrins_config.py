@@ -13,7 +13,7 @@ SECONDARY_CALIB_PATH=calib/secondary/%(UTDATE)s
 QA_PATH=%(OUTDATA_PATH)s/qa
 HTML_PATH=html/%(UTDATE)s
 RECIPE_LOG_PATH=recipe_logs/%(UTDATE)s.recipes
-"""
+""".replace('/', os.path.sep)
 
 
 class IGRINSConfig(object):
@@ -49,11 +49,11 @@ class IGRINSConfig(object):
                                       "master_cal.config"))
 
     def get_value(self, option, utdate):
-        return self.config.get("DEFAULT", option,
-                               raw=0, vars=dict(UTDATE=utdate))
+        return config_directory_format(self.config.get("DEFAULT", option,
+                               raw=0, vars=dict(UTDATE=utdate)))
 
     def get(self, section, kind, **kwargs):
-        return self.config.get(section, kind, raw=0, vars=kwargs)
+        return config_directory_format(self.config.get(section, kind, raw=0, vars=kwargs))
 
 
 def get_config(config):
@@ -63,6 +63,11 @@ def get_config(config):
         config = IGRINSConfig(config)
 
     return config
+
+
+def config_directory_format(config_string):
+    formatted_string = config_string.replace('/', os.path.sep)
+    return formatted_string
 
 
 if __name__ == "__main__":

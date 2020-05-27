@@ -1,5 +1,7 @@
 from __future__ import division
 
+import os.path
+
 import numpy as np
 import pandas as pd
 
@@ -393,7 +395,7 @@ def main():
 
     frametype = "ON"
     # fn = "/media/igrins128/jjlee/annex/igrins/20170414/SDCK_20170414_0014.fits.gz"
-    fn = "/data/IGRINS_OBSDATA/20180406/SDC{}_20180406_0055.fits".format(band)
+    fn = ("/data/IGRINS_OBSDATA/20180406/SDC{}_20180406_0055.fits".format(band)).replace("/", os.path.sep)
     f = pyfits.open(fn)
 
     jo, jo_raw = do_ql_slit_profile(f[0], band, frametype)

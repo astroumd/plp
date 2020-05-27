@@ -1,3 +1,4 @@
+import os
 import json
 import scipy.ndimage as ni
 
@@ -192,7 +193,7 @@ def get_smooth_continuum(s, wvl=None):
 
 if __name__ == "__main__":
     band = "K"
-    wvl_sol = json.load(open("calib/primary/20140525/SKY_SDC%s_20140525_0029.wvlsol_v1.json" % (band,)))["wvl_sol"]
+    wvl_sol = json.load(open(os.path.join("calib", "primary", "20140525", "SKY_SDC%s_20140525_0029.wvlsol_v1.json" % (band,))))["wvl_sol"]
 
 
     fig1 = figure(1)
@@ -200,7 +201,7 @@ if __name__ == "__main__":
     ax1 = fig1.add_subplot(211)
     ax2 = fig1.add_subplot(212, sharex=ax1)
 
-    s = json.load(open("calib/primary/20140525/ORDERFLAT_SDC%s_20140525_0074.json" % (band,)))
+    s = json.load(open(os.path.join("calib", "primary", "20140525", "ORDERFLAT_SDC%s_20140525_0074.json" % (band,))))
 
     specs = s["mean_order_specs"]
 
@@ -212,7 +213,7 @@ if __name__ == "__main__":
     #    plot(s1)
 
     import astropy.io.fits as pyfits
-    dd = pyfits.open("outdata/20140525/SDC%s_20140525_0016.spec.fits" % band)[0].data
+    dd = pyfits.open(os.path.join("outdata", "20140525", "SDC%s_20140525_0016.spec.fits" % band))[0].data
 
     #ii = 0
 

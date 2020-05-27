@@ -1,7 +1,7 @@
 # This is to use new framework. Let's use this to measure flexure
 # between emission spectra (e.g., sky, UNe, etc.)
 
-#import os
+import os
 import numpy as np
 import pandas as pd
 
@@ -264,6 +264,6 @@ if __name__ == "__main__":
     band = "K"
 
     #helper = RecipeHelper("../recipe.config", utdate)
-    config_name = "../recipe.config"
+    config_name = os.path.join("..", "recipe.config")
 
     process_band(utdate, recipe_name, band, obsids, config_name)

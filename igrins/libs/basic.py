@@ -64,7 +64,7 @@ def split_path(fname):
     '''
     Split file path into path, filename 
     '''
-    return os.path.dirname(fname)+'/', os.path.basename(fname)
+    return os.path.dirname(fname)+os.path.sep, os.path.basename(fname)
 
 def exist_path(path):
     '''
@@ -125,19 +125,19 @@ def read_orderinfo(desc):
         oo = np.where(onum == iord)[0]
         return owv1[oo], owv2[oo]
     
-def save_fitting(desc, xcoeff, ycoeff, pdeg=[5,3], fitting_path='./fitdata/'):
+def save_fitting(desc, xcoeff, ycoeff, pdeg=[5,3], fitting_path='./fitdata/'.replace('/', os.path.sep)):
 
     pass
 
-def load_fitting(desc, pdeg=[5,3], fitting_path='./fitdata/'):
+def load_fitting(desc, pdeg=[5,3], fitting_path='./fitdata/'.replace('/', os.path.sep)):
     
     pass 
 
-def save_mapping(band, PA=0, offset=[1023.5, 1023.5], pscale=0.018, mapping_path='./mapdata/'):
+def save_mapping(band, PA=0, offset=[1023.5, 1023.5], pscale=0.018, mapping_path='./mapdata/'.replace('/', os.path.sep)):
     
     pass 
 
-def load_mapping(band, mapping_path='./mapdata/'):
+def load_mapping(band, mapping_path='./mapdata/'.replace('/', os.path.sep)):
     
     pass 
 

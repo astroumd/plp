@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     band = "K"
 
-    config_name = "../recipe.config"
+    config_name = "../recipe.config".replace("/", os.path.sep)
 
     process_band(utdate, recipe_name, band, 
                  obsids, frame_types, aux_infos, 

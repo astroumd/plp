@@ -1266,7 +1266,7 @@ class ProcessABBABand(object):
         #fn = get_master_calib_abspath("telluric/LBL_A15_s0_w050_R0060000_T.fits")
         #self.telluric = pyfits.open(fn)[1].data
 
-        telfit_outname = "telluric/transmission-795.20-288.30-41.9-45.0-368.50-3.90-1.80-1.40.%s" % extractor.band
+        telfit_outname = os.path.join("telluric", "transmission-795.20-288.30-41.9-45.0-368.50-3.90-1.80-1.40.%s" % extractor.band)
         telfit_outname_npy = telfit_outname+".npy"
         if 0:
             dd = np.genfromtxt(telfit_outname)

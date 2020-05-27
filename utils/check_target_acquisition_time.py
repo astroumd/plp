@@ -1,9 +1,11 @@
+import os.path
+
 import numpy as np
 import re
 
 utdate = "20140710"
 
-fn = "indata/%s/IGRINS_DT_Log_%s-1_H.txt" % (utdate, utdate)
+fn = os.path.join("indata", utdate, "IGRINS_DT_Log_%s-1_H.txt" % (utdate, ))
 p_end_comma = re.compile(r",$")
 s = "".join(p_end_comma.sub("", l) for l in open(fn))
 
