@@ -159,7 +159,7 @@ def test_plot():
     # from igrins_config import IGRINSConfig
     from recipe_helper import RecipeHelper
 
-    config_file = "../recipe.config"
+    config_file = "../recipe.config".replace("/", os.path.sep)
     utdate = 20151124
 
     # config = IGRINSConfig(config_file)

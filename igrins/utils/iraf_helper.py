@@ -1,3 +1,5 @@
+import os.path
+
 import astropy.io.fits as pyfits
 
 default_header_str = """WCSDIM  =                    3
@@ -135,4 +137,4 @@ if __name__ == "__main__":
 
     wat_list = get_wat_spec([111], [p])
 
-    f= pyfits.open("outdata/20140525/SDCK_20140525_0016.spec.fits")
+    f= pyfits.open(os.path.join("outdata", "20140525", "SDCK_20140525_0016.spec.fits"))

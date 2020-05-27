@@ -38,7 +38,7 @@ def load_simple_aperture(resource_manager):
 
 def get_calibs(band):
     import os
-    config_name = os.path.join("./master_calib",
+    config_name = os.path.join(".", "master_calib",
                                "calib_recipe.config")
     obsdate = "20180404"
     rm = get_resource_manager(config_name, obsdate, band)

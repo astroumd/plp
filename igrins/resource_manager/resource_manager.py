@@ -302,7 +302,8 @@ if __name__ == "__main__":
     master_obsid = obsids[0]
 
     from recipe_helper import RecipeHelper
-    helper = RecipeHelper("../recipe.config", utdate)
+    recipe_config = os.path.join("..", "recipe.config")
+    helper = RecipeHelper(recipe_config, utdate)
 
     caldb = helper.get_caldb()
     resource = caldb.load_resource_for((band, master_obsid),

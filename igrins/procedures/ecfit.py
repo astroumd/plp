@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 igrins_orders = {}
@@ -223,7 +225,7 @@ if __name__ == "__main__":
                            for (k, v) in ohlines_.items())
 
     for b_ in ["K"]:
-        hitran_ = json.load(open("../hitran_bootstrap_%s_%s.json" % (b_,utdate)))
+        hitran_ = json.load(open(os.path.join("..", "hitran_bootstrap_%s_%s.json" % (b_,utdate))))
         hitran_ = dict((int(i_), s) for i_,s in hitran_.items())
 
         for k, o in enumerate(igrins_orders["K"]):
@@ -233,7 +235,7 @@ if __name__ == "__main__":
             kk[0].extend(v["pixel"])
             kk[1].extend(v["wavelength"])
 
-        extra_ = json.load(open("../extra_%s_%s.json" % (b_,utdate)))
+        extra_ = json.load(open(os.path.join("..", "extra_%s_%s.json" % (b_,utdate))))
         for k, v in extra_.items():
             kk = ohlines[b_].setdefault(int(k), [[],[]])
             kk[0].extend(v["pixel"])

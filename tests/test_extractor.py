@@ -1,4 +1,4 @@
-
+import os.path
 # old code
 
 basename = extractor.basenames["flat_on"]
@@ -11,7 +11,7 @@ from libs.apertures import Apertures
 ap =  Apertures(orders, bottomup_solutions)
 #ap.extract_spectra_v2()
 
-order_map2 = pyfits.open("calib/primary/20150525/SKY_SDCH_20150525_0052.order_map.fits")[0].data > 0
+order_map2 = pyfits.open(os.path.join("calib", "primary", "20150525", "SKY_SDCH_20150525_0052.order_map.fits"))[0].data > 0
 #order_map2 = ap.make_order_map(mask_top_bottom=True)
 bias_mask = (flat.mask.data & (order_map2 > 0)) | extractor.pix_mask
 
