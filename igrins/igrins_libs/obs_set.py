@@ -191,7 +191,8 @@ class ObsSet(object):
                           item_type=None, postfix="",
                           resource_postfix="",
                           check_self=False):
-        r = self.rs.load_resource_for(self.master_obsid,
+        #r = self.rs.load_resource_for(self.master_obsid,
+        r = self.rs.load_resource_for(self.groupname,
                                       resource_type, item_type=item_type,
                                       postfix=postfix, resource_postfix=resource_postfix,
                                       check_self=check_self)
@@ -202,7 +203,8 @@ class ObsSet(object):
                                   item_type=None, postfix="",
                                   resource_postfix="",
                                   check_self=False):
-        r = self.rs.load_resource_for(self.master_obsid, resource_type, item_type=item_type,
+        #r = self.rs.load_resource_for(self.master_obsid, resource_type, item_type=item_type,
+        r = self.rs.load_resource_for(self.groupname, resource_type, item_type=item_type,
                                       postfix=postfix, resource_postfix=resource_postfix,
                                       check_self=check_self)
         hdu = get_first_science_hdu(r)

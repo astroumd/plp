@@ -103,16 +103,20 @@ class ResourceDBFile(ResourceDBBase):
                     continue
 
                 try:
-                    obsid_ = int(l1.strip().split("_")[-1])
+                    #obsid_ = int(l1.strip().split("_")[-1])
+                    obsid_ = l1.strip().split("_")[-1]
                 except ValueError:
                     continue
 
                 obsid_list.append(obsid_)
                 basename_list.append(l1.strip())
 
+            if len(np.unique(obsid_list)) == 1:
+                return basename_list[0]
+
             if obsid_list:
                 # return last one with minimum distance
-                obsid_dist = np.abs(np.array(obsid_list) - obsid)
+                obsid_dist = np.abs(np.array(obsid_list, dtype=np.int) - obsid)
                 i = np.where(obsid_dist == np.min(obsid_dist))[0][-1]
                 return basename_list[i]
             else:
