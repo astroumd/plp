@@ -1,5 +1,6 @@
-import os
 from __future__ import print_function
+
+import os.path
 
 import astropy.io.fits as pyfits
 import numpy as np
