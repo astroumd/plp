@@ -5,6 +5,22 @@ import json
 from six.moves import configparser as ConfigParser
 
 
+def soft_link_loader(func):
+    def wrapper(fn):
+        try:
+            return func(fn)
+        except (json.decoder.JSONDecodeError, ):
+            print("Loader error in function {} for file {}".format(func, fn))
+            base_path = os.path.dirname(fn)
+            with open(fn) as f:
+                link_name = f.read()
+                link_name = link_name.strip()
+                fn = os.path.join(base_path, link_name)
+            print("New filename: {}".format(fn))
+            return func(fn)
+    return wrapper
+
+
 def get_master_calib_abspath(fn):
     return os.path.join("master_calib", fn)
 
@@ -67,10 +83,14 @@ def get_master_calib_abspath(fn):
 #     return r
 
 
+@soft_link_loader
 def json_loader(fn):
     print(fn)
     import json
+    # TODO: fix this throughout the code / master_cal.config so that the
+    #  UTDATE variable is no longer necessary, and the soft links can be removed
     return json.load(open(fn))
+
 
 def fits_loader(fn):
     import astropy.io.fits as pyfits
