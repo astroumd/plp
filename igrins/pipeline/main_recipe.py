@@ -77,13 +77,14 @@ def iter_obsset(recipe_name_fnmatch,
             frametypes = s[2]
             aux_infos = s[3]
             groupname = aux_infos["group1"]
+            expt = aux_infos["expt"]
 
             obsset = get_obsset(obsdate, recipe_name, band,
                                 obsids, frametypes,
                                 groupname=groupname, recipe_entry=aux_infos,
                                 config_file=config,
                                 basename_postfix=basename_postfix,
-                                runner_config=runner_config)
+                                runner_config=runner_config, expt=expt)
             yield obsset
 
 

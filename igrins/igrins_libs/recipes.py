@@ -291,6 +291,14 @@ def load_recipe_as_dict(fn):
     #           ('GROUP1', 'S128'), ('GROUP2', 'S128'),
     #           ('EXPTIME', 'f'), ('RECIPE', 'S128'),
     #           ('OBSIDS', 'S1024'),  ('FRAMETYPES', 'S1024')]
+
+    with open(fn) as f:
+        line = f.readline()
+        if line.strip() == '#RIMAS':
+            expt = 'RIMAS'
+        else:
+            expt = 'IGRINS'
+
     dtypes = [('OBJNAME', np.unicode), ('OBJTYPE', np.unicode),
               ('GROUP1', np.unicode), ('GROUP2', np.unicode),
               ('EXPTIME', 'f'), ('RECIPE', np.unicode),
@@ -324,7 +332,8 @@ def load_recipe_as_dict(fn):
              exptime=d["EXPTIME"],
              recipe=d["RECIPE"],
              obsids=obsids,
-             frametypes=frametypes)
+             frametypes=frametypes,
+             expt=expt)
 
     return r
 
@@ -473,7 +482,7 @@ class RecipeLog(RecipeLogClass):
 
         columns = ["starting_obsid", "objname", "obstype",
                    "recipe", "obsids", "frametypes",
-                   "exptime", "group1", "group2"]
+                   "exptime", "group1", "group2", "expt"]
         super(RecipeLog, self).__init__(d, columns=columns,
                                         obsdate=obsdate,
                                         igrins_config=config)

@@ -75,13 +75,13 @@ def apply_steps(obsset, steps, kwargs=None, step_slice=None, on_raise=None,
     obsdate_band = str(obsset.rs.get_resource_spec())
     if progress_mode == "terminal":
         if obsset.basename_postfix:
-            info("[{} {}: {} {}]".format(obsdate_band,
-                                         obsset.recipe_name,
-                                         obsset.groupname,
-                                         obsset.basename_postfix))
+            info("[{} {} {}: {} {}]".format(obsset.expt, obsdate_band,
+                                            obsset.recipe_name,
+                                            obsset.groupname,
+                                            obsset.basename_postfix))
         else:
-            info("[{} {}: {}]".format(obsdate_band,
-                                      obsset.recipe_name, obsset.groupname))
+            info("[{} {} {}: {}]".format(obsset.expt, obsdate_band,
+                                         obsset.recipe_name, obsset.groupname))
 
     if tqdm and progress_mode == "tqdm":
         _it = tqdm(enumerate(steps), total=len(steps))

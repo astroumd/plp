@@ -9,7 +9,8 @@ def get_obsset(obsdate, recipe_name, band,
                obsids, frametypes,
                groupname=None, recipe_entry=None,
                config_file=None, saved_context_name=None,
-               basename_postfix="", runner_config=None):
+               basename_postfix="", runner_config=None,
+               expt="IGRINS"):
     # recipe_entry : dict of original recipe entry
 
     # from igrins import get_obsset
@@ -29,7 +30,7 @@ def get_obsset(obsdate, recipe_name, band,
     obsset = ObsSet(resource_manager, recipe_name, obsids, frametypes,
                     groupname=groupname, recipe_entry=recipe_entry,
                     basename_postfix=basename_postfix,
-                    runner_config=runner_config)
+                    runner_config=runner_config, expt=expt)
 
     return obsset
 
