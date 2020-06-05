@@ -1,9 +1,9 @@
-import os
-import numpy as np
 import json
+import os
 
+from astropy.io import fits
+import numpy as np
 from six.moves import configparser as ConfigParser
-
 
 def soft_link_loader(func):
     def wrapper(fn):
@@ -85,20 +85,18 @@ def get_master_calib_abspath(fn):
 
 @soft_link_loader
 def json_loader(fn):
-    print(fn)
-    import json
     # TODO: fix this throughout the code / master_cal.config so that the
     #  UTDATE variable is no longer necessary, and the soft links can be removed
     return json.load(open(fn))
 
 
+@soft_link_loader
 def fits_loader(fn):
-    import astropy.io.fits as pyfits
-    return pyfits.open(fn)
+    return fits.open(fn)
 
+@soft_link_loader
 def npy_loader(fn):
-    import numpy
-    return numpy.load(fn)
+    return np.load(fn)
 
 
 ref_loader_dict = {".json":json_loader,
@@ -106,7 +104,6 @@ ref_loader_dict = {".json":json_loader,
                    ".npy":npy_loader}
 
 def get_ref_loader(fn):
-    import os
     fn1, ext = os.path.splitext(fn)
 
     loader = ref_loader_dict[ext]
@@ -146,7 +143,6 @@ def query_ref_data_path(config, band, kind, ref_utdate=None):
     #                  BAND=band)
     fn0 = query_ref_value(config, band, kind, ref_utdate=ref_utdate)
 
-    import os
     fn = os.path.join(config.master_cal_dir, fn0)
     return fn
 

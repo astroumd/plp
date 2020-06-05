@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import numpy as np
 import astropy.io.fits as pyfits
@@ -115,13 +116,13 @@ def get_rectified_2dspec(data, order_map, bottom_up_solutions,
 
 
 if __name__ == "__main__":
-    d = pyfits.open("../outdata/20140525/SDCH_20140525_0016.combined_image.fits".replace("/", os.path.sep))[0].data
+    d = pyfits.open(Path("../outdata/20140525/SDCH_20140525_0016.combined_image.fits"))[0].data
 
-    msk = np.isfinite(pyfits.open("../outdata/20140525/SDCH_20140525_0042.combined_image.fits".replace("/", os.path.sep))[0].data)
+    msk = np.isfinite(pyfits.open(Path("../outdata/20140525/SDCH_20140525_0042.combined_image.fits"))[0].data)
 
     d[~msk] = np.nan
 
-    slitoffset = pyfits.open("../calib/primary/20140525/SKY_SDCH_20140525_0029.slitoffset_map.fits".replace("/", os.path.sep))[0].data
+    slitoffset = pyfits.open(Path("../calib/primary/20140525/SKY_SDCH_20140525_0029.slitoffset_map.fits"))[0].data
 
     d[~np.isfinite(slitoffset)] = np.nan
 

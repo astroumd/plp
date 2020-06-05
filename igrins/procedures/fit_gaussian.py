@@ -167,7 +167,8 @@ def plot_sol(ax, sol):
 if __name__ == "__main__":
 
     import astropy.io.fits as pyfits
-    f = pyfits.open("crires/CR_GCAT_061130A_lines_hitran.fits".replace("/", os.path.sep))
+    from pathlib import Path
+    f = pyfits.open(Path("crires/CR_GCAT_061130A_lines_hitran.fits"))
     d = f[1].data
 
     wvl, s = np.array(d["Wavelength"]*1.e-3), np.array(d["Emission"]/.5e-11)

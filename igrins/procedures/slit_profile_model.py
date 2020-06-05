@@ -158,8 +158,9 @@ def derive_multi_gaussian_slit_profile(s, y, n_comp, stddev_list,
 def test_plot():
     # from igrins_config import IGRINSConfig
     from recipe_helper import RecipeHelper
-
-    config_file = "../recipe.config".replace("/", os.path.sep)
+    from pathlib import Path
+    
+    config_file = Path("../recipe.config")
     utdate = 20151124
 
     # config = IGRINSConfig(config_file)

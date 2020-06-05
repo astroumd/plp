@@ -1,6 +1,7 @@
 
 import os
 from os.path import join
+from pathlib import Path
 # import astropy.io.fits as pyfits
 
 import re
@@ -57,7 +58,7 @@ class IGRINSPath(object):
                       "QA_PATH",
                       "HTML_PATH"]
 
-    default_paths = dict(QL_PATH="{OUTDATA_PATH}/quicklook".replace('/', os.path.sep))
+    default_paths = dict(QL_PATH=str(Path("{OUTDATA_PATH}/quicklook")))
 
     sections_names_no_ensuredir = ["INDATA_PATH"]
 

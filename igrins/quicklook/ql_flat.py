@@ -81,7 +81,8 @@ def plot_flat(jo, fig=None):
 if __name__ == "__main__":
 
     import astropy.io.fits as pyfits
-
+    from pathlib import Path
+    
     band = "K"
     # calib = Calib(band, 10.)
 
@@ -89,7 +90,7 @@ if __name__ == "__main__":
 
     frametype = "ON"
     # fn = "/media/igrins128/jjlee/annex/igrins/20170414/SDCK_20170414_0014.fits.gz"
-    fn = "/data/IGRINS_OBSDATA/20180406/SDCH_20180406_0042.fits".replace("/", os.path.sep)
+    fn = Path("/data/IGRINS_OBSDATA/20180406/SDCH_20180406_0042.fits")
     f = pyfits.open(fn)
 
     jo = do_ql_flat(f[0], frametype)

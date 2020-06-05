@@ -235,7 +235,6 @@ def make_combined_images(obsset, allow_no_b_frame=False,
                         remove_amp_wise_var=False)
 
     gain = float(obsset.rs.query_ref_value("GAIN"))
-
     variance_map0, variance_map = get_variances(d2, dp, gain)
 
     hdul = obsset.get_hdul_to_write(([], d2))

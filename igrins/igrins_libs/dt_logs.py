@@ -1,7 +1,8 @@
-import os
-import pandas as pd
-
 import glob
+import os
+from pathlib import Path
+
+import pandas as pd
 
 from ..igrins_libs import logger
 
@@ -222,7 +223,7 @@ def test():
     dirname = '2017T1/20170312'
     dirname = '2017T1/20170314'
     dirname = '2017T1/20170315'
-    dirname.replace('/', os.path.sep)
+    dirname = Path(dirname)
     obsdate = os.path.basename(dirname)
     d3 = load_from_dir(obsdate, dirname)
     d3.to_json("test.json", orient="records")

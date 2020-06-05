@@ -1,10 +1,22 @@
 import os
+from pathlib import Path
 from six.moves import configparser as ConfigParser
 from six.moves import cStringIO as StringIO
 
 from ..igrins_libs.logger import warning
 
-default_config_content = """[DEFAULT]
+#default_config_content = """[DEFAULT]
+#MASTER_CAL_DIR=master_calib
+#INDATA_PATH=indata/%(UTDATE)s
+#OUTDATA_PATH=outdata/%(UTDATE)s
+#PRIMARY_CALIB_PATH=calib/primary/%(UTDATE)s
+#SECONDARY_CALIB_PATH=calib/secondary/%(UTDATE)s
+#QA_PATH=%(OUTDATA_PATH)s/qa
+#HTML_PATH=html/%(UTDATE)s
+#RECIPE_LOG_PATH=recipe_logs/%(UTDATE)s.recipes
+#""".replace('/', os.path.sep)
+
+default_config_content = str(Path("""[DEFAULT]
 MASTER_CAL_DIR=master_calib
 INDATA_PATH=indata/%(UTDATE)s
 OUTDATA_PATH=outdata/%(UTDATE)s
@@ -13,7 +25,7 @@ SECONDARY_CALIB_PATH=calib/secondary/%(UTDATE)s
 QA_PATH=%(OUTDATA_PATH)s/qa
 HTML_PATH=html/%(UTDATE)s
 RECIPE_LOG_PATH=recipe_logs/%(UTDATE)s.recipes
-""".replace('/', os.path.sep)
+"""))
 
 
 class IGRINSConfig(object):
@@ -22,8 +34,8 @@ class IGRINSConfig(object):
         if config_file is None:
             config_file = 'recipe.config'
 
-        import os.path
-
+        import os #for some reason this need to be here
+        
         config_file = os.path.abspath(config_file)
         self.config_file = config_file
 
@@ -49,11 +61,11 @@ class IGRINSConfig(object):
                                       "master_cal.config"))
 
     def get_value(self, option, utdate):
-        return config_directory_format(self.config.get("DEFAULT", option,
-                               raw=0, vars=dict(UTDATE=utdate)))
+        return self.config.get("DEFAULT", option,
+                               raw=0, vars=dict(UTDATE=utdate))
 
     def get(self, section, kind, **kwargs):
-        return config_directory_format(self.config.get(section, kind, raw=0, vars=kwargs))
+        return self.config.get(section, kind, raw=0, vars=kwargs)
 
 
 def get_config(config):
@@ -65,9 +77,9 @@ def get_config(config):
     return config
 
 
-def config_directory_format(config_string):
-    formatted_string = config_string.replace('/', os.path.sep)
-    return formatted_string
+#def config_directory_format(config_string):
+#    formatted_string = config_string.replace('/', os.path.sep)
+#    return formatted_string
 
 
 if __name__ == "__main__":

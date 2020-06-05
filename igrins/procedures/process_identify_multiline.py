@@ -108,6 +108,7 @@ if 0:
 
 if __name__ == "__main__":
 
+    from pathlib import Path
     # utdate = "20140709"
     # obsids = [62, 63]
 
@@ -129,6 +130,5 @@ if __name__ == "__main__":
     band = "K"
 
     #helper = RecipeHelper("../recipe.config", utdate)
-    config_name = "../recipe.config".replace("/", os.path.sep)
-
+    config_name = Path("../recipe.config")
     process_band(utdate, recipe_name, band, obsids, config_name)

@@ -1,10 +1,14 @@
 import os
+from pathlib import Path
+import pickle
+
 from .argh_helper import arg
 from .driver import get_obsset, get_obsset_from_context  # , apply_steps
 from .steps import apply_steps
 
+from ..igrins_libs.igrins_config import IGRINSConfig
 from ..igrins_libs.logger import info
-from ..igrins_libs.recipes import get_pmatch_from_fnmatch
+from ..igrins_libs.recipes import get_pmatch_from_fnmatch, RecipeLog
 
 
 # for testing purposes
@@ -42,13 +46,11 @@ def iter_obsset(recipe_name_fnmatch,
                 basename_postfix="", recipe_name_exclude=None,
                 runner_config=None):
 
-    from ..igrins_libs.igrins_config import IGRINSConfig
     config = IGRINSConfig(config_file)
 
     fn = os.path.join(config.root_dir,
-                      config.get_value('RECIPE_LOG_PATH', obsdate))
+                      Path(config.get_value('RECIPE_LOG_PATH', obsdate)))
 
-    from ..igrins_libs.recipes import RecipeLog
     recipes = RecipeLog(obsdate, fn)
 
     if callable(recipe_name_fnmatch):
@@ -94,12 +96,10 @@ def _save_context(obsdate, obsset, context_id, outname):
              obsset_desc=obsset_desc,
              context_id=context_id
     )
-    import pickle
     pickle.dump(p, open(outname, "wb"))
 
 
 def _load_context(outname):
-    import pickle
     p = pickle.load(open(outname, "rb"))
     info("Loading context from '{}'".format(outname))
     resource_context = p["resource_context"]

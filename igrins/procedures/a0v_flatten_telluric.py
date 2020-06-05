@@ -4,11 +4,10 @@ import os
 
 import astropy.io.fits as pyfits
 import numpy as np
+from scipy.interpolate import interp1d
 import scipy.ndimage as ni
 
 from .a0v_spec import A0VSpec
-
-from scipy.interpolate import interp1d
 
 
 def air2vac(x0):

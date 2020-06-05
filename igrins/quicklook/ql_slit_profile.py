@@ -387,7 +387,8 @@ def do_figure_eq_width(stacked, stacked_stat,
 
 def main():
     import astropy.io.fits as pyfits
-
+    from pathlib import Path
+    
     band = "K"
     # calib = Calib(band, 10.)
 
@@ -395,7 +396,7 @@ def main():
 
     frametype = "ON"
     # fn = "/media/igrins128/jjlee/annex/igrins/20170414/SDCK_20170414_0014.fits.gz"
-    fn = ("/data/IGRINS_OBSDATA/20180406/SDC{}_20180406_0055.fits".format(band)).replace("/", os.path.sep)
+    fn = Path("/data/IGRINS_OBSDATA/20180406/SDC{}_20180406_0055.fits".format(band))
     f = pyfits.open(fn)
 
     jo, jo_raw = do_ql_slit_profile(f[0], band, frametype)

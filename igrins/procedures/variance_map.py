@@ -101,15 +101,17 @@ def get_variance_map2(a_plus_b, a_minus_b, bias_mask2, pix_mask, gain):
 
 if __name__ == "__main__":
     import astropy.io.fits as pyfits
-    a = pyfits.open("../indata/20140525/SDCH_20140525_0016.fits".replace("/", os.path.sep))[0].data
-    b = pyfits.open("../indata/20140525/SDCH_20140525_0017.fits".replace("/", os.path.sep))[0].data
+    from pathlib import Path
+    
+    a = pyfits.open(Path("../indata/20140525/SDCH_20140525_0016.fits"))[0].data
+    b = pyfits.open(Path("../indata/20140525/SDCH_20140525_0017.fits"))[0].data
 
-    flat_mask = pyfits.open("../calib/primary/20140525/FLAT_SDCH_20140525_0074.flat_mask.fits".replace("/", os.path.sep))[0].data > 0
-    order_map2 = pyfits.open("../calib/primary/20140525/SKY_SDCH_20140525_0029.order_map_masked.fits".replace("/", os.path.sep))[0].data
+    flat_mask = pyfits.open(Path("../calib/primary/20140525/FLAT_SDCH_20140525_0074.flat_mask.fits"))[0].data > 0
+    order_map2 = pyfits.open(Path("../calib/primary/20140525/SKY_SDCH_20140525_0029.order_map_masked.fits"))[0].data
 
     bias_mask2 = flat_mask & (order_map2 > 0)
 
-    pix_mask0 = pyfits.open("../calib/primary/20140525/FLAT_SDCH_20140525_0074.flat_bpixed.fits".replace("/", os.path.sep))[0].data
+    pix_mask0 = pyfits.open(Path("../calib/primary/20140525/FLAT_SDCH_20140525_0074.flat_bpixed.fits"))[0].data
     pix_mask = ~np.isfinite(pix_mask0)
 
 

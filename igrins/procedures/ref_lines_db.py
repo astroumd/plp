@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -540,7 +542,7 @@ class SampleSpec:
 
 
 def test_H():
-    config_name = "../recipe.config".replace("/", os.path.sep)
+    config_name = Path("../recipe.config")
     utdate = 20151130
     obsid = 50
     band = "H"
@@ -559,7 +561,7 @@ def test_H():
 
 
 def test_K():
-    config_name = "../recipe.config".replace("/", os.path.sep)
+    config_name = Path("../recipe.config")
     utdate = 20151130
     obsid = 50
     band = "K"
@@ -578,7 +580,7 @@ def test_K():
 
 
 def test_K_Hitran():
-    config_name = "../recipe.config".replace("/", os.path.sep)
+    config_name = Path("../recipe.config")
     utdate = 20151130
     obsid = 50
     band = "K"
