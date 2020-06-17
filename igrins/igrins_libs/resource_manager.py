@@ -81,6 +81,40 @@ class IgrinsBasenameHelper():
     def parse_basename(self, basename):
         return self.from_basename(basename)
 
+class RimasBasenameHelper():
+    p = re.compile(r"rimas.(\d+).(HK|YJ).(C0|C1)")
+    p_obsid = re.compile(r"(\d+)(.*)")
+
+    def __init__(self, obsdate, band):
+        self.obsdate = obsdate
+        self.band = band
+
+    def to_basename(self, obsid):
+        if isinstance(obsid, int):
+            group_postfix = ""
+        else:
+            obsid_, group_postfix = self.p_obsid.match(obsid).groups()
+            obsid = int(obsid_)
+
+        band_dict = {"YJ": "C0",
+                     "HK": "C1",
+                     "C0": "YJ",
+                     "C1": "HK"}
+
+        return "rimas.{obsid:04d}.{band}.{bandb}".format(obsid=obsid,
+                                                         band=self.band,
+                                                         bandb=band_dict[self.band])
+
+    def from_basename(self, basename):
+        m = self.p.match(basename).groups()
+        if (m[1] == "YJ" and m[2] == "C1") or \
+           (m[1] == "HK" and m[2] == "C0"):
+            raise ValueError("basename has mismatched detector names:", m[1], m[2])
+
+        return m[0]
+    
+    def parse_basename(self, basename):
+        return self.from_basename(basename)
 
 def get_file_storage(config, resource_spec, check_candidate=False):
     return get_storage(config, resource_spec, check_candidate=check_candidate)
@@ -129,13 +163,17 @@ def get_resource_manager(config, resource_spec,
     return resource_manager
 
 
-def get_igrins_resource_manager(config, resource_spec):
+def get_igrins_resource_manager(config, resource_spec, expt="igrins"):
     obsdate, band = resource_spec
 
-    basename_helper = IgrinsBasenameHelper(obsdate, band)
+    if expt.lower() == "igrins":
+        basename_helper = IgrinsBasenameHelper(obsdate, band)
+    elif expt.lower() == "rimas":
+        basename_helper = RimasBasenameHelper(obsdate, band)
 
     rs = get_resource_manager(config, resource_spec,
                               basename_helper=basename_helper,
                               check_candidate=True)
 
     return rs
+

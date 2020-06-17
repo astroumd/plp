@@ -140,8 +140,16 @@ def obsset_combine_flat_off(obsset, destripe=True):
     # cards, flat_off = combine_flat_off(hdu_list,
     #                                    destripe=destripe,
     #                                    correct_bg_upper256=correct_bg_upper256)
-    cards, flat_off = combine_flat_off_cube_201909(hdul,
-                                                   rp_remove_mod, bg_y_slice)
+    
+    #NOTE: IGRINS and RIMAS probably need different ways of combining the off data.
+    #Removing patterns, etc.
+    if obsset.expt.lower() == 'igrins':
+        cards, flat_off = combine_flat_off_cube_201909(hdul,
+                                                       rp_remove_mod, bg_y_slice)
+    elif obsset.expt.lower() == 'rimas':
+        cards, flat_off = combine_flat_off_cube_201909(hdul,
+                                                       rp_remove_mod, bg_y_slice)
+
 
     hdu_cards = [Card(k, json_dumps(v)) for (k, v) in cards]
 

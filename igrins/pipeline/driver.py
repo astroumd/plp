@@ -25,7 +25,7 @@ def get_obsset(obsdate, recipe_name, band,
         import cPickle as pickle
         resource_manager = pickle.load(open(saved_context_name, "rb"))
     else:
-        resource_manager = get_igrins_resource_manager(config, (obsdate, band))
+        resource_manager = get_igrins_resource_manager(config, (obsdate, band), expt=expt)
 
     obsset = ObsSet(resource_manager, recipe_name, obsids, frametypes,
                     groupname=groupname, recipe_entry=recipe_entry,
