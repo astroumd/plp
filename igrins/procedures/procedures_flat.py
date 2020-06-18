@@ -76,6 +76,17 @@ def combine_flat_off_cube_201909(hdul, rp_remove_mod, bg_y_slice):
 
     return cards, flat_off
 
+def combine_flat_off_rimas(hdul, rp_remove_mod, bg_y_slice):
+
+    data_list = np.array([hdu.data[:].astype(np.float)
+                          for hdu in hdul])
+    
+    #cards, cube = make_flat_off_rimas(hdul, rp_remove_mod, bg_y_slice)
+    cards, cube = make_initial_flat_cube(data_list, rp_remove_mod, bg_y_slice)
+
+    flat_off = image_median(cube)
+
+    return cards, flat_off
 
 def correct_bg_from_upper256(d):
     s = ni.median_filter(np.nanmedian(d[-256:-4], axis=0), 128)
@@ -147,8 +158,8 @@ def obsset_combine_flat_off(obsset, destripe=True):
         cards, flat_off = combine_flat_off_cube_201909(hdul,
                                                        rp_remove_mod, bg_y_slice)
     elif obsset.expt.lower() == 'rimas':
-        cards, flat_off = combine_flat_off_cube_201909(hdul,
-                                                       rp_remove_mod, bg_y_slice)
+        cards, flat_off = combine_flat_off_rimas(hdul,
+                                                 rp_remove_mod, bg_y_slice)
 
 
     hdu_cards = [Card(k, json_dumps(v)) for (k, v) in cards]
@@ -257,7 +268,7 @@ def combine_flat_on(obsset):
 
     obsset_on = obsset.get_subset("ON")
 
-    data_list = [hdu.data for hdu in obsset_on.get_hdus()]
+    data_list = [hdu.data[:].astype(np.float) for hdu in obsset_on.get_hdus()]
 
     # data_list1 = [dh.sub_p64_from_guard(d) for d in data_list]
 

@@ -34,7 +34,7 @@ class IGRINSConfig(object):
         if config_file is None:
             config_file = 'recipe.config'
 
-        import os #for some reason this need to be here
+        import os #for some reason this needs to be here
         
         config_file = os.path.abspath(config_file)
         self.config_file = config_file
