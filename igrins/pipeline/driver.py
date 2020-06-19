@@ -19,7 +19,7 @@ def get_obsset(obsdate, recipe_name, band,
     if isinstance(config_file, IGRINSConfig):
         config = config_file
     else:
-        config = IGRINSConfig(config_file)
+        config = IGRINSConfig(config_file, expt=expt)
 
     if saved_context_name is not None:
         import cPickle as pickle
