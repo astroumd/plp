@@ -151,7 +151,6 @@ def figlist_to_pngs(rootname, figlist, postfixes=None):
 
     for postfix, fig in zip(postfixes, figlist):
         FigureCanvasAgg(fig)
-        #print("SSS:", rootname, postfix)
         fig.savefig("%s_%s.png" % (rootname, postfix))
         #fig2.savefig("align_zemax_%s_fig2_fit.png" % postfix)
         #fig3.savefig("align_zemax_%s_fig3_hist_dlambda.png" % postfix)
@@ -165,23 +164,22 @@ def _save_to_pngs(fig_list, path, mastername):
     tgt_basename = mastername
 
     #dirname = "spec_" + tgt_basename
-    dirname = tgt_basename
-    basename_postfix_s = basename_postfix if basename_postfix is not None else ""
+    #dirname = tgt_basename
 
-    #filename_prefix = "spec_" + tgt_basename + basename_postfix_s 
-    filename_prefix = "spec"
+    basename_postfix_s = basename_postfix if basename_postfix is not None else ""
+    filename_prefix = "spec_" + tgt_basename + basename_postfix_s
 
     #print("TEST:", path, dirname, filename_prefix)
-    figout = os.path.join(path, dirname, filename_prefix)
-    path_dirname = os.path.join(path, dirname)
-    if not os.path.exists(path_dirname):
-        os.mkdir(path_dirname)
+    figout = os.path.join(path, filename_prefix)
+
+    if not os.path.exists(path):
+        os.mkdir(path)
 
     #Function is copied from old code
     figlist_to_pngs(figout, fig_list)
 
 
-def _save_to_html():
+def _save_to_html(path, mastername):
     i1i2_list = get_i1i2_list(extractor,
                               orders_w_solutions)
 
@@ -247,11 +245,12 @@ def plot_spec(obsset, interactive=False,
             from ..igrins_libs.igrins_config import IGRINSConfig
             config = IGRINSConfig(expt=obsset.expt)
             if obsset.groupname == str(obsset.master_obsid):
-                mastername = obsset.recipe_name + '_' + obsset.groupname
+                mastername = obsset.groupname
             else:
-                mastername = obsset.recipe_name + '_' + obsset.groupname + '_' + str(obsset.master_obsid)
-            qa_path = config.get_value("QA_PATH", obsset.obsdate)
-            _save_to_pngs(fig_list, qa_path, mastername)
+                mastername = obsset.groupname + '_' + str(obsset.master_obsid)
+            path = os.path.join(config.get_value("QA_PATH", obsset.obsdate),
+                                obsset.recipe_name)
+            _save_to_pngs(fig_list, path, mastername)
 
 
     if do_interactive_figure:
