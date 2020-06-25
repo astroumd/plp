@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 
@@ -8,8 +10,9 @@ from ..igrins_libs.logger import logger
 
 # from ..utils.image_combine import image_median
 
-from ..igrins_libs.resource_helper_igrins import ResourceHelper
+from ..igrins_libs.a0v_obsid import get_group2, get_a0v_obsid
 from ..igrins_libs.oned_spec_helper import OnedSpecHelper
+from ..igrins_libs.resource_helper_igrins import ResourceHelper
 
 
 def set_basename_postfix(obsset, basename_postfix):
@@ -35,9 +38,6 @@ def _plot_source_spec(fig, tgt, objname=""):
 
     if objname:
         ax1a.set_title(objname)
-
-
-from ..igrins_libs.a0v_obsid import get_group2, get_a0v_obsid
 
 def get_tgt_spec_cor(obsset, tgt, a0v, threshold_a0v, multiply_model_a0v):
     tgt_spec_cor = []
@@ -142,20 +142,42 @@ def _plot_div_a0v_spec(fig, tgt, obsset, a0v="GROUP2", a0v_obsid=None,
     ax2b.set_ylim(s_min-ds_pad, s_max+ds_pad)
     ax2a.set_title(objname)
 
+def figlist_to_pngs(rootname, figlist, postfixes=None):
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from itertools import count
 
-def _save_to_pngs():
+    if postfixes is None:
+        postfixes = ("fig%02d" % i for i in count(1))
+
+    for postfix, fig in zip(postfixes, figlist):
+        FigureCanvasAgg(fig)
+        #print("SSS:", rootname, postfix)
+        fig.savefig("%s_%s.png" % (rootname, postfix))
+        #fig2.savefig("align_zemax_%s_fig2_fit.png" % postfix)
+        #fig3.savefig("align_zemax_%s_fig3_hist_dlambda.png" % postfix)
+
+def _save_to_pngs(fig_list, path, mastername):
     # FIXME: This is copy from old version. Need to modify it.
     # tgt_basename = extractor.pr.tgt_basename
+    #mastername = igr_path.get_basename(band, groupname)
+    basename_postfix = None
+
     tgt_basename = mastername
 
-    dirname = "spec_"+tgt_basename
+    #dirname = "spec_" + tgt_basename
+    dirname = tgt_basename
     basename_postfix_s = basename_postfix if basename_postfix is not None else ""
-    filename_prefix = "spec_" + tgt_basename + basename_postfix_s
-    figout = igr_path.get_section_filename_base("QA_PATH",
-                                                filename_prefix,
-                                                dirname)
-    #figout = obj_path.get_secondary_path("spec", "spec_dir")
-    from ..libs.qa_helper import figlist_to_pngs
+
+    #filename_prefix = "spec_" + tgt_basename + basename_postfix_s 
+    filename_prefix = "spec"
+
+    #print("TEST:", path, dirname, filename_prefix)
+    figout = os.path.join(path, dirname, filename_prefix)
+    path_dirname = os.path.join(path, dirname)
+    if not os.path.exists(path_dirname):
+        os.mkdir(path_dirname)
+
+    #Function is copied from old code
     figlist_to_pngs(figout, fig_list)
 
 
@@ -186,6 +208,7 @@ def plot_spec(obsset, interactive=False,
               multiply_model_a0v=False):
     recipe = obsset.recipe_name
     target_type, nodding_type = recipe.split("_")
+    master_obsid = obsset.master_obsid
 
     if target_type in ["A0V"]:
         FIX_TELLURIC = False
@@ -220,6 +243,16 @@ def plot_spec(obsset, interactive=False,
     if fig_list:
         for fig in fig_list:
             fig.tight_layout()
+        if not do_interactive_figure:
+            from ..igrins_libs.igrins_config import IGRINSConfig
+            config = IGRINSConfig(expt=obsset.expt)
+            if obsset.groupname == str(obsset.master_obsid):
+                mastername = obsset.recipe_name + '_' + obsset.groupname
+            else:
+                mastername = obsset.recipe_name + '_' + obsset.groupname + '_' + str(obsset.master_obsid)
+            qa_path = config.get_value("QA_PATH", obsset.obsdate)
+            _save_to_pngs(fig_list, qa_path, mastername)
+
 
     if do_interactive_figure:
         import matplotlib.pyplot as plt
