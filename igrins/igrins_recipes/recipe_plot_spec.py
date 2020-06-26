@@ -255,6 +255,39 @@ def plot_spec(obsset, interactive=False,
         import matplotlib.pyplot as plt
         plt.show()
 
+def html_save(utdate, dirname, objroot, band,
+              orders_w_solutions, wvl_solutions,
+              tgt_spec, tgt_sn, i1i2_list,
+              spec_js_name="jj.js"):
+
+        wvl_list_html, s_list_html, sn_list_html = [], [], []
+
+        for wvl, s, sn, (i1, i2) in zip(wvl_solutions,
+                                        tgt_spec, tgt_sn,
+                                        i1i2_list):
+
+            sl = slice(i1, i2)
+
+            wvl_list_html.append(wvl[sl])
+            s_list_html.append(s[sl])
+            sn_list_html.append(sn[sl])
+
+
+        save_for_html(dirname, objroot, band,
+                      orders_w_solutions,
+                      wvl_list_html, s_list_html, sn_list_html)
+
+        from jinja2 import Environment, FileSystemLoader
+        env = Environment(loader=FileSystemLoader('jinja_templates'))
+        spec_template = env.get_template('spec.html')
+
+        master_root = "igrins_spec_%s_%s" % (objroot, band)
+        jsname = master_root + ".js"
+        ss = spec_template.render(utdate=utdate,
+                                  jsname=jsname,
+                                  spec_js_name=spec_js_name)
+        htmlname = master_root + ".html"
+        open(os.path.join(dirname, htmlname), "w").write(ss)
 
 steps = [Step("Set basename_postfix", set_basename_postfix,
               basename_postfix=''),

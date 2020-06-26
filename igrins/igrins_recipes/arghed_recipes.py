@@ -61,6 +61,9 @@ def get_recipe_list():
                    create_argh_command("analyze-sky",
                                        ["SKY", "*_ONOFF", "*_AB"],
                                        recipe_name_exclude=["SKY_AB"]),
+                   create_argh_command("publish-html", ["A0V_*",
+                                                        "STELLAR_*",
+                                                        "EXTENDED_*"]),
                    create_argh_command_quicklook(),
                    create_argh_command_noise_guard()
     ]
