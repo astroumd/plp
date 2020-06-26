@@ -169,7 +169,6 @@ def _save_to_pngs(fig_list, path, mastername):
     basename_postfix_s = basename_postfix if basename_postfix is not None else ""
     filename_prefix = "spec_" + tgt_basename + basename_postfix_s
 
-    #print("TEST:", path, dirname, filename_prefix)
     figout = os.path.join(path, filename_prefix)
 
     if not os.path.exists(path):
