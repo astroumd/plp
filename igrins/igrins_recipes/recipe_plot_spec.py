@@ -11,6 +11,7 @@ from ..igrins_libs.logger import logger
 # from ..utils.image_combine import image_median
 
 from ..igrins_libs.a0v_obsid import get_group2, get_a0v_obsid
+from ..igrins_libs.igrins_config import IGRINSConfig
 from ..igrins_libs.oned_spec_helper import OnedSpecHelper
 from ..igrins_libs.resource_helper_igrins import ResourceHelper
 
@@ -156,9 +157,6 @@ def figlist_to_pngs(rootname, figlist, postfixes=None):
         #fig3.savefig("align_zemax_%s_fig3_hist_dlambda.png" % postfix)
 
 def _save_to_pngs(fig_list, path, mastername):
-    # FIXME: This is copy from old version. Need to modify it.
-    # tgt_basename = extractor.pr.tgt_basename
-    #mastername = igr_path.get_basename(band, groupname)
     basename_postfix = None
 
     tgt_basename = mastername
@@ -202,7 +200,10 @@ def _save_to_html(path, mastername):
 
 
 def plot_spec(obsset, interactive=False,
-              multiply_model_a0v=False):
+              multiply_model_a0v=False,
+              html_output=False):
+    obsdate = obsset.rs.basename_helper.obsdate
+    config = IGRINSConfig(expt=obsset.expt)
     recipe = obsset.recipe_name
     target_type, nodding_type = recipe.split("_")
     master_obsid = obsset.master_obsid
@@ -240,17 +241,15 @@ def plot_spec(obsset, interactive=False,
     if fig_list:
         for fig in fig_list:
             fig.tight_layout()
-        if not do_interactive_figure:
-            from ..igrins_libs.igrins_config import IGRINSConfig
-            config = IGRINSConfig(expt=obsset.expt)
-            if obsset.groupname == str(obsset.master_obsid):
-                mastername = obsset.groupname
-            else:
-                mastername = obsset.groupname + '_' + str(obsset.master_obsid)
-            path = os.path.join(config.get_value("QA_PATH", obsset.obsdate),
+
+        if not (do_interactive_figure or html_output):
+            mastername = obsset.rs.basename_helper.to_basename(obsset.master_obsid)
+            path = os.path.join(config.get_value("QA_PATH", obsdate),
                                 obsset.recipe_name)
             _save_to_pngs(fig_list, path, mastername)
-
+    
+    if html_output:
+        _save_to_html(path, mastername)
 
     if do_interactive_figure:
         import matplotlib.pyplot as plt
@@ -261,5 +260,6 @@ steps = [Step("Set basename_postfix", set_basename_postfix,
               basename_postfix=''),
          Step("Plot spec", plot_spec,
               interactive=ArghFactoryWithShort(False),
-              multiply_model_a0v=ArghFactoryWithShort(False)),
+              multiply_model_a0v=ArghFactoryWithShort(False),
+              html_output=ArghFactoryWithShort(False))
 ]

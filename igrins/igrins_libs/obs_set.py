@@ -38,7 +38,7 @@ class ObsSet(object):
 
         #Stuff added for RIMAS
         self.expt = expt
-        self.obsdate = obsdate
+        #self.obsdate = obsdate
 
         # self.basename = self.caldb._get_basename((self.band, groupname))
         # # this is for query
