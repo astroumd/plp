@@ -4,44 +4,16 @@ from collections import namedtuple
 
 import numpy as np
 import scipy.ndimage as ni
-
 from astropy.io.fits import Card, HDUList, PrimaryHDU
 
 from .. import get_obsset_helper, DESCS
 
-from ..utils.image_combine import image_median as stsci_median
-from ..procedures import destripe_dark_flatoff as dh
-
 from ..utils.json_helper import json_dumps
-
-# def combine_flat_off(hdul, destripe=True):
-#     # destripe=True):
-
-#     cards = []
-
-#     data_list = [hdu.data for hdu in hdul]
-
-#     flat_off = stsci_median(data_list)
-
-#     if destripe:
-#         from .destriper import destriper
-#         flat_off = destriper.get_destriped(flat_off)
-
-#         cards.append(Card("HISTORY",
-#                           "IGR: image destriped."))
-
-#     return (cards, flat_off)
-
 from ..utils.image_combine import image_median
 
+from ..procedures import destripe_dark_flatoff as dh
 from ..procedures.readout_pattern_guard import remove_pattern_from_guard
-
-# from igrins.procedures import destripe_dark_flatoff as dh
-
 from ..procedures.readout_pattern_helper import make_initial_flat_cube
-
-# from igrins.procedures.procedure_dark import (apply_rp_2nd_phase,
-#                                               apply_rp_1st_phase)
 
 
 def get_params(band):
@@ -82,27 +54,6 @@ def correct_bg_from_upper256(d):
     return d - s
 
 
-def combine_flat_off_old(hdul, destripe=True,
-                         correct_bg_upper256=False):
-    # destripe=True):
-
-    cards = []
-
-    data_list = [hdu.data for hdu in hdul]
-
-    if destripe:
-        bg_mask, bg_dict = dh.make_background_mask(data_list)
-        cards.append(("IGRFLAT0", bg_dict))
-        flat_off = dh.make_initial_dark(data_list, bg_mask)
-    else:
-        flat_off = stsci_median(data_list)
-
-    if correct_bg_upper256:
-        flat_off = correct_bg_from_upper256(flat_off)
-
-    return (cards, flat_off)
-
-
 def obsset_combine_flat_off(obsset, destripe=True):
     """
     For flat-off, they are first guard-removed.
@@ -117,29 +68,11 @@ def obsset_combine_flat_off(obsset, destripe=True):
 
     obsset_off = obsset.get_subset("OFF")
 
-    # cards = []
-
-    # data_list = [hdu.data for hdu in obsset_off.get_hdus()]
-
-    # flat_off = stsci_median(data_list)
-
-    # if destripe:
-    #     from .destriper import destriper
-    #     flat_off = destriper.get_destriped(flat_off)
-
-    #     cards.append(Card("HISTORY",
-    #                       "IGR: image destriped."))
-
     hdul = obsset_off.get_hdus()
 
     band = get_band(obsset)
     rp_remove_mod, bg_y_slice = get_params(band)
 
-    # correct_bg_upper256 = True if band == "K" else False
-
-    # cards, flat_off = combine_flat_off(hdu_list,
-    #                                    destripe=destripe,
-    #                                    correct_bg_upper256=correct_bg_upper256)
     cards, flat_off = combine_flat_off_cube_201909(hdul,
                                                    rp_remove_mod, bg_y_slice)
 
@@ -199,10 +132,6 @@ def obsset_combine_flat_off_step2(obsset):
 def make_hotpix_mask(obsset,
                      sigma_clip1=100, sigma_clip2=10,
                      medfilter_size=None):
-
-    # caldb = helper.get_caldb()
-    # master_obsid = obsset.obsids[0]
-
     from . import badpixel as bp
 
     obsset_off = obsset.get_subset("OFF")
@@ -217,9 +146,6 @@ def make_hotpix_mask(obsset,
 
     flat_off_cards = [Card("BG_STD", bg_std, "IGR: stddev of combined flat")]
 
-    # caldb = helper.get_caldb()
-
-    # hdul = obsset.get_hdul_to_write(([], hotpix_mask))
     obsset_off.store(DESCS["HOTPIX_MASK"], hotpix_mask, item_type="mask")
 
     # save fits with updated header
@@ -245,7 +171,6 @@ def combine_flat_on(obsset):
     ['amp_wise_bias_r2', 'p64_0th_order']
     And then median-combined.
     """
-    # destripe=True):
 
     obsset_on = obsset.get_subset("ON")
 
@@ -451,10 +376,6 @@ def trace_order_boundaries(obsset):
 
 
 def stitch_up_traces(obsset):
-    # from igrins.libs.process_flat import trace_solutions
-    # trace_solution_products, trace_solution_products_plot = \
-    #                          trace_solutions(trace_products)
-
     from .igrins_detector import IGRINSDetector
     from .trace_flat import trace_centroids_chevyshev
     nx = IGRINSDetector.nx
@@ -532,53 +453,6 @@ def update_db(obsset):
     obsset_on.add_to_db("flat_on")
 
 ####
-
-
-def store_qa(obsset_on, obsset_off):
-
-    # Prepare figures.
-
-    from matplotlib.figure import Figure
-    from ..libs.process_flat import plot_trace_solutions
-    from ..libs.flat_qa import check_trace_order
-
-    fig1 = Figure(figsize=[9, 4])
-
-    flat_deriv = obsset_on.load_image("flat_deriv")
-    trace_dict = obsset_on.load_item("flatcentroids_json")
-
-    check_trace_order(flat_deriv, trace_dict, fig1)
-
-    flat_normed = obsset_on.load_image("flat_normed")
-    flatcentroid_sol_json = obsset_on.load_item("flatcentroid_sol_json")
-
-    fig2, fig3 = plot_trace_solutions(flat_normed,
-                                      flatcentroid_sol_json)
-
-    # Now save them
-
-    from ..libs.qa_helper import figlist_to_pngs
-    # get_filename = helper.get_section_filename_base
-    dest_dir = obsset_on.query_item_path("qa_flat_aperture_dir",
-                                         subdir="aperture")
-    # aperture_figs = get_filename("QA_PATH",
-    #                              "aperture_"+flaton_basename,
-    #                              "aperture_"+flaton_basename)
-
-    figlist_to_pngs(dest_dir, [fig1, fig2, fig3])
-
-    # if 1: # now trace the orders
-
-    #     #del trace_solution_products["bottom_up_solutions"]
-    #     igr_storage.store(trace_solution_products,
-    #                       mastername=flat_on_filenames[0],
-    #                       masterhdu=flat_on_hdu_list[0])
-
-###
-
-
-# from ..pipeline.steps import Step
-
 
 # steps = [Step("Combine Flat-Off", combine_flat_off),
 #          Step("Hotpix Mask", make_hotpix_mask,
