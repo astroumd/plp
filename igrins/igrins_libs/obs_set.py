@@ -15,7 +15,7 @@ class ObsSet(object):
     def __init__(self, resource_stack, recipe_name, obsids, frametypes,
                  groupname=None, recipe_entry=None,
                  reset_read_cache=False, basename_postfix="",
-                 runner_config=None, expt="IGRINS"):
+                 runner_config=None, expt="IGRINS", obsdate=None):
         self.rs = resource_stack
         self.recipe_name = recipe_name
         self.obsids = obsids
@@ -36,7 +36,9 @@ class ObsSet(object):
 
         self.runner_config = runner_config
 
+        #Stuff added for RIMAS
         self.expt = expt
+        #self.obsdate = obsdate
 
         # self.basename = self.caldb._get_basename((self.band, groupname))
         # # this is for query

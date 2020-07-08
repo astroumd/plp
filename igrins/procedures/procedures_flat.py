@@ -8,6 +8,9 @@ from astropy.io.fits import Card, HDUList, PrimaryHDU
 
 from .. import get_obsset_helper, DESCS
 
+from ..utils.image_combine import image_median as stsci_median
+from ..procedures import destripe_dark_flatoff as dh
+
 from ..utils.json_helper import json_dumps
 from ..utils.image_combine import image_median
 
@@ -48,6 +51,17 @@ def combine_flat_off_cube_201909(hdul, rp_remove_mod, bg_y_slice):
 
     return cards, flat_off
 
+def combine_flat_off_rimas(hdul, rp_remove_mod, bg_y_slice):
+
+    data_list = np.array([hdu.data[:].astype(np.float)
+                          for hdu in hdul])
+
+    #cards, cube = make_flat_off_rimas(hdul, rp_remove_mod, bg_y_slice)
+    cards, cube = make_initial_flat_cube(data_list, rp_remove_mod, bg_y_slice)
+
+    flat_off = image_median(cube)
+
+    return cards, flat_off
 
 def correct_bg_from_upper256(d):
     s = ni.median_filter(np.nanmedian(d[-256:-4], axis=0), 128)
@@ -174,7 +188,7 @@ def combine_flat_on(obsset):
 
     obsset_on = obsset.get_subset("ON")
 
-    data_list = [hdu.data for hdu in obsset_on.get_hdus()]
+    data_list = [hdu.data[:].astype(np.float) for hdu in obsset_on.get_hdus()]
 
     # data_list1 = [dh.sub_p64_from_guard(d) for d in data_list]
 
@@ -376,6 +390,10 @@ def trace_order_boundaries(obsset):
 
 
 def stitch_up_traces(obsset):
+    # from igrins.libs.process_flat import trace_solutions
+    # trace_solution_products, trace_solution_products_plot = \
+    #                          trace_solutions(trace_products)
+
     from .igrins_detector import IGRINSDetector
     from .trace_flat import trace_centroids_chevyshev
     nx = IGRINSDetector.nx

@@ -8,7 +8,6 @@ from ..utils.image_combine import image_median
 from ..igrins_libs.resource_helper_igrins import ResourceHelper
 # from ..libs.image_combine import destripe_sky
 
-
 from .aperture_helper import get_simple_aperture_from_obsset
 
 from .destripe_helper import sub_p64_from_guard, sub_bg64_from_guard
@@ -228,13 +227,13 @@ def _make_combined_image_sky(obsset, bg_subtraction_mode="flat"):
         return final_sky, cards
 
 
-def extract_spectra(obsset):
+def extract_spectra(obsset, comb_type='combined_sky'):
     "extract spectra"
 
     # caldb = helper.get_caldb()
     # master_obsid = obsids[0]
 
-    data = obsset.load_fits_sci_hdu(DESCS["combined_sky"]).data
+    data = obsset.load_fits_sci_hdu(DESCS[comb_type]).data
     data = np.nan_to_num(data)
 
     aperture = get_simple_aperture_from_obsset(obsset)

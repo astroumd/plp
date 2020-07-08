@@ -19,18 +19,19 @@ def get_obsset(obsdate, recipe_name, band,
     if isinstance(config_file, IGRINSConfig):
         config = config_file
     else:
-        config = IGRINSConfig(config_file)
+        config = IGRINSConfig(config_file, expt=expt)
 
     if saved_context_name is not None:
         import cPickle as pickle
         resource_manager = pickle.load(open(saved_context_name, "rb"))
     else:
-        resource_manager = get_igrins_resource_manager(config, (obsdate, band))
+        resource_manager = get_igrins_resource_manager(config, (obsdate, band), expt=expt)
 
     obsset = ObsSet(resource_manager, recipe_name, obsids, frametypes,
                     groupname=groupname, recipe_entry=recipe_entry,
                     basename_postfix=basename_postfix,
-                    runner_config=runner_config, expt=expt)
+                    runner_config=runner_config,
+                    expt=expt, obsdate=obsdate)
 
     return obsset
 

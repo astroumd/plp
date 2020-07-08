@@ -29,12 +29,12 @@ RECIPE_LOG_PATH=recipe_logs/%(UTDATE)s.recipes
 
 
 class IGRINSConfig(object):
-    def __init__(self, config_file=None):
+    def __init__(self, config_file=None, expt='IGRINS'):
 
         if config_file is None:
             config_file = 'recipe.config'
 
-        import os #for some reason this need to be here
+        import os #for some reason this needs to be here
         
         config_file = os.path.abspath(config_file)
         self.config_file = config_file
@@ -54,9 +54,9 @@ class IGRINSConfig(object):
 
         self.master_cal_dir = os.path.join(self.root_dir,
                                            self.config.get("DEFAULT",
-                                                           "MASTER_CAL_DIR"))
+                                                           "MASTER_CAL_DIR"),
+                                           expt.lower())
 
-        import os
         self.config.read(os.path.join(self.master_cal_dir,
                                       "master_cal.config"))
 

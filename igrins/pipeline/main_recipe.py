@@ -66,6 +66,15 @@ def iter_obsset(recipe_name_fnmatch,
         raise ValueError("no matching recipes are found: {}"
                          .format(recipe_name_fnmatch))
 
+    #Checking for RIMAS or IGRINS to see what bands should be looped over
+    s = selected[0]
+    expt = s[3]["expt"]
+    if expt.lower() == "rimas":
+        if bands == "all":
+            bands = ["YJ", "HK"]
+        else:
+            bands = [bands]
+
     for band in bands:
         # info("= Entering band:{}".format(band))
         for s in selected:
@@ -234,7 +243,7 @@ def driver_func_obsset(command_name, obsdate, steps, obsset_list,
             obsset.rs.save_io_items(open(io_log_name, "w"))
 
 
-driver_args = [arg("-b", "--bands", default="HK", choices=["HK", "H", "K"]),
+driver_args = [arg("-b", "--bands", default="HK", choices=["HK", "H", "K", "YJ"]),
                arg("-g", "--groups", default=None),
                arg("-c", "--config-file", default=None),
                # arg("--log-level", default=20),

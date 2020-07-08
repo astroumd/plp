@@ -39,6 +39,8 @@ def get_recipe_list():
                    create_argh_command("combine-sky", ["SKY", "SKY_AB"]),
                    create_argh_command("register-sky", ["SKY", "SKY_AB"]),
                    create_argh_command("wvlsol-sky", ["SKY", "SKY_AB"]),
+                   create_argh_command("register-thar", ["THAR"]),
+                   create_argh_command("wvlsol-thar", ["THAR"]),
                    create_argh_command("extract-sky", ["SKY", "SKY_AB"]),
                    create_argh_command("extract-arc", ["ARC_*"]),
                    create_argh_command("a0v-ab", ["A0V_AB"]),
@@ -59,6 +61,9 @@ def get_recipe_list():
                    create_argh_command("analyze-sky",
                                        ["SKY", "*_ONOFF", "*_AB"],
                                        recipe_name_exclude=["SKY_AB"]),
+                   create_argh_command("publish-html", ["A0V_*",
+                                                        "STELLAR_*",
+                                                        "EXTENDED_*"]),
                    create_argh_command_quicklook(),
                    create_argh_command_noise_guard()
     ]
