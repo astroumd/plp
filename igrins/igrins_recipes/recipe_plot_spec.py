@@ -219,8 +219,7 @@ def plot_spec(obsset, interactive=False,
               multiply_model_a0v=False,
               html_output=False,
               threshold_a0v=0.2):
-    obsdate = obsset.rs.basename_helper.obsdate
-    band = obsset.rs.basename_helper.band
+    obsdate, band = obsset.get_resource_spec()
 
     config = IGRINSConfig(expt=obsset.expt)
     recipe = obsset.recipe_name
