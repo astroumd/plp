@@ -639,3 +639,114 @@ def get_finite_boundary_indices(s1):
     k1 = max(k1, 4)
     k2 = min(k2, 2047-4)
     return k1, k2
+
+#NOTE: Functions readded in for qa plots for register
+def prepare_order_trace_plot(s_list, row_col=(3, 2)):
+
+    from matplotlib.figure import Figure
+    from mpl_toolkits.axes_grid1 import Grid
+    #TODO: redo this
+    #from axes_grid_patched import Grid
+
+    row, col = row_col
+
+    n_ax = len(s_list)
+    n_f, n_remain = divmod(n_ax, row*col)
+    if n_remain:
+        n_ax_list = [row*col]*n_f + [n_remain]
+    else:
+        n_ax_list = [row*col]*n_f
+
+
+    i_ax = 0
+
+    fig_list = []
+    ax_list = []
+    for n_ax in n_ax_list:
+        fig = Figure()
+        fig_list.append(fig)
+
+        grid = Grid(fig, 111, (row, col), ngrids=n_ax,
+                    share_x=True)
+
+        sl = slice(i_ax, i_ax+n_ax)
+        for s, ax in zip(s_list[sl], grid):
+            ax_list.append(ax)
+
+        i_ax += n_ax
+
+    return fig_list, ax_list
+
+def check_order_trace1(ax, x, s, i1i2):
+    x = np.arange(len(s))
+    ax.plot(x, s)
+    i1, i2 = i1i2
+    ax.plot(np.array(x)[[i1, i2]], np.array(s)[[i1,i2]], "o")
+
+def check_order_trace2(ax, x, p):
+    ax.plot(x, p(x))
+
+def get_order_flat1d(s, i1=None, i2=None):
+
+    s = np.array(s)
+    k1, k2 = np.nonzero(np.isfinite(s))[0][[0, -1]]
+    s1 = s[k1:k2+1]
+
+
+    if i1 is None:
+        i1 = 0
+    else:
+        i1 -= k1
+
+    if i2 is None:
+        i2 = len(s1)
+    else:
+        i2 -= k1
+
+    x = np.arange(len(s1))
+
+    if 0:
+
+        from astropy.modeling import models, fitting
+        p_init = models.Chebyshev1D(degree=6, window=[0, 2047])
+        fit_p = fitting.LinearLSQFitter()
+        p = fit_p(p_init, x[i1:i2][mmm[i1:i2]], s[i1:i2][mmm[i1:i2]])
+
+    if 1:
+        # t= np.linspace(x[i1]+10, x[i2-1]-10, 10)
+        # p = LSQUnivariateSpline(x[i1:i2],
+        #                         s[i1:i2],
+        #                         t, bbox=[0, 2047])
+
+        # t= np.concatenate([[x[1],x[i1-5],x[i1],x[i1+5]],
+        #                    np.linspace(x[i1]+10, x[i2-1]-10, 10),
+        #                    [x[i2-5], x[i2], x[i2+5],x[-2]]])
+
+        t_list = []
+        if i1 > 10:
+            t_list.append([x[1],x[i1]])
+        else:
+            t_list.append([x[1]])
+
+        t_list.append(np.linspace(x[i1]+10, x[i2-1]-10, 10))
+        if i2 < len(s) - 10:
+            t_list.append([x[i2], x[-2]])
+        else:
+            t_list.append([x[-2]])
+
+        t= np.concatenate(t_list)
+
+        # s0 = ni.median_filter(s, 40)
+        from scipy.interpolate import LSQUnivariateSpline
+        p = LSQUnivariateSpline(x,
+                                s1,
+                                t, bbox=[0, len(s1)-1])
+
+        def p0(x, k1=k1, k2=k2, p=p):
+            msk = (k1 <= x) & (x <= k2)
+            r = np.empty(len(x), dtype="d")
+            r.fill(np.nan)
+            r[msk] = p(x[msk])
+            return r
+
+    return p0
