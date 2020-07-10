@@ -553,8 +553,10 @@ def update_db(obsset):
 ####
 
 
-def store_qa(obsset_on, obsset_off):
+def store_qa(obsset):
 
+    obsset_on = obsset.get_subset("ON")
+    obsset_off = obsset.get_subset("OFF")
     # Prepare figures.
 
     from matplotlib.figure import Figure
@@ -585,13 +587,6 @@ def store_qa(obsset_on, obsset_off):
     #                              "aperture_"+flaton_basename)
 
     figlist_to_pngs(dest_dir, [fig1, fig2, fig3])
-
-    # if 1: # now trace the orders
-
-    #     #del trace_solution_products["bottom_up_solutions"]
-    #     igr_storage.store(trace_solution_products,
-    #                       mastername=flat_on_filenames[0],
-    #                       masterhdu=flat_on_hdu_list[0])
 
 ###
 

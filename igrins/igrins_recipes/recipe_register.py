@@ -13,6 +13,7 @@ from ..procedures.procedures_register import (identify_orders,
                                               save_orderflat,
                                               update_db)
 
+from ..qa.register_qa import produce_qa
 
 def _test():
     from igrins import get_obsset
@@ -36,6 +37,8 @@ def make_combined_image_sky(obsset, bg_subtraction_mode="flat"):
     hdul = obsset.get_hdul_to_write(([], final_sky))
     obsset.store("combined_sky", data=hdul)
 
+def obsset_produce_qa_plots(obsset):
+    produce_qa(obsset)
 
 steps = [Step("Make Combined Sky", make_combined_image_sky,
               bg_subtraction_mode="none"),
@@ -46,5 +49,6 @@ steps = [Step("Make Combined Sky", make_combined_image_sky,
          Step("Derive transformed Wvl. Solution",
               transform_wavelength_solutions),
          Step("Save Order-Flats, etc", save_orderflat),
+         Step("Produce QA Plots", obsset_produce_qa_plots),
          Step("Update DB", update_db),
 ]
