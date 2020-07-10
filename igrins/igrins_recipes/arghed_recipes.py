@@ -103,10 +103,3 @@ def get_callable_recipes():
             recipes[argh_entrant.__name__] = argh_entrant
 
     return recipes
-
-
-if False:
-    from igrins.igrins_recipes.arghed_recipes import get_callable_recipes
-    recipes = get_callable_recipes()
-    kk = recipes.keys()
-    print(kk)
