@@ -3,10 +3,11 @@
 *#
 *.recipes
 *.tmp
-html_*
+html*
 *swp
 *swo
 indata
 calib
 outdata
 *DS_STORE
+
