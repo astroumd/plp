@@ -46,6 +46,8 @@ def iter_obsset(recipe_name_fnmatch,
                 basename_postfix="", recipe_name_exclude=None,
                 runner_config=None):
 
+    #NOTE: See if I can figure out the experiment here so I don't have to recreate the
+    #config with the right experiment
     config = IGRINSConfig(config_file)
 
     fn = os.path.join(config.root_dir,
@@ -74,6 +76,8 @@ def iter_obsset(recipe_name_fnmatch,
             bands = ["YJ", "HK"]
         else:
             bands = [bands]
+
+    config = IGRINSConfig(config_file, expt=expt)
 
     for band in bands:
         # info("= Entering band:{}".format(band))
