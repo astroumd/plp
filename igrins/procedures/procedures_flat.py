@@ -87,8 +87,11 @@ def obsset_combine_flat_off(obsset, destripe=True):
     band = get_band(obsset)
     rp_remove_mod, bg_y_slice = get_params(band)
 
-    cards, flat_off = combine_flat_off_cube_201909(hdul,
-                                                   rp_remove_mod, bg_y_slice)
+    if obsset.expt.lower() == 'rimas':
+        cards, flat_off = combine_flat_off_rimas(hdul, rp_remove_mod, bg_y_slice)
+    else:
+        cards, flat_off = combine_flat_off_cube_201909(hdul,
+                                                       rp_remove_mod, bg_y_slice)
 
     hdu_cards = [Card(k, json_dumps(v)) for (k, v) in cards]
 
@@ -287,7 +290,11 @@ def make_deadpix_mask(obsset,  # helper, band, obsids,
 
     f = obsset.load_ref_data(kind="DEFAULT_DEADPIX_MASK")
 
-    deadpix_mask_old = f[0].data.astype(bool)
+    print("DEBUG: TRY STATEMENT FOR WHICH HDU OBJECT FOR DEADPIX MASK")
+    try:
+        deadpix_mask_old = f[0].data.astype(bool)
+    except AttributeError:
+        deadpix_mask_old = f[1].data.astype(bool)
 
     # main routine
     r = _make_deadpix_mask(flat_on, flat_std, hotpix_mask,
