@@ -342,9 +342,14 @@ def identify_order_boundaries(obsset):
     flaton_info = obsset_on.load(DESCS["FLATON_JSON"])
     bg_fwhm_normed = flaton_info["bg_fwhm_norm"]
 
+    if obsset.expt.lower() == 'igrins':
+        max_sep_order = 150
+    elif obsset.expt.lower() == 'rimas':
+        max_sep_order = 50
+
     flat_deriv_ = get_y_derivativemap(flat_normed, flat_bpixed,
                                       bg_fwhm_normed,
-                                      max_sep_order=150, pad=10,
+                                      max_sep_order=max_sep_order, pad=10,
                                       flat_mask=flat_mask)
 
     flat_deriv = flat_deriv_["data"]

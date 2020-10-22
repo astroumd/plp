@@ -75,6 +75,8 @@ def estimate_bg_mean_std(flat, pad=4, smoothing_length=150):
         std_corr = np.sqrt(std**2 - std_tmp**2)
         fwhm = std_corr * fact
         flat_bg -= mean_tmp
+        if np.isnan(fwhm):
+            fwhm = 0.0001
 
     return flat_bg, fwhm
 
@@ -284,7 +286,7 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
     center_cut = im_labeled[:, nx//2-thre_dx:nx//2+thre_dx]
     labels_ = list(set(np.unique(center_cut)) - set([0]))
 
-    if True:  # remove flase detections
+    if True:  # remove false detections
         sl_subset = [slice_map[l][1] for l in labels_]
         mm = [(sl1.stop - sl1.start) > thre_dx for sl1 in sl_subset]
         labels1 = [l1 for l1, m1 in zip(labels_, mm) if m1]
