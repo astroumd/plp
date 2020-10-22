@@ -228,7 +228,7 @@ def _make_combined_image_sky(obsset, bg_subtraction_mode="flat"):
 
 
 def extract_spectra(obsset, comb_type='combined_sky'):
-    "extract spectra"
+    """extract spectra"""
 
     # caldb = helper.get_caldb()
     # master_obsid = obsids[0]

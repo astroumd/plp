@@ -38,10 +38,23 @@ def estimate_bg_mean_std(flat, pad=4, smoothing_length=150):
     flat_gradient = ni.gaussian_filter1d(flat_sorted,
                                          smoothing_length, order=1)
 
+    corr = False
+    if np.min(flat_gradient) == 0:
+        tmp = np.unique(flat_sorted)
+        npts = len(flat_sorted)
+        flat_sorted += np.random.randn(npts)
+        flat_sorted = np.sort(flat_sorted)
+        flat_gradient = ni.gaussian_filter1d(flat_sorted,
+                                             smoothing_length, order=1)
+        mean_tmp = 0
+        std_tmp = 1.0
+        corr = True
+
     flat_sorted = flat_sorted[smoothing_length:]
     flat_dist = 1. / flat_gradient[smoothing_length:]
 
     over_half_mask = flat_dist > 0.5 * max(flat_dist)
+
     max_width_slice = max((sl.stop-sl.start, sl) for sl,
                           in ni.find_objects(over_half_mask))[1]
 
@@ -54,6 +67,14 @@ def estimate_bg_mean_std(flat, pad=4, smoothing_length=150):
     flat_bg = flat_selected[indm]
 
     fwhm = flat_selected[-1] - flat_selected[0]
+
+    #Correction for the noise added in
+    if corr:
+        fact = 2 * np.sqrt(2* np.log(2))
+        std = fwhm / fact
+        std_corr = np.sqrt(std**2 - std_tmp**2)
+        fwhm = std_corr * fact
+        flat_bg -= mean_tmp
 
     return flat_bg, fwhm
 
@@ -147,36 +168,60 @@ def find_nearest_object(mmp, im_labeled, slice_map, i, labels_center_column):
     labels_center_column : known objects
     """
     thre = 40
+    #thre = 100
+
     # threshold # of pixels (in y-direction) to detect adjacent object
     steps = [5, 10, 20, 40, 80]
+    #steps = [5, 10, 20, 40, 80, 100, 120, 140, 160]
 
     sl_y, sl_x = slice_map[i]
 
-    # right side
-    ss = im_labeled[:, sl_x.stop-3:sl_x.stop].max(axis=1)
-    ss_msk = ni.maximum_filter1d(ss == i, thre)
+    ## right side
+    #ss = im_labeled[:, sl_x.stop-3:sl_x.stop].max(axis=1)
+    #ss_msk = ni.maximum_filter1d(ss == i, thre)
 
     if sl_x.stop < 2048/2.:
         sl_x0 = sl_x.stop
         sl_x_pos = [sl_x.stop + s for s in steps]
+
+        # right side of unlabeled object
+        ss = im_labeled[:, sl_x.stop-3:sl_x.stop].max(axis=1)
+        ss_msk = ni.maximum_filter1d(ss == i, thre)
+
+        rhs=False
     else:
         sl_x0 = sl_x.start
         sl_x_pos = [sl_x.start - s for s in steps]
 
+        # left side of unlabeled object
+        ss = im_labeled[:, sl_x.start:sl_x.start+3].max(axis=1)
+        ss_msk = ni.maximum_filter1d(ss == i, thre)
+
+        rhs=True
+
     for pos in sl_x_pos:
         ss1 = im_labeled[:, pos]
         detected_ob = set(np.unique(ss1[ss_msk])) - set([0])
+        #detected_ob = sorted(set(np.unique(ss1[ss_msk])) - set([0]))
+
         for ob_id in detected_ob:
             if ob_id in labels_center_column:
                 sl = slice_map[ob_id][1]
-                if sl.start < sl_x0 < sl.stop:
+                sl0 = slice_map[ob_id]
+                #if rhs:
+                #    if sl_y.stop > sl0[0].start:
+                #        continue
+                #else:
+                #    if sl_y.start < sl0[0].stop:
+                #        continue
+                if sl0[1].start < sl_x0 < sl0[1].stop:
                     continue
                 else:
                     return ob_id
 
 
 def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
-                             thre_dx=30):
+                             thre_dx=30, stitch_objects=False):
     """
     d_deriv : derivative (along-y) image
     mmp : mask
@@ -184,6 +229,8 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
     pad : padding around the boundary will be ignored
     bg_std : if given, derivative smaller than bg_std will be suppressed.
              This will affect faint signal near the chip boundary
+    stitch_objects : bool, whether to try and stitch labels outside the center to labels in
+                     the center
 
     Masks will be derived from mmp, and peak values of d_deriv will be
     fitted with polynomical of given order.
@@ -264,12 +311,27 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
 
     slice_map_update_required = False
 
-    for i in undetected_labels:
-        ob_id = find_nearest_object(mmp, im_labeled,
-                                    slice_map, i, labels_center_column)
-        if ob_id:
-            im_labeled[im_labeled == i] = ob_id
-            slice_map_update_required = True
+    if stitch_objects:
+        rerun = True
+        while rerun:
+            attached_labels = []
+            rerun = False
+            for i in undetected_labels:
+                ob_id = find_nearest_object(mmp, im_labeled,
+                                            slice_map, i, labels_center_column)
+
+                if ob_id:
+                    im_labeled[im_labeled == i] = ob_id
+                    slice_map_update_required = True
+
+                    objects_found = ni.find_objects(im_labeled)
+                    slice_map = dict(zip(label_indx, objects_found))
+
+                    rerun = True
+                    attached_labels.append(i)
+
+            undetected_labels = np.setdiff1d(undetected_labels, attached_labels)
+
 
     if slice_map_update_required:
         objects_found = ni.find_objects(im_labeled)
@@ -332,6 +394,7 @@ def trace_aperture_chebyshev(xy_list, domain=None):
     if domain is None:
         domain = [0, 2047]
 
+    domain_order = {}
     # we first fit the all traces with 2d chebyshev polynomials
     x_list, o_list, y_list = [], [], []
     for o, (x, y) in enumerate(xy_list):
@@ -344,7 +407,7 @@ def trace_aperture_chebyshev(xy_list, domain=None):
         x_list.append(x1)
         o_list.append(np.zeros(len(x1))+o)
         y_list.append(np.array(y)[msk])
-
+        domain_order[o] = [np.min(x1), np.max(x1)]
     n_o = len(xy_list)
 
     from astropy.modeling import fitting  # models, fitting
@@ -387,12 +450,17 @@ def trace_aperture_chebyshev(xy_list, domain=None):
     ooo = [o[0] for o in o_list]
 
     def _get_f(o0):
+        #y_m = p(xx, oo+o0)
+        #f = cheb.Chebyshev.fit(xx, y_m, x_degree, domain=domain)
+        xx = np.arange(domain_order[o][0], domain_order[0][1])
+        oo = np.zeros_like(xx)
         y_m = p(xx, oo+o0)
-        f = cheb.Chebyshev.fit(xx, y_m, x_degree, domain=domain)
+        f = cheb.Chebyshev.fit(xx, y_m, x_degree, domain=domain_order[o])
         return f
 
     f_list = []
     f_list = [_get_f(o0) for o0 in ooo]
+    domain_list = [domain_order[o0] for o0 in ooo]
 
     # def _get_f_old(next_orders, y_thresh):
     #     oi = next_orders.pop(0)
@@ -407,6 +475,7 @@ def trace_aperture_chebyshev(xy_list, domain=None):
 
     def _get_f(next_orders, y_thresh):
         oi = next_orders.pop(0)
+        oo = np.zeros_like(xx)
         y_m = p(xx, oo+oi)
         f = cheb.Chebyshev.fit(xx, y_m, x_degree, domain=domain)
         if np.all(y_thresh(y_m)):
@@ -418,21 +487,27 @@ def trace_aperture_chebyshev(xy_list, domain=None):
     # go down in order
     f_list_down = []
     o_list_down = []
+    domain_list_down = []
     go_down_orders = [ooo[0] - _oi for _oi in range(1, 5)]
     while go_down_orders:
+        xx = np.arange(domain_order[ooo[0]][0], domain_order[ooo[0]][1])
         oi, f, go_down_orders = _get_f(go_down_orders,
                                        y_thresh=lambda y_m: y_m < domain[0])
         f_list_down.append(f)
         o_list_down.append(oi)
+        domain_list_down.append(domain_order[ooo[0]])
 
     f_list_up = []
     o_list_up = []
+    domain_list_up = []
     go_up_orders = [ooo[-1]+_oi for _oi in range(1, 5)]
     while go_up_orders:
+        xx = np.arange(domain_order[ooo[-1]][0], domain_order[ooo[-1]][1])
         oi, f, go_up_orders = _get_f(go_up_orders,
                                      y_thresh=lambda y_m: y_m > domain[-1])
         f_list_up.append(f)
         o_list_up.append(oi)
+        domain_list_up.append(domain_order[ooo[-1]])
 
     # if 0:
     #     _get_f(next_orders)
@@ -450,7 +525,7 @@ def trace_aperture_chebyshev(xy_list, domain=None):
     #         f_list_down.append(f)
 
     # print(o_list_down[::-1] + ooo + o_list_up)
-    return f_list, f_list_down[::-1] + f_list + f_list_up
+    return f_list, f_list_down[::-1] + f_list + f_list_up, domain_list_down[::-1] + domain_list + domain_list_up
 
 
 def get_matched_slices(yc_down_list, yc_up_list):
@@ -470,7 +545,7 @@ def get_matched_slices(yc_down_list, yc_up_list):
     return slice_down, slice_up
 
 
-def trace_centroids_chevyshev(centroid_bottom_list,
+def trace_centroids_chebyshev(centroid_bottom_list,
                               centroid_up_list,
                               domain, ref_x=None):
     # from .trace_aperture import trace_aperture_chebyshev
@@ -480,11 +555,11 @@ def trace_centroids_chevyshev(centroid_bottom_list,
 
     _ = trace_aperture_chebyshev(centroid_bottom_list,
                                  domain=domain)
-    sol_bottom_list, sol_bottom_list_full = _
+    sol_bottom_list, sol_bottom_list_full, domain_bottom_list = _
 
     _ = trace_aperture_chebyshev(centroid_up_list,
                                  domain=domain)
-    sol_up_list, sol_up_list_full = _
+    sol_up_list, sol_up_list_full, domain_up_list = _
 
     yc_down_list = [s(ref_x) for s in sol_bottom_list_full]
     # lower-boundary list
@@ -512,18 +587,32 @@ def trace_centroids_chevyshev(centroid_bottom_list,
     sol_bottom_up_list_full = zip(sol_bottom_list_full[indx_down_bottom-1:-1],
                                   sol_up_list_full[1:indx_up_top+1])
 
+    domain_bottom_up_list_full = zip(domain_bottom_list[indx_down_bottom-1:-1],
+                                     domain_up_list[1:indx_up_top+1])
+
     slice_down, slice_up = get_matched_slices(yc_down_list, yc_up_list)
 
     sol_bottom_up_list_full = zip(sol_bottom_list_full[slice_down],
                                   sol_up_list_full[slice_up])
 
+    domain_bottom_up_list_full = zip(domain_bottom_list[slice_down],
+                                     domain_up_list[slice_up])
+
+    domain_list_full = []
+    for domain_bottom, domain_up in domain_bottom_up_list_full:
+        d0 = max(domain_bottom[0], domain_up[0])
+        d1 = min(domain_bottom[1], domain_up[1])
+        domain_list_full.append((d0, d1))
+
     # check if the given order has pixels in the detector
     x = np.arange(2048)
     sol_bottom_up_list_full_filtered = []
-    for s_bottom, s_up in sol_bottom_up_list_full:
+    domain_bottom_up_list_filtered = []
+    for s_tmp, d_tmp in zip(sol_bottom_up_list_full, domain_list_full):
+        s_bottom, s_up = s_tmp
         if max(s_up(x)) > 0. and min(s_bottom(x)) < 2048.:
             sol_bottom_up_list_full_filtered.append((s_bottom, s_up))
-
+            domain_bottom_up_list_filtered.append(d_tmp)
     # print sol_bottom_up_list_full
 
     sol_bottom_up_list = sol_bottom_list, sol_up_list
@@ -531,7 +620,8 @@ def trace_centroids_chevyshev(centroid_bottom_list,
     # centroid_bottom_up_list = []
 
     return (sol_bottom_up_list_full_filtered,
-            sol_bottom_up_list, centroid_bottom_up_list)
+            sol_bottom_up_list, centroid_bottom_up_list,
+            domain_bottom_up_list_filtered)
 
 
 def get_smoothed_order_spec(s):
@@ -666,8 +756,10 @@ def prepare_order_trace_plot(s_list, row_col=(3, 2)):
         fig = Figure()
         fig_list.append(fig)
 
-        grid = Grid(fig, 111, (row, col), ngrids=n_ax,
-                    share_x=True)
+        if n_ax < row*col:
+            n_ax = row*col
+
+        grid = Grid(fig, 111, (row, col), ngrids=n_ax, share_x=True)
 
         sl = slice(i_ax, i_ax+n_ax)
         for s, ax in zip(s_list[sl], grid):

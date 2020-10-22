@@ -32,7 +32,8 @@ class Apertures(object):
         self.orders_to_extract = range(start_order, end_order+1)
 
     def __init__(self, orders, bottomup_solutions,
-                 basename="", order_minmax_to_extract=(-1, -1)):
+                 basename="", order_minmax_to_extract=(-1, -1),
+                 nx=2048, ny=None, domain_list=None):
         self.orders = orders
         self.set_order_minmax_to_extract(order_minmax_to_extract[0],
                                          order_minmax_to_extract[1])
@@ -46,8 +47,12 @@ class Apertures(object):
 
             self.apcoeffs[o] = ApCoeff(bottom, up)
 
-        self.yi = np.arange(2048)
-        self.xi = np.arange(2048)
+        if ny is None:
+            ny = nx
+
+        self.yi = np.arange(ny)
+        self.xi = np.arange(nx)
+        self.domain_list = domain_list
 
         self.basename = basename
 
@@ -80,11 +85,13 @@ class Apertures(object):
         if mask_top_bottom is False:
             def _g(i1):
                 order_map1 = np.zeros(len(xx), dtype="i")
-                for order, bottom, top in zip(self.orders,
-                                              bottom_list, top_list):
+                for order, bottom, top, domain in zip(self.orders,
+                                                      bottom_list, top_list,
+                                                      self.domain_list):
                     m_up = yy > bottom[i1]
                     m_down = yy < top[i1]
-                    order_map1[m_up & m_down] = order
+                    x_test = ((i1 >= domain[0]) & (i1 <= domain[1])) * np.ones_like(yy, dtype=np.bool)
+                    order_map1[m_up & m_down & x_test] = order
 
                 return order_map1
         else:

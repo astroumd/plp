@@ -9,7 +9,7 @@ import astropy.io.fits as pyfits
 
 from .. import DESCS
 from ..utils.load_fits import get_first_science_hdu
-
+import igrins.procedures.detectors as detectors
 
 class ObsSet(object):
     def __init__(self, resource_stack, recipe_name, obsids, frametypes,
@@ -38,7 +38,8 @@ class ObsSet(object):
 
         #Stuff added for RIMAS
         self.expt = expt
-        #self.obsdate = obsdate
+        classname = expt.upper() + "Detector"
+        self.detector = getattr(detectors, classname)
 
         # self.basename = self.caldb._get_basename((self.band, groupname))
         # # this is for query
@@ -116,7 +117,7 @@ class ObsSet(object):
         obsids = [o for o, f in ofs]
         frametypes = [f for o, f in ofs]
 
-        return ObsSet(self.rs, self.recipe_name, obsids, frametypes)
+        return ObsSet(self.rs, self.recipe_name, obsids, frametypes, expt=self.expt)
 
     # ref_data related
     def load_ref_data(self, kind, get_path=False):
@@ -224,6 +225,10 @@ class ObsSet(object):
         for obsid in obsids:
             hdul = self.rs.load(obsid, DESCS["RAWIMAGE"], item_type="fits")
             hdu = get_first_science_hdu(hdul)
+
+            if self.expt.lower() == 'rimas':
+                hdu.data = hdu.data.T
+
             hdus.append(hdu)
 
         return hdus
