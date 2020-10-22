@@ -68,7 +68,7 @@ def _check_thresh(unique, counts, frac_thresh=0.5):
 
 def match_specs(s_list_src, s_list_dst, frac_thresh=0.3):
     """
-    try to math orders of src and dst.
+    try to match orders of src and dst.
 
     frac_thresh: raise error if the fraction of the convered d_order is less than this value.
     """

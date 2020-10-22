@@ -56,6 +56,8 @@ def combine_flat_off_rimas(hdul, rp_remove_mod, bg_y_slice):
     data_list = np.array([hdu.data[:].astype(np.float)
                           for hdu in hdul])
 
+    rp_remove_mod = 0
+
     #cards, cube = make_flat_off_rimas(hdul, rp_remove_mod, bg_y_slice)
     cards, cube = make_initial_flat_cube(data_list, rp_remove_mod, bg_y_slice)
 
@@ -170,14 +172,25 @@ def make_hotpix_mask(obsset,
     obsset_off.store(DESCS["FLAT_OFF"], HDUList([flat_off_hdu]))
 
 
-def make_initial_flat_on(data_list):
+def make_initial_flat_on(data_list, expt='igrins'):
     """
     data_list : list of raw images
     """
     # subtract p64 with the background mask, and create initial background
 
-    cube = np.array([remove_pattern_from_guard(d1)
-                     for d1 in data_list])
+    #Possible recipes: amp_wise_bias_r2, p64_0th_order,
+    #                  col_wise_bias_c64, p64_1st_order,
+    #                  col_wise_bias, p64_per_column,
+    #                  row_wise_bias, amp_wise_bias_c64
+    if expt.lower() == 'igrins':
+        cube = np.array([remove_pattern_from_guard(d1)
+                         for d1 in data_list])
+    elif expt.lower() == 'rimas':
+        print("FLAT ON RIMAS")
+        recipes = ['amp_wise_bias_r2', 'p64_0th_order']
+        #cube = np.array([remove_pattern_from_guard(d1, recipes=recipes, tmp=False, expt=expt)
+        #                 for d1 in data_list])
+        cube = np.array([d1 for d1 in data_list])
 
     return cube
 
@@ -197,7 +210,7 @@ def combine_flat_on(obsset):
 
     # flat_on = stsci_median(data_list1)
     # flat_on = dh.make_flaton(data_list)
-    cube = make_initial_flat_on(data_list)
+    cube = make_initial_flat_on(data_list, expt=obsset.expt)
     flat_on = image_median(cube)
 
     flat_std = np.std(data_list, axis=0)
@@ -374,11 +387,19 @@ def trace_order_boundaries(obsset):
     bg_fwhm_normed = flaton_info["bg_fwhm_norm"]
 
     ny, nx = flat_deriv.shape
+    if nx != obsset.detector.nx or ny != obsset.detector.ny:
+        raise ValueError("Input images do not match detector size")
+
+    if obsset.expt.lower() == 'rimas':
+        stitch_objects = False
+    elif obsset.expt.lower() == 'igrins':
+        stitch_objects = True
 
     cent_bottom_list = identify_horizontal_line(flat_deriv,
                                                 flat_deriv_pos_msk,
                                                 pad=10,
-                                                bg_std=bg_fwhm_normed)
+                                                bg_std=bg_fwhm_normed,
+                                                stitch_objects=stitch_objects)
 
     # make sure that centroid lists are in order by checking its center
     # position.
@@ -387,7 +408,8 @@ def trace_order_boundaries(obsset):
     cent_up_list = identify_horizontal_line(-flat_deriv,
                                             flat_deriv_neg_msk,
                                             pad=10,
-                                            bg_std=bg_fwhm_normed)
+                                            bg_std=bg_fwhm_normed,
+                                            stitch_objects=stitch_objects)
 
     cent_up_list = _check_boundary_orders(cent_up_list, nx=nx)
 
@@ -401,9 +423,10 @@ def stitch_up_traces(obsset):
     # trace_solution_products, trace_solution_products_plot = \
     #                          trace_solutions(trace_products)
 
-    from .igrins_detector import IGRINSDetector
-    from .trace_flat import trace_centroids_chevyshev
-    nx = IGRINSDetector.nx
+    #from .igrins_detector import IGRINSDetector
+    from .trace_flat import trace_centroids_chebyshev
+
+    nx = obsset.detector.nx
 
     obsset_on = obsset.get_subset("ON")
 
@@ -412,12 +435,12 @@ def stitch_up_traces(obsset):
     bottom_centroids = centroids_dict["bottom_centroids"]
     up_centroids = centroids_dict["up_centroids"]
 
-    _ = trace_centroids_chevyshev(bottom_centroids,
+    _ = trace_centroids_chebyshev(bottom_centroids,
                                   up_centroids,
                                   domain=[0, nx],
                                   ref_x=nx/2)
 
-    bottom_up_solutions_full, bottom_up_solutions, bottom_up_centroids = _
+    bottom_up_solutions_full, bottom_up_solutions, bottom_up_centroids, domain_list = _
 
     assert len(bottom_up_solutions_full) != 0
 
@@ -426,7 +449,6 @@ def stitch_up_traces(obsset):
     bottom_up_solutions_as_list = []
 
     for b, d in bottom_up_solutions_full:
-
         bb, dd = b.convert(kind=Polynomial), d.convert(kind=Polynomial)
         bb_ = ("poly", bb.coef)
         dd_ = ("poly", dd.coef)
@@ -439,7 +461,8 @@ def stitch_up_traces(obsset):
              bottom_up_solutions=bottom_up_solutions_as_list,
              bottom_up_centroids=bottom_up_centroids,
              bottom_up_solutions_qa=[jsonize_cheb(bottom_up_solutions[0]),
-                                     jsonize_cheb(bottom_up_solutions[1])])
+                                     jsonize_cheb(bottom_up_solutions[1])],
+             domain=domain_list)
 
     obsset_on.store(DESCS["flatcentroid_sol_json"], r)
 
@@ -451,11 +474,12 @@ def make_bias_mask(obsset):
     flatcentroid_info = obsset_on.load(DESCS["flatcentroid_sol_json"])
 
     bottomup_solutions = flatcentroid_info["bottom_up_solutions"]
+    domain_list = flatcentroid_info["domain"]
 
-    orders = list(range(len(bottomup_solutions)))
+    orders = list(range(1, len(bottomup_solutions)+1))
 
     from .apertures import Apertures
-    ap = Apertures(orders, bottomup_solutions)
+    ap = Apertures(orders, bottomup_solutions, domain_list=domain_list)
 
     order_map2 = ap.make_order_map(mask_top_bottom=True)
 
