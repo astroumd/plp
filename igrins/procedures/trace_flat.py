@@ -41,13 +41,14 @@ def estimate_bg_mean_std(flat, pad=4, smoothing_length=150):
     corr = False
     if np.min(flat_gradient) == 0:
         tmp = np.unique(flat_sorted)
+        diff = tmp[1] - tmp[0]
         npts = len(flat_sorted)
-        flat_sorted += np.random.randn(npts)
+        flat_sorted += np.random.randn(npts)*diff
         flat_sorted = np.sort(flat_sorted)
         flat_gradient = ni.gaussian_filter1d(flat_sorted,
                                              smoothing_length, order=1)
         mean_tmp = 0
-        std_tmp = 1.0
+        std_tmp = diff
         corr = True
 
     flat_sorted = flat_sorted[smoothing_length:]
@@ -76,6 +77,7 @@ def estimate_bg_mean_std(flat, pad=4, smoothing_length=150):
         fwhm = std_corr * fact
         flat_bg -= mean_tmp
         if np.isnan(fwhm):
+            print("NAN FWHM")
             fwhm = 0.0001
 
     return flat_bg, fwhm
