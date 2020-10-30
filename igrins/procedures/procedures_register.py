@@ -82,12 +82,12 @@ def identify_orders(obsset):
                            ref_spec_path=ref_spec_path))
 
 
-def _get_offset_transform(thar_spec_src, thar_spec_dst):
+def _get_offset_transform(thar_spec_src, thar_spec_dst, nx=2048):
 
     from scipy.signal import correlate
     offsets = []
     cor_list = []
-    center = 2048/2.
+    center = nx/2.
 
     for s_src, s_dst in zip(thar_spec_src, thar_spec_dst):
         import warnings
@@ -134,7 +134,7 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst):
                 offsets_revised=offsets2)
 
 
-def _get_offset_transform_between_2spec(ref_spec, tgt_spec):
+def _get_offset_transform_between_2spec(ref_spec, tgt_spec, nx=2048):
 
     orders_ref = ref_spec["orders"]
     s_list_ref = ref_spec["specs"]
@@ -158,7 +158,8 @@ def _get_offset_transform_between_2spec(ref_spec, tgt_spec):
                                        orders_intersection)
 
     offset_transform = _get_offset_transform(s_list_ref_filtered,
-                                             s_list_tgt_filtered)
+                                             s_list_tgt_filtered,
+                                             nx=nx)
 
     return orders_intersection, offset_transform
 
@@ -167,6 +168,7 @@ def identify_lines(obsset):
 
     _ = _get_ref_spec_name(obsset.recipe_name)
     ref_spec_key, ref_identified_lines_key = _
+    nx = obsset.detector.nx
 
     ref_spec = obsset.rs.load_ref_data(ref_spec_key)
 
@@ -175,7 +177,8 @@ def identify_lines(obsset):
     # tgt_spec = obsset.load_item("ONED_SPEC_JSON")
 
     intersected_orders, d = _get_offset_transform_between_2spec(ref_spec,
-                                                                tgt_spec)
+                                                                tgt_spec,
+                                                                nx=nx)
 
     # REF_TYPE="OH"
     # fn = "../%s_IGRINS_identified_%s_%s.json" % (REF_TYPE, band,
@@ -362,6 +365,7 @@ def _get_wavelength_solutions(affine_tr_matrix, zdata,
     solution.
 
     """
+    #TODO: Input limited domain range for wavelength for RIMAS
     from .ecfit import get_ordered_line_data, fit_2dspec  # , check_fit
 
     affine_tr = matplotlib.transforms.Affine2D()
@@ -450,12 +454,15 @@ def _make_order_flat(flat_normed, flat_mask, orders, order_map):
     import scipy.ndimage as ni
     slices = ni.find_objects(order_map)
 
+    #TODO: Check whether nx is correct value to use
+    nx = len(flat_normed)
+
     mean_order_specs = []
     mask_list = []
     for o in orders:
         # if slices[o-1] is None:
         #     continue
-        sl = (slices[o-1][0], slice(0, 2048))
+        sl = (slices[o-1][0], slice(0, nx))
         d_sl = flat_normed[sl].copy()
         d_sl[order_map[sl] != o] = np.nan
 
@@ -471,7 +478,7 @@ def _make_order_flat(flat_normed, flat_mask, orders, order_map):
             warnings.filterwarnings('ignore', r'Mean of empty slice')
 
             ss = [np.nanmean(d_sl[2:-2][:, i][mmm[:, i][2: -2]])
-                  for i in range(2048)]
+                  for i in range(nx)]
 
         mean_order_specs.append(ss)
 
@@ -495,7 +502,7 @@ def _make_order_flat(flat_normed, flat_mask, orders, order_map):
     fitted_responses = []
 
     for o, px in zip(orders, s2_list):
-        sl = (slices[o-1][0], slice(0, 2048))
+        sl = (slices[o-1][0], slice(0, nx))
         d_sl = flat_normed[sl].copy()
         msk = (order_map[sl] == o)
         # d_sl[~msk] = np.nan

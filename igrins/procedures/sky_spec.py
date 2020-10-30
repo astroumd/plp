@@ -83,7 +83,8 @@ def _destripe_sky(data, destripe_mask, subtract_bg=True):
     elif subtract_bg:
         xc, yc, v, std = estimate_background(data, destripe_mask,
                                              di=48, min_pixel=40)
-        nx = ny = 2048
+        nx = len(data)
+        ny = nx
         ZI3 = get_interpolated_cubic(nx, ny, xc, yc, v)
         ZI3 = np.nan_to_num(ZI3)
 

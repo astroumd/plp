@@ -57,7 +57,7 @@ def estimate_slit_profile_stellar(obsset,
 
     do_ab = _get_do_ab_from_recipe_name(obsset)
     estimate_slit_profile(obsset,
-                          x1=800, x2=2048-800,
+                          x1=x1, x2=x2,
                           do_ab=do_ab, slit_profile_mode=slit_profile_mode)
 
 
@@ -68,7 +68,7 @@ def estimate_slit_profile_extended(obsset,
 
     do_ab = _get_do_ab_from_recipe_name(obsset)
     estimate_slit_profile(obsset,
-                          x1=800, x2=2048-800,
+                          x1=x1, x2=x2,
                           do_ab=do_ab,
                           slit_profile_mode=slit_profile_mode)
 

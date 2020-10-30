@@ -39,6 +39,8 @@ def check_trace_order(flat_deriv, trace_dict, fig,
 
     # d = trace_products[FLAT_DERIV_DESC].data
     # trace_dict = trace_products[FLATCENTROIDS_JSON_DESC]
+    
+    nx = len(flat_deriv)
 
     grid = ImageGrid(fig, rect, rowcol, share_all=True)
     _imshow_flat_deriv(grid[0], flat_deriv)
@@ -70,8 +72,8 @@ def check_trace_order(flat_deriv, trace_dict, fig,
     #     ax.plot(l[0], l[1], "b-")
 
     ax = grid[0]
-    ax.set_xlim(0, 2048)
-    ax.set_ylim(0, 2048)
+    ax.set_xlim(0, nx)
+    ax.set_ylim(0, nx)
 
     if title_fontsize is None:
         return
@@ -145,7 +147,7 @@ def plot_solutions1(fig1, flat,
 
 
 def plot_solutions2(fig2, cent_bottomup_list,
-                    bottom_up_solutions):
+                    bottom_up_solutions, nx=2048):
 
     # x_indices = np.arange(flat.shape[1])
 
@@ -166,8 +168,8 @@ def plot_solutions2(fig2, cent_bottomup_list,
         y = np.array(up_cent[1], dtype="f")
         ax22.plot(x, y - up_sol(x))
 
-    ax21.set_xlim(0, 2048)
-    ax22.set_xlim(0, 2048)
+    ax21.set_xlim(0, nx)
+    ax22.set_xlim(0, nx)
 
     ax21.set_ylim(-3, 3)
     ax22.set_ylim(-3, 3)
@@ -223,6 +225,7 @@ def set_visible_all(l, b):
 def plot_qa_flat(obsset, ax1, ax2):
     obsdate, band = obsset.get_resource_spec()
     obsid = obsset.master_obsid
+    nx = obsset.detector.nx
 
     obsset_on = obsset.get_subset("ON")
     flat_deriv = obsset_on.load("flat_deriv")[0].data
@@ -236,8 +239,8 @@ def plot_qa_flat(obsset, ax1, ax2):
     line_modeled = _draw_modeled(ax2, obsset_on)
 
     for ax in [ax1, ax2]:
-        ax.set_xlim(0, 2048)
-        ax.set_ylim(0, 2048)
+        ax.set_xlim(0, nx)
+        ax.set_ylim(0, nx)
 
     ax1.set_title("{}-{} [{}]".format(obsdate, obsid, band))
 

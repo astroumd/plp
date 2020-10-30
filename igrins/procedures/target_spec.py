@@ -212,7 +212,11 @@ def subtract_interorder_background(obsset, di=24, min_pixel=40):
     xc, yc, v, std = estimate_background(data_minus, sky_mask,
                                          di=di, min_pixel=min_pixel)
 
-    nx = ny = 2048
+    nx = obsset.detector.nx
+    ny = nx
+    if len(data_minus) != nx:
+        raise ValueError("Detector size does not equal size of image:", nx, len(data_minus))
+
     ZI3 = get_interpolated_cubic(nx, ny, xc, yc, v)
 
     hdul = obsset.get_hdul_to_write(([], ZI3))
@@ -223,8 +227,13 @@ def subtract_interorder_background(obsset, di=24, min_pixel=40):
 
 
 def estimate_slit_profile(obsset,
-                          x1=800, x2=2048-800,
+                          x1=800, x2=None,
                           do_ab=True, slit_profile_mode="1d"):
+
+    #TODO: Check to see what I need to change for RIMAS
+    #Might need to change x-range of slits
+    if x2 is None:
+        x2 = obsset.detector.nx - x1
 
     if slit_profile_mode == "1d":
         from .slit_profile import estimate_slit_profile_1d
