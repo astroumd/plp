@@ -5,6 +5,10 @@ from ..utils.iraf_helper import get_wat_spec, default_header_str
 
 def save_wat_header(obsset):
 
+    #TODO: Use different domains for different orders for RIMAS.
+    #Domains probably stored in SKY_WVLSOL_JSON or FIT_RESULT
+
+    nx = obsset.detector.nx
     d = obsset.load("SKY_WVLSOL_JSON")
 
     orders = d["orders"]
@@ -17,8 +21,8 @@ def save_wat_header(obsset):
     p = deserialize_poly_model(modeul_name, class_name, serialized)
 
     # save as WAT fits header
-    xx = np.arange(0, 2048)
-    xx_plus1 = np.arange(1, 2048+1)
+    xx = np.arange(0, nx)
+    xx_plus1 = np.arange(1, nx+1)
 
     from astropy.modeling import models, fitting
 
@@ -33,7 +37,7 @@ def save_wat_header(obsset):
         oo.fill(o)
         wvl = p(xx, oo) / o * 1.e4  # um to angstrom
 
-        p_init1d = models.Chebyshev1D(domain=[1, 2048],
+        p_init1d = models.Chebyshev1D(domain=[1, nx],
                                       degree=p.x_degree)
         fit_p1d = fitting.LinearLSQFitter()
         p1d = fit_p1d(p_init1d, xx_plus1, wvl)

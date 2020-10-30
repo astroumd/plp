@@ -80,6 +80,7 @@ def estimate_bg_mean_std(flat, pad=4, smoothing_length=150):
             print("NAN FWHM")
             fwhm = 0.0001
 
+
     return flat_bg, fwhm
 
 
@@ -184,7 +185,9 @@ def find_nearest_object(mmp, im_labeled, slice_map, i, labels_center_column):
     #ss = im_labeled[:, sl_x.stop-3:sl_x.stop].max(axis=1)
     #ss_msk = ni.maximum_filter1d(ss == i, thre)
 
-    if sl_x.stop < 2048/2.:
+    nx = len(mmp)
+
+    if sl_x.stop < nx/2.:
         sl_x0 = sl_x.stop
         sl_x_pos = [sl_x.stop + s for s in steps]
 
@@ -551,8 +554,9 @@ def get_matched_slices(yc_down_list, yc_up_list):
 
 def trace_centroids_chebyshev(centroid_bottom_list,
                               centroid_up_list,
-                              domain, ref_x=None):
+                              domain, ref_x=None, nx=2048):
     # from .trace_aperture import trace_aperture_chebyshev
+    #TODO: See difference in domain and nx variables
 
     if ref_x is None:
         ref_x = 0.5 * (domain[0] + domain[-1])
@@ -609,12 +613,12 @@ def trace_centroids_chebyshev(centroid_bottom_list,
         domain_list_full.append((d0, d1))
 
     # check if the given order has pixels in the detector
-    x = np.arange(2048)
+    x = np.arange(nx)
     sol_bottom_up_list_full_filtered = []
     domain_bottom_up_list_filtered = []
     for s_tmp, d_tmp in zip(sol_bottom_up_list_full, domain_list_full):
         s_bottom, s_up = s_tmp
-        if max(s_up(x)) > 0. and min(s_bottom(x)) < 2048.:
+        if max(s_up(x)) > 0. and min(s_bottom(x)) < nx:
             sol_bottom_up_list_full_filtered.append((s_bottom, s_up))
             domain_bottom_up_list_filtered.append(d_tmp)
     # print sol_bottom_up_list_full

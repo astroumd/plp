@@ -443,11 +443,13 @@ def stitch_up_traces(obsset):
     _ = trace_centroids_chebyshev(bottom_centroids,
                                   up_centroids,
                                   domain=[0, nx],
-                                  ref_x=nx/2)
+                                  ref_x=nx/2, nx=nx)
 
     bottom_up_solutions_full, bottom_up_solutions, bottom_up_centroids, domain_list = _
 
     assert len(bottom_up_solutions_full) != 0
+
+    #TODO: Put in some code to change domain_list values to (0, nx) if obsset.expt == 'IGRINS'
 
     from numpy.polynomial import Polynomial
 
