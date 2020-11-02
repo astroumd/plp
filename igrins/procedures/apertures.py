@@ -154,10 +154,35 @@ class Apertures(object):
     def extract_spectra_simple(self, data, mode="median", f1=0., f2=1.):
         if mode == "median":
             s = self.extract_spectra_v2(data, f1=f1, f2=f2)
+            #s = self.extract_spectra_v3(data, f1=f1, f2=f2)
         else:
             raise ValueError("unsupported mode value : mode = ", mode)
 
         return s
+
+    def extract_spectra_v3(self, data, f1=0., f2=1.):
+        
+        s_list = []
+        nx = len(data)
+        for o in self.orders_to_extract:
+            domain = self.domain_list[o]
+            xx = np.arange(domain[0], domain[1]+1)
+            yy1 = self.apcoeffs[o](xx, frac=f1)
+            yy2 = self.apcoeffs[o](xx, frac=f2)
+
+            down = np.clip((yy1+0.5).astype("i"), 0, nx)
+            up = np.clip((yy2+0.5).astype("i"), 0, nx)
+
+            import warnings
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', r'Mean of empty slice')
+                warnings.filterwarnings('ignore', r'All-NaN slice')
+
+                s = [np.nanmedian(data[down[i]:up[i], xx[i]]) for i in range(len(xx))]
+
+            s_list.append(s)
+
+        return s_list
 
     def extract_spectra_v2(self, data, f1=0., f2=1.):
 

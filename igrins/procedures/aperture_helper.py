@@ -44,11 +44,12 @@ def get_aperture_from_obsset(obsset, orders=None):
     resource = obsset.load_resource_for(resource_type)
 
     bottomup_solutions = resource["bottom_up_solutions"]
+    domain_list = resource["domain"]
 
     if orders is None:
         orders = list(range(len(bottomup_solutions)))
 
     aperture = Apertures(orders, bottomup_solutions,
-                         basename=basename)
+                         basename=basename, domain_list=domain_list)
 
     return aperture
