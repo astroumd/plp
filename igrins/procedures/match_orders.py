@@ -87,14 +87,16 @@ def match_specs(s_list_src, s_list_dst, frac_thresh=0.3):
         s0 = get_filtered(s)
 
         dst_indx = _find_matching_spectra(s0, s_list)
-
+        
+        #import matplotlib.pyplot as plt
+        #plt.plot(s0)
         delta_indx = center_indx - dst_indx
 
         delta_indx_list.append(delta_indx)
 
     unique, counts = np.unique(delta_indx_list, return_counts=True)
     delta_indx = _check_thresh(unique, counts, frac_thresh)
-
+    
     if delta_indx is None:
         print(delta_indx_list)
         raise ValueError("Concensus is not made for matching oders"
@@ -107,7 +109,7 @@ def match_orders(orders, s_list_src, s_list_dst, frac_thresh=0.3):
     do = match_specs(s_list_src, s_list_dst, frac_thresh=frac_thresh)
 
     center_indx0 = 0
-    center_indx_dst0 = center_indx0 + do
+    center_indx_dst0 = center_indx0 - do
     orders_dst = (np.arange(len(s_list_dst))
                   + orders[center_indx0] - center_indx_dst0)
 

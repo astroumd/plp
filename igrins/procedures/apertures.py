@@ -38,21 +38,27 @@ class Apertures(object):
         self.set_order_minmax_to_extract(order_minmax_to_extract[0],
                                          order_minmax_to_extract[1])
 
+        if domain_list is None:
+            domain_list = [[0, nx-1] for i in range(len(orders))]
+
         self.apcoeffs = {}
-        for o, (bottom, up) in zip(orders, bottomup_solutions):
+        self.domain_dict = {}
+        #for o, (bottom, up) in zip(orders, bottomup_solutions):
+        for o, (bottom, up), domain in zip(orders, bottomup_solutions, domain_list):
             if isinstance(bottom, (list, tuple)) and bottom[0] == "poly":
                 bottom = P.Polynomial(bottom[1])
             if isinstance(up, (list, tuple)) and up[0] == "poly":
                 up = P.Polynomial(up[1])
 
             self.apcoeffs[o] = ApCoeff(bottom, up)
+            self.domain_dict[o] = domain
 
         if ny is None:
             ny = nx
 
         self.yi = np.arange(ny)
         self.xi = np.arange(nx)
-        self.domain_list = domain_list
+        #self.domain_list = domain_list
 
         self.basename = basename
 
@@ -65,8 +71,11 @@ class Apertures(object):
         """
 
         xy2 = []
+        #for (order_i, pixel), domain in zip(pixels_list.items(), self.domain_list):
         for order_i, pixel in pixels_list.items():
-            pixel_y = self.apcoeffs[order_i](pixel)
+            domain = self.domain_dict[order_i]
+            pixel_b = pixel + domain[0]
+            pixel_y = self.apcoeffs[order_i](pixel_b)
             xy2.extend(zip(pixel, pixel_y))
 
         if nan_filter is not None:
@@ -153,19 +162,26 @@ class Apertures(object):
 
     def extract_spectra_simple(self, data, mode="median", f1=0., f2=1.):
         if mode == "median":
-            s = self.extract_spectra_v2(data, f1=f1, f2=f2)
-            #s = self.extract_spectra_v3(data, f1=f1, f2=f2)
+            #s = self.extract_spectra_v2(data, f1=f1, f2=f2)
+            s = self.extract_spectra_v3(data, f1=f1, f2=f2)
         else:
             raise ValueError("unsupported mode value : mode = ", mode)
 
         return s
 
     def extract_spectra_v3(self, data, f1=0., f2=1.):
-        
+        """Extracts a simple spectra from the input image with constraints on the x-range
+        for each order
+
+        Notes
+        -----
+        Simple means that there is no y-dependence on the frequency
+        """
+       
         s_list = []
         nx = len(data)
         for o in self.orders_to_extract:
-            domain = self.domain_list[o]
+            domain = self.domain_dict[o]
             xx = np.arange(domain[0], domain[1]+1)
             yy1 = self.apcoeffs[o](xx, frac=f1)
             yy2 = self.apcoeffs[o](xx, frac=f2)

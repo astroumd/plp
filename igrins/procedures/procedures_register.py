@@ -82,17 +82,24 @@ def identify_orders(obsset):
                            ref_spec_path=ref_spec_path))
 
 
-def _get_offset_transform(thar_spec_src, thar_spec_dst, nx=2048):
+def _get_offset_transform(thar_spec_src, thar_spec_dst):
 
     from scipy.signal import correlate
     offsets = []
     cor_list = []
-    center = nx/2.
+    #center = nx/2.
+    nxs = []
 
     for s_src, s_dst in zip(thar_spec_src, thar_spec_dst):
+        nx_src = len(s_src)
+        nx_dst = len(s_dst)
+        nx = nx_dst
+        nxs.append(nx)
+        center = nx / 2.
+
         import warnings
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore",category=FutureWarning)
+            warnings.filterwarnings("ignore", category=FutureWarning)
 
             cor = correlate(s_src, s_dst, mode="same")
 
@@ -114,9 +121,11 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst, nx=2048):
     for i in outliers_indices:
         # reduce the search range for correlation peak using the model
         # prediction.
+        nx = nxs[i]
+        center = nx / 2.
         ym = int(model_robust.predict_y(i))
         x1 = int(max(0, (center - ym) - 20))
-        x2 = int(min((center - ym) + 20 + 1, 2048))
+        x2 = int(min((center - ym) + 20 + 1, nx))
         # print i, x1, x2
         ym2 = center - (np.argmax(cor_list[i][x1:x2]) + x1)
         # print ym2
@@ -134,7 +143,7 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst, nx=2048):
                 offsets_revised=offsets2)
 
 
-def _get_offset_transform_between_2spec(ref_spec, tgt_spec, nx=2048):
+def _get_offset_transform_between_2spec(ref_spec, tgt_spec):
 
     orders_ref = ref_spec["orders"]
     s_list_ref = ref_spec["specs"]
@@ -158,8 +167,7 @@ def _get_offset_transform_between_2spec(ref_spec, tgt_spec, nx=2048):
                                        orders_intersection)
 
     offset_transform = _get_offset_transform(s_list_ref_filtered,
-                                             s_list_tgt_filtered,
-                                             nx=nx)
+                                             s_list_tgt_filtered)
 
     return orders_intersection, offset_transform
 
@@ -168,7 +176,6 @@ def identify_lines(obsset):
 
     _ = _get_ref_spec_name(obsset.recipe_name)
     ref_spec_key, ref_identified_lines_key = _
-    nx = obsset.detector.nx
 
     ref_spec = obsset.rs.load_ref_data(ref_spec_key)
 
@@ -177,8 +184,7 @@ def identify_lines(obsset):
     # tgt_spec = obsset.load_item("ONED_SPEC_JSON")
 
     intersected_orders, d = _get_offset_transform_between_2spec(ref_spec,
-                                                                tgt_spec,
-                                                                nx=nx)
+                                                                tgt_spec)
 
     # REF_TYPE="OH"
     # fn = "../%s_IGRINS_identified_%s_%s.json" % (REF_TYPE, band,
