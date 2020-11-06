@@ -464,6 +464,9 @@ def stitch_up_traces(obsset):
     def jsonize_cheb(l):
         return [(repr(l1), l1.coef, l1.domain, l1.window) for l1 in l]
 
+    if obsset.expt.lower() == 'igrins':
+        domain_list = None
+
     r = dict(orders=[],
              bottom_up_solutions=bottom_up_solutions_as_list,
              bottom_up_centroids=bottom_up_centroids,
