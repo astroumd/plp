@@ -511,8 +511,6 @@ def update_db(obsset):
     obsset_off.add_to_db("flat_off")
     obsset_on.add_to_db("flat_on")
 
-####
-
 # steps = [Step("Combine Flat-Off", combine_flat_off),
 #          Step("Hotpix Mask", make_hotpix_mask,
 #               sigma_clip1=100, sigma_clip2=5),
