@@ -4,7 +4,7 @@ import os
 import numpy as np
 from scipy.stats import linregress
 
-from .image import ExistingImage, file_overlay
+from master_calib_creation.image import ExistingImage, file_overlay
 
 from igrins.procedures.find_peak import find_peaks
 
@@ -44,14 +44,41 @@ def gen_identified_lines(oned_spec_json_file, oned_wavemap_file, lines_dat_file,
         'wvl_list': [], 'ref_name': os.path.basename(lines_dat_file), 'ref_indices_list': [], 'pixpos_list': [],
         'orders': []
     }
-    for order, spec, wavelengths in zip(orders, specs, map_wavelengths_array):
-        wavelengths_nonzero = wavelengths[np.nonzero(wavelengths)]
-        ref_indices_array = np.asarray(np.nonzero(
-            np.logical_and(line_wavelengths <= wavelengths_nonzero.max(), line_wavelengths >= wavelengths_nonzero.min())
+
+    def filtered_peaks(peaks_array, sigma=3):
+        filtered_peaks_array = peaks_array.copy()
+        widths = peaks_array[:, 1]
+        width_median = np.median(widths)
+        width_dev = np.std(widths)
+        width_max = width_median + width_dev * sigma
+        width_min = width_median - width_dev * sigma
+        sigma_indices = np.asarray(np.nonzero(
+            np.logical_and(filtered_peaks_array <= width_max, filtered_peaks_array >= width_min)
         ))[0]
-        wvl_array = line_wavelengths[ref_indices_array]
+        return filtered_peaks_array[sigma_indices, :]
+
+    def line_lookup(detected_peaks):
+        line_waves = []
+        line_index = []
+        for peak in detected_peaks:
+            value, index = find_nearest(line_wavelengths, peak)
+            line_waves.append(value)
+            line_index.append(index)
+        return np.asarray(line_waves), np.asarray(line_index)
+
+    for order, spec, wavelengths in zip(orders, specs, map_wavelengths_array):
+        # wavelengths_nonzero = wavelengths[np.nonzero(wavelengths)]
+        # ref_indices_array = np.asarray(np.nonzero(
+        #     np.logical_and(line_wavelengths <= wavelengths_nonzero.max(), line_wavelengths >= wavelengths_nonzero.min())
+        # ))[0]
+        # wvl_array = line_wavelengths[ref_indices_array]
         # pixpos_array = np.interp(wvl_array, np.arange(wavelengths.shape[0]), wavelengths)
-        pixpos_array = np.interp(wvl_array, wavelengths, np.arange(wavelengths.shape[0]))
+        peaks = filtered_peaks(np.asarray(find_peaks(np.asarray(spec))))
+        # peaks = filtered_peaks(peaks)
+        pixpos_array = peaks[:, 0]
+        detected_wvl_array = np.interp(pixpos_array, np.arange(wavelengths.shape[0]), wavelengths)
+        wvl_array, ref_indices_array = line_lookup(detected_wvl_array)
+        # pixpos_array = np.interp(wvl_array, wavelengths, np.arange(wavelengths.shape[0]))
         json_dict['orders'].append(order)
         json_dict['wvl_list'].append(wvl_array.astype(float).tolist())
         json_dict['ref_indices_list'].append(ref_indices_array.astype(int).tolist())
@@ -140,6 +167,12 @@ def single_order_image_from_map(image, order, order_map_image):
     return single_order
 
 
+def find_nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return array[idx], idx
+
+
 if __name__ == '__main__':
     order_map = r'G:\My Drive\RIMAS spectra\modeled_spectra\echelle\YJ_order_map_extended.fits'
     wavemap   = r'G:\My Drive\RIMAS spectra\modeled_spectra\echelle\YJ_wavmap_extended.fits'
@@ -152,7 +185,7 @@ if __name__ == '__main__':
     echellogram_output_file = 'YJ_echellogram.json'
     # file_overlay(order_map, spectrum)
     # file_overlay(order_map, wavemap)
-    # gen_oned_spec(order_map, spectrum, skyline_output_filename, 1)
-    # gen_oned_spec(order_map, wavemap, wavemap_output_filename, 1, np.nanmax)
-    # gen_identified_lines(skyline_output_filename, wavemap_output_filename, ohline_dat, identified_lines_output_filename)
+    gen_oned_spec(order_map, spectrum, skyline_output_filename, 1)
+    gen_oned_spec(order_map, wavemap, wavemap_output_filename, 1, np.nanmax)
+    gen_identified_lines(skyline_output_filename, wavemap_output_filename, ohline_dat, identified_lines_output_filename)
     gen_echellogram(order_map, wavemap_output_filename, echellogram_output_file, 1, np.nanmean)
