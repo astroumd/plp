@@ -174,17 +174,18 @@ def find_nearest(array, value):
 
 
 if __name__ == '__main__':
-    order_map = r'G:\My Drive\RIMAS spectra\modeled_spectra\echelle\YJ_order_map_extended.fits'
-    wavemap   = r'G:\My Drive\RIMAS spectra\modeled_spectra\echelle\YJ_wavmap_extended.fits'
-    spectrum = r'G:\My Drive\RIMAS spectra\echelle simulator\simulations\20201008\rimas.0026.YJ.C0.fits'
+    order_map = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\echelle\YJ_order_map_extended.fits'
+    wavemap   = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\echelle\YJ_wavmap_extended.fits'
+    spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\echelle simulator\simulations\20201008\rimas.0026.YJ.C0.fits'
     ohline_dat = r'C:\Users\durba\PycharmProjects\plp\master_calib\igrins\ohlines.dat'
     skyline_output_filename = 'YJ_oned.json'
     # wavemap_output_filename = 'YJ_oned_wavemap.json'
     wavemap_output_filename = 'YJ_oned_wavemap_linear_fit.json'
     identified_lines_output_filename = 'YJ_identified_lines.json'
     echellogram_output_file = 'YJ_echellogram.json'
-    # file_overlay(order_map, spectrum)
-    # file_overlay(order_map, wavemap)
+    file_overlay(order_map, spectrum)
+    file_overlay(wavemap, spectrum)
+    file_overlay(order_map, wavemap)
     gen_oned_spec(order_map, spectrum, skyline_output_filename, 1)
     gen_oned_spec(order_map, wavemap, wavemap_output_filename, 1, np.nanmax)
     gen_identified_lines(skyline_output_filename, wavemap_output_filename, ohline_dat, identified_lines_output_filename)
