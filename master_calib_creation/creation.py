@@ -106,6 +106,55 @@ def gen_echellogram(order_map_file, oned_wavemap_file, output_file, aggregation_
     save_dict_to_json(json_dict, output_file)
 
 
+def gen_ref_indices(
+        identified_lines_json_file, lines_dat_file, band_name, updated_identified_lines_output, ref_indices_output
+):
+    if os.path.isfile(ref_indices_output):
+        ref_dict = json_dict_from_file(ref_indices_output)
+    else:
+        ref_dict = {}
+    id_lines = json_dict_from_file(identified_lines_json_file)
+    lines = np.loadtxt(lines_dat_file)
+    intensities = lines[:, 1]
+    wavelengths = lines[:, 0]
+    indices = np.arange(*intensities.shape)
+    dtype = [('index', np.int), ('wavelength', np.float64), ('intensity', np.float64)]
+    lines = np.asarray(list(zip(indices, wavelengths, intensities)), dtype=dtype)
+    new_id_lines_dict = {
+        'orders': [], 'pixpos_list': [], 'ref_indices_list': [], 'ref_name': os.path.basename(lines_dat_file),
+        'wvl_list': id_lines['wvl_list']
+    }
+    band_dict = {}
+    for order, pix_pos, ref_index in zip(id_lines['orders'], id_lines['pixpos_list'], id_lines['ref_indices_list']):
+        ref_index_array = np.asarray(ref_index)
+        ref_index_array_new = ref_index_array.copy()
+        unq, count = np.unique(ref_index_array, axis=0, return_counts=True)
+        repeat_index = unq[count>1]
+        repeat_index_count = count[count>1]
+        ref_indices = []
+        for index, index_count in zip(repeat_index, repeat_index_count):
+            wavelength = wavelengths[index]
+            max_index = index + index_count
+            min_index = index - index_count
+            initial_matches = lines[min_index:max_index].copy()
+            initial_matches['wavelength'] = initial_matches['wavelength'] - wavelength
+            sorted_matches = np.sort(initial_matches, order='wavelength')
+            sorted_matches_cutoff = sorted_matches[0:index_count]
+            resorted_matches = np.sort(sorted_matches_cutoff, order='index')
+            new_indices = resorted_matches['index']
+            ref_index_array_new[ref_index_array==index] = new_indices
+            ref_indices.append(new_indices.tolist())
+
+        band_dict[str(order)] = ref_indices
+        new_id_lines_dict['orders'].append(order)
+        new_id_lines_dict['pixpos_list'].append(pix_pos)
+        new_id_lines_dict['ref_indices_list'].append(ref_index_array_new.tolist())
+
+    ref_dict[band_name] = band_dict
+    save_dict_to_json(ref_dict, ref_indices_output)
+    save_dict_to_json(new_id_lines_dict, updated_identified_lines_output)
+
+
 def index_matching(list1, list2):
     if len(list1) != len(list2):
         raise ValueError('lists must be of the same length')
@@ -183,10 +232,15 @@ if __name__ == '__main__':
     wavemap_output_filename = 'YJ_oned_wavemap_linear_fit.json'
     identified_lines_output_filename = 'YJ_identified_lines.json'
     echellogram_output_file = 'YJ_echellogram.json'
-    file_overlay(order_map, spectrum)
-    file_overlay(wavemap, spectrum)
-    file_overlay(order_map, wavemap)
-    gen_oned_spec(order_map, spectrum, skyline_output_filename, 1)
-    gen_oned_spec(order_map, wavemap, wavemap_output_filename, 1, np.nanmax)
-    gen_identified_lines(skyline_output_filename, wavemap_output_filename, ohline_dat, identified_lines_output_filename)
-    gen_echellogram(order_map, wavemap_output_filename, echellogram_output_file, 1, np.nanmean)
+    ref_indices_output_file = 'ref_ohlines_indices.json'
+    # file_overlay(order_map, spectrum)
+    # file_overlay(wavemap, spectrum)
+    # file_overlay(order_map, wavemap)
+    # gen_oned_spec(order_map, spectrum, skyline_output_filename, 1)
+    # gen_oned_spec(order_map, wavemap, wavemap_output_filename, 1, np.nanmax)
+    # gen_identified_lines(skyline_output_filename, wavemap_output_filename, ohline_dat, identified_lines_output_filename)
+    # gen_echellogram(order_map, wavemap_output_filename, echellogram_output_file, 1, np.nanmean)
+    gen_ref_indices(
+        identified_lines_output_filename, ohline_dat, 'YJ',
+        identified_lines_output_filename.replace('.json', 'update.json'), ref_indices_output_file
+    )
