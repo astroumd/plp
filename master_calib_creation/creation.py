@@ -155,6 +155,32 @@ def gen_ref_indices(
     save_dict_to_json(new_id_lines_dict, updated_identified_lines_output)
 
 
+def gen_ref_indices_alt1(identified_lines_json_file, band_name, ref_indices_output):
+    if os.path.isfile(ref_indices_output):
+        ref_dict = json_dict_from_file(ref_indices_output)
+    else:
+        ref_dict = {}
+    id_lines = json_dict_from_file(identified_lines_json_file)
+    band_dict = {}
+    for order, indices in zip(id_lines['orders'], id_lines['ref_indices_list']):
+        band_dict[str(order)] = [indices]
+    ref_dict[band_name] = band_dict
+    save_dict_to_json(ref_dict, ref_indices_output)
+
+
+def gen_ref_indices_alt2(identified_lines_json_file, band_name, ref_indices_output):
+    if os.path.isfile(ref_indices_output):
+        ref_dict = json_dict_from_file(ref_indices_output)
+    else:
+        ref_dict = {}
+    id_lines = json_dict_from_file(identified_lines_json_file)
+    band_dict = {}
+    for order, indices in zip(id_lines['orders'], id_lines['ref_indices_list']):
+        band_dict[str(order)] = [[_index] for _index in indices]
+    ref_dict[band_name] = band_dict
+    save_dict_to_json(ref_dict, ref_indices_output)
+
+
 def index_matching(list1, list2):
     if len(list1) != len(list2):
         raise ValueError('lists must be of the same length')
@@ -240,7 +266,9 @@ if __name__ == '__main__':
     # gen_oned_spec(order_map, wavemap, wavemap_output_filename, 1, np.nanmax)
     # gen_identified_lines(skyline_output_filename, wavemap_output_filename, ohline_dat, identified_lines_output_filename)
     # gen_echellogram(order_map, wavemap_output_filename, echellogram_output_file, 1, np.nanmean)
-    gen_ref_indices(
-        identified_lines_output_filename, ohline_dat, 'YJ',
-        identified_lines_output_filename.replace('.json', 'update.json'), ref_indices_output_file
-    )
+    # gen_ref_indices(
+    #     identified_lines_output_filename, ohline_dat, 'YJ',
+    #     identified_lines_output_filename.replace('.json', 'update.json'), ref_indices_output_file
+    # )
+    gen_ref_indices_alt1(identified_lines_output_filename, 'YJ', 'single_list'+ref_indices_output_file)
+    gen_ref_indices_alt2(identified_lines_output_filename, 'YJ', 'individual_lists'+ref_indices_output_file)
