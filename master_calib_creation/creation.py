@@ -137,7 +137,7 @@ def gen_ref_indices(
             max_index = index + index_count
             min_index = index - index_count
             initial_matches = lines[min_index:max_index].copy()
-            initial_matches['wavelength'] = initial_matches['wavelength'] - wavelength
+            initial_matches['wavelength'] = abs(initial_matches['wavelength'] - wavelength)
             sorted_matches = np.sort(initial_matches, order='wavelength')
             sorted_matches_cutoff = sorted_matches[0:index_count]
             resorted_matches = np.sort(sorted_matches_cutoff, order='index')
@@ -259,6 +259,7 @@ if __name__ == '__main__':
     identified_lines_output_filename = 'YJ_identified_lines.json'
     echellogram_output_file = 'YJ_echellogram.json'
     ref_indices_output_file = 'ref_ohlines_indices.json'
+    updated_identified_lines_output_filename = identified_lines_output_filename.replace('.json', 'update.json')
     # file_overlay(order_map, spectrum)
     # file_overlay(wavemap, spectrum)
     # file_overlay(order_map, wavemap)
@@ -268,7 +269,8 @@ if __name__ == '__main__':
     # gen_echellogram(order_map, wavemap_output_filename, echellogram_output_file, 1, np.nanmean)
     # gen_ref_indices(
     #     identified_lines_output_filename, ohline_dat, 'YJ',
-    #     identified_lines_output_filename.replace('.json', 'update.json'), ref_indices_output_file
+    #     updated_identified_lines_output_filename, ref_indices_output_file
     # )
-    gen_ref_indices_alt1(identified_lines_output_filename, 'YJ', 'single_list'+ref_indices_output_file)
-    gen_ref_indices_alt2(identified_lines_output_filename, 'YJ', 'individual_lists'+ref_indices_output_file)
+
+    gen_ref_indices_alt1(updated_identified_lines_output_filename, 'YJ', 'single_list'+ref_indices_output_file)
+    gen_ref_indices_alt2(updated_identified_lines_output_filename, 'YJ', 'individual_lists'+ref_indices_output_file)
