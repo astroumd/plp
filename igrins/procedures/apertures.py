@@ -58,7 +58,6 @@ class Apertures(object):
 
         self.yi = np.arange(ny)
         self.xi = np.arange(nx)
-        #self.domain_list = domain_list
 
         self.basename = basename
 
@@ -71,10 +70,12 @@ class Apertures(object):
         """
 
         xy2 = []
-        #for (order_i, pixel), domain in zip(pixels_list.items(), self.domain_list):
         for order_i, pixel in pixels_list.items():
+            #NOTE: Needed for RIMAS because of the extra orders
+            if len(pixel) == 0:
+                continue
             domain = self.domain_dict[order_i]
-            pixel_b = pixel + domain[0]
+            pixel_b = np.array(pixel) + domain[0]
             pixel_y = self.apcoeffs[order_i](pixel_b)
             xy2.extend(zip(pixel, pixel_y))
 
@@ -94,9 +95,9 @@ class Apertures(object):
         if mask_top_bottom is False:
             def _g(i1):
                 order_map1 = np.zeros(len(xx), dtype="i")
-                for order, bottom, top, domain in zip(self.orders,
-                                                      bottom_list, top_list,
-                                                      self.domain_list):
+                for order, bottom, top in zip(self.orders,
+                                              bottom_list, top_list):
+                    domain = self.domain_dict[order]
                     m_up = yy > bottom[i1]
                     m_down = yy < top[i1]
                     x_test = ((i1 >= domain[0]) & (i1 <= domain[1])) * np.ones_like(yy, dtype=np.bool)
