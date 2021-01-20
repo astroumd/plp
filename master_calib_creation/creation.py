@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 from scipy.stats import linregress
+from scipy.optimize import curve_fit
 
 from master_calib_creation.image import ExistingImage, file_overlay
 
@@ -103,6 +104,66 @@ def gen_echellogram(order_map_file, oned_wavemap_file, output_file, aggregation_
         oned_spec_no_nan = fill_in_nan(oned_spec)
         json_dict['y_list'].append(oned_spec_no_nan.astype(float).tolist())
 
+    save_dict_to_json(json_dict, output_file)
+
+
+def gen_echellogram_curve_fit(echellogram_json_file, identified_lines_json_file, output_file, pixels_in_order
+    # , pixel_degree, order_degree
+):
+    identified_lines = json_dict_from_file(identified_lines_json_file)
+    indices = range(len(identified_lines['orders']))
+    fitdata = [[],[],[]]
+    for j in indices:
+        wvls = identified_lines['wvl_list'][j]
+        pixpos = identified_lines['pixpos_list'][j]
+        order = identified_lines['orders'][j]
+        order_list = [order for i in range(len(wvls))]
+        fitdata = [fitdata[0]+wvls, fitdata[1]+pixpos, fitdata[2]+order_list]
+    fitdata_array = np.asarray(fitdata)
+
+    def wavelength(c_array, pix_array, m):
+        (
+            c00, c01, c02, c03,
+            c10, c11, c12, c13,
+            c20, c21, c22, c23,
+            c30, c31, c32, c33
+        ) = c_array
+        p = pix_array
+        return c00 + c01*m + c02*m**2 + c03*m**3 +\
+               c10*p + c11*p*m + c12*p*m**2 + c13*p*m**3 + \
+               c20*p**2 + c21*p**2*m + c22*p**2*m**2 + c23*p**2*m**3 +\
+               c30*p**3 + c31*p**3*m + c32*p**3*m**2 + c33*p**3*m**3
+
+    def func(data,
+             c00, c01, c02, c03,
+             c10, c11, c12, c13,
+             c20, c21, c22, c23,
+             c30, c31, c32, c33
+             ):
+        constants = (
+            c00, c01, c02, c03,
+            c10, c11, c12, c13,
+            c20, c21, c22, c23,
+            c30, c31, c32, c33
+        )
+        return wavelength(constants, data[1], data[2])
+
+    # guess = (
+    #     1,1,1,1,
+    #     1,1,1,1,
+    #     1,1,1,1,
+    #     1,1,1,1
+    # )
+    params, pcov = curve_fit(func, fitdata_array, fitdata_array[0])  # , guess)
+    pixels = np.arange(0, pixels_in_order)
+    json_dict = {
+        'wvl_list': [], 'x_list': [], 'y_list': [], 'orders': [],
+    }
+    for order in identified_lines['orders']:
+        json_dict['orders'].append(order)
+        json_dict['x_list'].append(pixels.tolist())
+        json_dict['wvl_list'].append(wavelength(params, pixels, order).tolist())
+    json_dict['y_list'] = json_dict_from_file(echellogram_json_file)['y_list']
     save_dict_to_json(json_dict, output_file)
 
 
@@ -260,6 +321,7 @@ if __name__ == '__main__':
     echellogram_output_file = 'YJ_echellogram.json'
     ref_indices_output_file = 'ref_ohlines_indices.json'
     updated_identified_lines_output_filename = identified_lines_output_filename.replace('.json', 'update.json')
+    curve_fit_echellogram_outpout_filename = echellogram_output_file.replace('.json', '_curvefit.json')
     # file_overlay(order_map, spectrum)
     # file_overlay(wavemap, spectrum)
     # file_overlay(order_map, wavemap)
@@ -272,5 +334,8 @@ if __name__ == '__main__':
     #     updated_identified_lines_output_filename, ref_indices_output_file
     # )
 
-    gen_ref_indices_alt1(updated_identified_lines_output_filename, 'YJ', 'single_list'+ref_indices_output_file)
-    gen_ref_indices_alt2(updated_identified_lines_output_filename, 'YJ', 'individual_lists'+ref_indices_output_file)
+    # gen_ref_indices_alt1(updated_identified_lines_output_filename, 'YJ', 'single_list'+ref_indices_output_file)
+    # gen_ref_indices_alt2(updated_identified_lines_output_filename, 'YJ', 'individual_lists'+ref_indices_output_file)
+    gen_echellogram_curve_fit(
+        echellogram_output_file, updated_identified_lines_output_filename, curve_fit_echellogram_outpout_filename, 2048
+    )
