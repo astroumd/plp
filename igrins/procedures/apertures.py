@@ -77,7 +77,7 @@ class Apertures(object):
             domain = self.domain_dict[order_i]
             pixel_b = np.array(pixel) + domain[0]
             pixel_y = self.apcoeffs[order_i](pixel_b)
-            xy2.extend(zip(pixel, pixel_y))
+            xy2.extend(zip(pixel_b, pixel_y))
 
         if nan_filter is not None:
             xy2 = np.compress(nan_filter, xy2, axis=0)
@@ -196,7 +196,6 @@ class Apertures(object):
                 warnings.filterwarnings('ignore', r'All-NaN slice')
 
                 s = [np.nanmedian(data[down[i]:up[i], xx[i]]) for i in range(len(xx))]
-
             s_list.append(s)
 
         return s_list
