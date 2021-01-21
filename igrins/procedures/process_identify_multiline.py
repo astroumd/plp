@@ -7,17 +7,19 @@ from collections import namedtuple
 
 from ..procedures.ref_lines_db import SkyLinesDB, HitranSkyLinesDB
 
-Spec = namedtuple("Spec", ["s_map", "wvl_map"])
+Spec = namedtuple("Spec", ["s_map", "wvl_map", "domain"])
 
 
 def identify_lines_from_spec(orders, spec_data, wvlsol,
                              ref_lines_db, ref_lines_db_hitrans,
-                             ref_sigma=1.5):
+                             ref_sigma=1.5,
+                             domains=None):
     small_list = []
     small_keys = []
 
     spec = Spec(dict(zip(orders, spec_data)),
-                dict(zip(orders, wvlsol)))
+                dict(zip(orders, wvlsol)),
+                dict(zip(orders, domains)))
 
     fitted_pixels_oh = ref_lines_db.identify(spec, ref_sigma=ref_sigma)
     small_list.append(fitted_pixels_oh)
@@ -65,9 +67,18 @@ def identify_multiline(obsset):
         slit_center = hdu.header["FSLIT_CN"]
         keys.append(slit_center)
 
+        str_test = str(orders[0]) + '_LO'
+        if str_test in hdu.header:
+            domains = []
+            for order in orders:
+                str_lo = str(order) + '_LO'
+                str_hi = str(order) + '_HI'
+                domains.append([int(hdu.header[str_lo]), int(hdu.header[str_hi])])
+
         fitted_pixels_ = identify_lines_from_spec(orders, hdu.data, wvlsol,
                                                   ref_lines_db,
-                                                  ref_lines_db_hitrans)
+                                                  ref_lines_db_hitrans,
+                                                  domains=domains)
 
         fitted_pixels_list.append(fitted_pixels_)
 
