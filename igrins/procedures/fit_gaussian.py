@@ -13,7 +13,9 @@ def _gauss0_w_dcenters(xx, params, dcenters):
         for d_center in dcenters:
             y_models.append(np.exp(-(((xx - (center + d_center))/sigma)**2*0.5)))
 
-    return height*np.array(y_models).sum(axis=0) + background
+    ncenters = len(dcenters)
+
+    return height*np.array(y_models).sum(axis=0)/ncenters + background
 
 
 def _gauss_w_dcenters(xx, yy, params, dcenters):
@@ -78,8 +80,47 @@ def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
     from scipy.optimize import fmin_tnc
     sol_ = fmin_tnc(_gauss, params0,
                     bounds=list(zip(params_min, params_max)),
-                    approx_grad=True, disp=0,
-                    )
+                    approx_grad=True, disp=0)
+
+    #TODO: REMOVE
+    '''
+    params_opt = sol_[0]
+    if params_opt[1] == 0:
+        raise ValueError("BAD BAD BAD FIT")
+    model = _gauss0_w_dcenters(xx, params_opt, dcenters0)
+    model0 = _gauss0_w_dcenters(xx, params0, dcenters0)
+    #params1 = [931.0, 1.5, 55.0, 0.0]
+    #sol1_ = fmin_tnc(_gauss, params1,
+    #                bounds=list(zip(params_min, params_max)),
+    #                approx_grad=True, disp=0,
+    #                )
+    #params_opt1 = sol1_[0]
+    #model1 = _gauss0_w_dcenters(xx, params_opt1, dcenters0)
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.plot(xx, yy, 'b')
+    plt.plot(xx, model, 'r')
+    plt.plot(xx, model0, 'g')
+    #plt.plot(xx, model1, 'm')
+    print("SSS:", lines)
+
+    plt.figure()
+    plt.plot(x, s)
+    plt.show()
+    '''
+
+    #TODO: REMOVE
+    '''
+    if len(lines) == 2:
+        if np.abs(lines[0] - 1107.53680408) < 0.001 and np.abs(lines[1] - 1107.61295184) < 0.001:
+            params_opt = sol_[0]
+            print("params_opt:", params_opt)
+            print("dcenter0:", dcenters0)
+            #yy_opt = _gauss0_w_dcenters(xx, params_opt, dcenters0)
+            #print("ABC:", np.shape(xx), np.shape(yy_opt))
+            #plt.plot(xx, yy_opt, 'r')
+            plt.show()
+    '''
 
     if do_plot:
         import matplotlib.pyplot as plt
