@@ -109,7 +109,7 @@ def gen_echellogram(order_map_file, oned_wavemap_file, output_file, aggregation_
 
 def gen_echellogram_curve_fit(
     echellogram_json_file, identified_lines_json_file, output_file, pixels_in_order,
-    centroid_solutions_json_file=None, domain_starting_index=0
+    centroid_solutions_json_file=None, domain_starting_index=0, fit_output_file='fit.json'
     # , pixel_degree, order_degree
 ):
     identified_lines = json_dict_from_file(identified_lines_json_file)
@@ -141,26 +141,30 @@ def gen_echellogram_curve_fit(
         (
             c00, c01, c02, c03,
             c10, c11, c12, c13,
-            c20, c21, c22, c23,
-            c30, c31, c32, c33
+            # c20, c21, c22, c23,
+            # c30, c31, c32, c33
         ) = c_array
         p = pix_array
+        # return c00 + c01 * m + c02 * m ** 2 + \
+        #        c10 * p + c11 * p * m + c12 * p * m ** 2 + \
+        #        c20 * p ** 2 + c21 * p ** 2 * m + c22 * p ** 2 * m ** 2  # + \
+        #        c30 * p ** 3 + c31 * p ** 3 * m + c32 * p ** 3 * m ** 2
         return c00 + c01*m + c02*m**2 + c03*m**3 +\
-               c10*p + c11*p*m + c12*p*m**2 + c13*p*m**3 + \
-               c20*p**2 + c21*p**2*m + c22*p**2*m**2 + c23*p**2*m**3 +\
-               c30*p**3 + c31*p**3*m + c32*p**3*m**2 + c33*p**3*m**3
+               c10*p + c11*p*m + c12*p*m**2 + c13*p*m**3  # + \
+        #        c20*p**2 + c21*p**2*m + c22*p**2*m**2 + c23*p**2*m**3 +\
+               # c30*p**3 + c31*p**3*m + c32*p**3*m**2 + c33*p**3*m**3
 
     def func(data,
              c00, c01, c02, c03,
              c10, c11, c12, c13,
-             c20, c21, c22, c23,
-             c30, c31, c32, c33
+             # c20, c21, c22, c23,
+             # c30, c31, c32, c33
              ):
         constants = (
             c00, c01, c02, c03,
             c10, c11, c12, c13,
-            c20, c21, c22, c23,
-            c30, c31, c32, c33
+            # c20, c21, c22, c23,
+            # c30, c31, c32, c33
         )
         return wavelength(constants, data[1], data[2])
 
@@ -181,6 +185,26 @@ def gen_echellogram_curve_fit(
         json_dict['wvl_list'].append(wavelength(params, pixels, order).tolist())
     json_dict['y_list'] = json_dict_from_file(echellogram_json_file)['y_list']
     save_dict_to_json(json_dict, output_file)
+
+    fit_wvl = wavelength(params, fitdata_array[1], fitdata_array[2])
+    error = fitdata_array[0] - fit_wvl
+    standard_error = np.sqrt(np.sum(error**2) / (error.shape[0]-1))
+    fit_dict = {
+        'param_names': [
+            'c00', 'c01', 'c02', 'c03',
+            'c10', 'c11', 'c12', 'c13',
+            # 'c20', 'c21', 'c22', 'c23',
+            # 'c30', 'c31', 'c32', 'c33'
+        ],
+        'params': params.tolist(),
+        'pixpos': fitdata_array[1].tolist(),
+        'order': fitdata_array[2].tolist(),
+        'fit_wvl': fit_wvl.tolist(),
+        'identified_lines_wvl': fitdata_array[0].tolist(),
+        'error': error.tolist(),
+        'standard_error': standard_error
+    }
+    save_dict_to_json(fit_dict, fit_output_file)
 
 
 def gen_ref_indices(
@@ -325,8 +349,15 @@ def find_nearest(array, value):
     return array[idx], idx
 
 
-def residuals_plot_and_save(echellogram_json_file, identified_lines_json_file, output_json_file):
-    return
+def plot_echellogram_error(fit_json_file):
+    from matplotlib import pyplot as plt
+
+    fit_dict = json_dict_from_file(fit_json_file)
+    plt.plot(fit_dict['order'], fit_dict['error'], 'bo')
+    plt.title(fit_json_file.replace('.json', ''))
+    plt.xlabel('order')
+    plt.ylabel('error')
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -340,6 +371,7 @@ if __name__ == '__main__':
     identified_lines_output_filename = 'YJ_identified_lines.json'
     echellogram_output_file = 'YJ_echellogram.json'
     ref_indices_output_file = 'ref_ohlines_indices.json'
+    fit_output_filename = 'fit_p2m2.json'
     centroid_solutions_file = r'..\calib\primary\20201008\FLAT_rimas.0000.YJ.C0.centroid_solutions.json'
     updated_identified_lines_output_filename = identified_lines_output_filename.replace('.json', 'update.json')
     curve_fit_echellogram_outpout_filename = echellogram_output_file.replace('.json', '_curvefit.json')
@@ -357,7 +389,8 @@ if __name__ == '__main__':
 
     # gen_ref_indices_alt1(updated_identified_lines_output_filename, 'YJ', 'single_list'+ref_indices_output_file)
     # gen_ref_indices_alt2(updated_identified_lines_output_filename, 'YJ', 'individual_lists'+ref_indices_output_file)
-    gen_echellogram_curve_fit(
-        echellogram_output_file, updated_identified_lines_output_filename, curve_fit_echellogram_outpout_filename, 2048,
-        centroid_solutions_file, 3
-    )
+    # gen_echellogram_curve_fit(
+    #     echellogram_output_file, updated_identified_lines_output_filename, curve_fit_echellogram_outpout_filename, 2048,
+    #     centroid_solutions_file, 3, fit_output_filename
+    # )
+    plot_echellogram_error(fit_output_filename)
