@@ -107,15 +107,31 @@ def gen_echellogram(order_map_file, oned_wavemap_file, output_file, aggregation_
     save_dict_to_json(json_dict, output_file)
 
 
-def gen_echellogram_curve_fit(echellogram_json_file, identified_lines_json_file, output_file, pixels_in_order
+def gen_echellogram_curve_fit(
+    echellogram_json_file, identified_lines_json_file, output_file, pixels_in_order,
+    centroid_solutions_json_file=None, domain_starting_index=0
     # , pixel_degree, order_degree
 ):
     identified_lines = json_dict_from_file(identified_lines_json_file)
-    indices = range(len(identified_lines['orders']))
+    num_orders = len(identified_lines['orders'])
+    indices = range(num_orders)
+    if centroid_solutions_json_file is not None:
+        domains = json_dict_from_file(centroid_solutions_json_file)['domain']
+        domains = domains[domain_starting_index:domain_starting_index+num_orders]
+    else:
+        domains = [list(range(pixels_in_order)) for j in indices]
+
     fitdata = [[],[],[]]
+
     for j in indices:
+        domain = domains[j]
         wvls = identified_lines['wvl_list'][j]
         pixpos = identified_lines['pixpos_list'][j]
+        wvls_array = np.asarray(wvls)
+        pixpos_array = np.asarray(pixpos)
+        domain_indices = np.logical_and(pixpos_array>domain[0], pixpos_array<domain[1])
+        pixpos = pixpos_array[domain_indices].tolist()
+        wvls = wvls_array[domain_indices].tolist()
         order = identified_lines['orders'][j]
         order_list = [order for i in range(len(wvls))]
         fitdata = [fitdata[0]+wvls, fitdata[1]+pixpos, fitdata[2]+order_list]
@@ -309,6 +325,10 @@ def find_nearest(array, value):
     return array[idx], idx
 
 
+def residuals_plot_and_save(echellogram_json_file, identified_lines_json_file, output_json_file):
+    return
+
+
 if __name__ == '__main__':
     order_map = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\echelle\YJ_order_map_extended.fits'
     wavemap   = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\echelle\YJ_wavmap_extended.fits'
@@ -320,6 +340,7 @@ if __name__ == '__main__':
     identified_lines_output_filename = 'YJ_identified_lines.json'
     echellogram_output_file = 'YJ_echellogram.json'
     ref_indices_output_file = 'ref_ohlines_indices.json'
+    centroid_solutions_file = r'..\calib\primary\20201008\FLAT_rimas.0000.YJ.C0.centroid_solutions.json'
     updated_identified_lines_output_filename = identified_lines_output_filename.replace('.json', 'update.json')
     curve_fit_echellogram_outpout_filename = echellogram_output_file.replace('.json', '_curvefit.json')
     # file_overlay(order_map, spectrum)
@@ -337,5 +358,6 @@ if __name__ == '__main__':
     # gen_ref_indices_alt1(updated_identified_lines_output_filename, 'YJ', 'single_list'+ref_indices_output_file)
     # gen_ref_indices_alt2(updated_identified_lines_output_filename, 'YJ', 'individual_lists'+ref_indices_output_file)
     gen_echellogram_curve_fit(
-        echellogram_output_file, updated_identified_lines_output_filename, curve_fit_echellogram_outpout_filename, 2048
+        echellogram_output_file, updated_identified_lines_output_filename, curve_fit_echellogram_outpout_filename, 2048,
+        centroid_solutions_file, 3
     )
