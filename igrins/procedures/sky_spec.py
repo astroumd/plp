@@ -282,8 +282,10 @@ def extract_spectra_multi(obsset):
     ap = get_simple_aperture_from_obsset(obsset, orders=orders)
 
     def make_hdu(s_up, s_down, data):
-        data_out = np.array(data)
-        save_domain = data_out.ndim == 1
+        #data_out = np.array(data)
+        #save_domain = data_out.ndim == 1
+        len_data = [len(tmp) for tmp in data]
+        save_domain = len(np.unique(len_data)) != 1
 
         h = [("NSLIT", n_slice_one_direction*2 + 1),
              ("FSLIT_DN", s_down),
@@ -312,6 +314,8 @@ def extract_spectra_multi(obsset):
                 str_key_hi = str(key) + '_HI'
                 h.append((str_key_lo, domain_lo))
                 h.append((str_key_hi, domain_hi))
+        else:
+            data_out = np.array(data)
 
         return (h, data_out)
 
