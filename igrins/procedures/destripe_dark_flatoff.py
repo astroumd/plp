@@ -63,12 +63,27 @@ def _sub_with_bg_201909(d, bg, destripe_mask=None):
 
     return r
 
+def _sub_with_bg_rimas(d, bg, destripe_mask=None):
+
+    with np.warnings.catch_warnings():
+        np.warnings.filterwarnings('ignore', r'All-NaN (slice|axis)')
+
+        r = d - bg + bg
+
+    return r
 
 def make_dark_with_bg(data_list, bg_model,
-                      destripe_mask=None):
+                      destripe_mask=None,
+                      expt='igrins'):
 
-    data_list5 = [_sub_with_bg_201909(d, bg_model, destripe_mask)
-                  for d in data_list]
+    if expt == 'igrins':
+        data_list5 = [_sub_with_bg_201909(d, bg_model, destripe_mask)
+                      for d in data_list]
+    elif expt == 'rimas':
+        print("NOT APPLYING SOME PATTERN REMOVAL DURING FLAT OFF 2nd PHASE. THIS NEEDS TO")
+        print("BE ADDED AFTER REAL DATA HAS BEEN TAKEN")
+        data_list5 = [_sub_with_bg_rimas(d, bg_model, destripe_mask)
+                      for d in data_list]
 
     flat5 = image_median(data_list5)
     return flat5
