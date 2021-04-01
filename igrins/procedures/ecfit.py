@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import numpy as np
 
@@ -92,7 +93,7 @@ def show_grided_image(ax, gi, xl, yl, zl, orders):
     ax.set_ylim(orders[0]-1, orders[-1]+1)
 
 def fit_2dspec(xl, yl, zl, x_degree=4, y_degree=3,
-               x_domain=None, y_domain=None):
+               x_domain=None, y_domain=None, p_init=None):
     from astropy.modeling import fitting
     # Fit the data using astropy.modeling
     if x_domain is None:
@@ -102,8 +103,9 @@ def fit_2dspec(xl, yl, zl, x_degree=4, y_degree=3,
         #y_domain = [orders[0]-2, orders[-1]+2]
         y_domain = [min(yl), max(yl)]
     from astropy.modeling.polynomial import Chebyshev2D
-    p_init = Chebyshev2D(x_degree=x_degree, y_degree=y_degree,
-                         x_domain=x_domain, y_domain=y_domain)
+    if p_init is None:
+        p_init = Chebyshev2D(x_degree=x_degree, y_degree=y_degree,
+                             x_domain=x_domain, y_domain=y_domain)
     f = fitting.LinearLSQFitter()
 
     p = f(p_init, xl, yl, zl)
