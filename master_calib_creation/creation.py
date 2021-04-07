@@ -114,112 +114,13 @@ def gen_echellogram(order_map_file, oned_wavemap_file, output_file, aggregation_
     save_dict_to_json(json_dict, output_file)
 
 
-def gen_echellogram_curve_fit(
-    echellogram_json_file, identified_lines_json_file, output_file, pixels_in_order,
-    centroid_solutions_json_file=None, domain_starting_index=0, fit_output_file='fit.json'
-    # , pixel_degree, order_degree
-):
-    identified_lines = json_dict_from_file(identified_lines_json_file)
-    num_orders = len(identified_lines['orders'])
-    indices = range(num_orders)
-    if centroid_solutions_json_file is not None:
-        domains = json_dict_from_file(centroid_solutions_json_file)['domain']
-        domains = domains[domain_starting_index:domain_starting_index+num_orders]
-    else:
-        domains = [(0, pixels_in_order) for j in indices]
-
-    fitdata = [[],[],[]]
-
-    for j in indices:
-        domain = domains[j]
-        wvls = identified_lines['wvl_list'][j]
-        pixpos = identified_lines['pixpos_list'][j]
-        wvls_array = np.asarray(wvls)
-        pixpos_array = np.asarray(pixpos)
-        domain_indices = np.logical_and(pixpos_array>domain[0], pixpos_array<domain[1])
-        pixpos = pixpos_array[domain_indices].tolist()
-        wvls = wvls_array[domain_indices].tolist()
-        order = identified_lines['orders'][j]
-        order_list = [order for i in range(len(wvls))]
-        fitdata = [fitdata[0]+wvls, fitdata[1]+pixpos, fitdata[2]+order_list]
-    fitdata_array = np.asarray(fitdata)
-
-    def wavelength(c_array, pix_array, m):
-        (
-            c00, c01, c02, c03,
-            c10, c11, c12, c13,
-            c20, c21, c22, c23,
-            c30, c31, c32, c33
-        ) = c_array
-        p = pix_array
-        # return c00 + c01 * m + c02 * m ** 2 + \
-        #        c10 * p + c11 * p * m + c12 * p * m ** 2 + \
-        #        c20 * p ** 2 + c21 * p ** 2 * m + c22 * p ** 2 * m ** 2  # + \
-        #        c30 * p ** 3 + c31 * p ** 3 * m + c32 * p ** 3 * m ** 2
-        return c00 + c01*m + c02*m**2 + c03*m**3 +\
-               c10*p + c11*p*m + c12*p*m**2 + c13*p*m**3 + \
-               c20*p**2 + c21*p**2*m + c22*p**2*m**2 + c23*p**2*m**3 +\
-               c30*p**3 + c31*p**3*m + c32*p**3*m**2 + c33*p**3*m**3
-
-    def func(data,
-             c00, c01, c02, c03,
-             c10, c11, c12, c13,
-             c20, c21, c22, c23,
-             c30, c31, c32, c33
-             ):
-        constants = (
-            c00, c01, c02, c03,
-            c10, c11, c12, c13,
-            c20, c21, c22, c23,
-            c30, c31, c32, c33
-        )
-        return wavelength(constants, data[1], data[2])
-
-    # guess = (
-    #     1,1,1,1,
-    #     1,1,1,1,
-    #     1,1,1,1,
-    #     1,1,1,1
-    # )
-    params, pcov = curve_fit(func, fitdata_array, fitdata_array[0])  # , guess)
-    pixels = np.arange(0, pixels_in_order)
-    json_dict = {
-        'wvl_list': [], 'x_list': [], 'y_list': [], 'orders': [],
-    }
-    for order in identified_lines['orders']:
-        json_dict['orders'].append(order)
-        json_dict['x_list'].append(pixels.tolist())
-        json_dict['wvl_list'].append(wavelength(params, pixels, order).tolist())
-    json_dict['y_list'] = json_dict_from_file(echellogram_json_file)['y_list']
-    save_dict_to_json(json_dict, output_file)
-
-    fit_wvl = wavelength(params, fitdata_array[1], fitdata_array[2])
-    error = fitdata_array[0] - fit_wvl
-    standard_error = np.sqrt(np.sum(error**2) / (error.shape[0]-1))
-    fit_dict = {
-        'param_names': [
-            'c00', 'c01', 'c02', 'c03',
-            'c10', 'c11', 'c12', 'c13',
-            'c20', 'c21', 'c22', 'c23',
-            'c30', 'c31', 'c32', 'c33'
-        ],
-        'params': params.tolist(),
-        'pixpos': fitdata_array[1].tolist(),
-        'order': fitdata_array[2].tolist(),
-        'fit_wvl': fit_wvl.tolist(),
-        'identified_lines_wvl': fitdata_array[0].tolist(),
-        'error': error.tolist(),
-        'standard_error': standard_error
-    }
-    save_dict_to_json(fit_dict, fit_output_file)
-
-
 def gen_echellogram_fit_wvlsol(
-    echellogram_json_file, identified_lines_json_file, output_file, pixels_in_order,
+    echellogram_json_file, identified_lines_json_file, ref_indices_json_file, output_file, pixels_in_order,
     centroid_solutions_json_file=None, domain_starting_index=0, fit_output_file='fit.json',
-    pixel_degree=4, order_degree=3, p_init_pickle=None, pickle_output_file = None
+    pixel_degree=4, order_degree=3, p_init_pickle=None, pickle_output_file=None, band='YJ'
 ):
     identified_lines = json_dict_from_file(identified_lines_json_file)
+    ref_indices_dict = json_dict_from_file(ref_indices_json_file)['YJ']
     num_orders = len(identified_lines['orders'])
     indices = range(num_orders)
     if centroid_solutions_json_file is not None:
@@ -231,15 +132,24 @@ def gen_echellogram_fit_wvlsol(
     fitdata = {'pixels':[], 'order':[], 'wavelength':[]}
 
     for j in indices:
+        order = identified_lines['orders'][j]
         domain = domains[j]
         wvls = identified_lines['wvl_list'][j]
         pixpos = identified_lines['pixpos_list'][j]
+        ref_indices = identified_lines['ref_indices_list'][j]
+        repeat_ref_indices = ref_indices_dict[str(order)]
+        repeat_ref_indices = [item for sublist in repeat_ref_indices for item in sublist]  # flattening lists
         wvls_array = np.asarray(wvls)
         pixpos_array = np.asarray(pixpos)
-        domain_indices = np.logical_and(pixpos_array>domain[0], pixpos_array<domain[1])
+        ref_indices_array = np.asarray(ref_indices)
+        if len(repeat_ref_indices) == 0:
+            no_repeats_array = np.ones(ref_indices_array.shape, dtype=np.bool)
+        else:
+            repeat_list = np.asarray([ref_indices_array != i for i in repeat_ref_indices])
+            no_repeats_array = np.all(repeat_list, axis=0)
+        domain_indices = np.logical_and(pixpos_array>domain[0], pixpos_array<domain[1], no_repeats_array)
         pixpos = pixpos_array[domain_indices].tolist()
         wvls = wvls_array[domain_indices].tolist()
-        order = identified_lines['orders'][j]
         order_list = [order for i in range(len(wvls))]
         fitdata['wavelength'] = fitdata['wavelength'] + wvls
         fitdata['pixels'] = fitdata['pixels'] + pixpos
@@ -337,32 +247,6 @@ def gen_ref_indices(
     ref_dict[band_name] = band_dict
     save_dict_to_json(ref_dict, ref_indices_output)
     save_dict_to_json(new_id_lines_dict, updated_identified_lines_output)
-
-
-def gen_ref_indices_alt1(identified_lines_json_file, band_name, ref_indices_output):
-    if os.path.isfile(ref_indices_output):
-        ref_dict = json_dict_from_file(ref_indices_output)
-    else:
-        ref_dict = {}
-    id_lines = json_dict_from_file(identified_lines_json_file)
-    band_dict = {}
-    for order, indices in zip(id_lines['orders'], id_lines['ref_indices_list']):
-        band_dict[str(order)] = [indices]
-    ref_dict[band_name] = band_dict
-    save_dict_to_json(ref_dict, ref_indices_output)
-
-
-def gen_ref_indices_alt2(identified_lines_json_file, band_name, ref_indices_output):
-    if os.path.isfile(ref_indices_output):
-        ref_dict = json_dict_from_file(ref_indices_output)
-    else:
-        ref_dict = {}
-    id_lines = json_dict_from_file(identified_lines_json_file)
-    band_dict = {}
-    for order, indices in zip(id_lines['orders'], id_lines['ref_indices_list']):
-        band_dict[str(order)] = [[_index] for _index in indices]
-    ref_dict[band_name] = band_dict
-    save_dict_to_json(ref_dict, ref_indices_output)
 
 
 def index_matching(list1, list2):
@@ -549,7 +433,7 @@ if __name__ == '__main__':
     # output_dir = 'pickle_fit_test_med_oh'
     output_dir = 'even_spaced_25-stuermer'
     # output_dir = 'even_spaced_10-stuermer'
-    output_dir = os.path.join(output_dir, 'pickle_fit')
+    output_dir = os.path.join(output_dir, 'pickle_fit__no_repeats')
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
     skyline_output_filename = os.path.join(output_dir, 'YJ_oned.json')
@@ -592,7 +476,7 @@ if __name__ == '__main__':
     # )
     #
     gen_echellogram_fit_wvlsol(
-        echellogram_output_file, updated_identified_lines_output_filename,
+        echellogram_output_file, updated_identified_lines_output_filename, ref_indices_output_file,
         fit_wvlsol_echellogram_output_filename, 2048,
         centroid_solutions_file, 3,
         fit_output_file=fit_output_filename,
