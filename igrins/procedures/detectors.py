@@ -6,5 +6,9 @@ class IGRINSDetector(Detector):
     ny = 2048
 
 class RIMASDetector(Detector):
-    nx = 2048
-    ny = 2048
+    print("RIMAS DETECTOR AT 4096")
+    nx = 4096
+    ny = 4096
+    #print("RIMAS DETECTOR AT 2048")
+    #nx = 2048
+    #ny = 2048

@@ -134,6 +134,9 @@ def _get_finite_boundary_indices(s1):
     # select finite number only. This may happen when orders go out of
     # chip boundary.
     s1 = np.array(s1)
+
+    nx = len(s1)
+
     # k1, k2 = np.nonzero(np.isfinite(s1))[0][[0, -1]]
 
     # k1, k2 = np.nonzero(s1>0.)[0][[0, -1]]
@@ -146,7 +149,7 @@ def _get_finite_boundary_indices(s1):
 
     k1, k2 = nonzero_indices[[0, -1]]
     k1 = max(k1, 4)
-    k2 = min(k2, 2047-4)
+    k2 = min(k2, nx-5)
     return k1, k2
 
 
@@ -188,6 +191,7 @@ def get_smooth_continuum(s, wvl=None):
     r.fill(np.nan)
     if f12 is not None:
         r[sl] = f12
+
     return r
 
 

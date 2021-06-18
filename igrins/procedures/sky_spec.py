@@ -186,8 +186,10 @@ def _sky_subtract_bg(obsset, sky_image,
                                                    DESCS["FLAT_OFF_BG"]))
         bg = bg_hdu.data
         #bg_exptime = float(bg_hdu.header["exptime"])
-        print("SETTING bg_exptime to 30 for RIMAS simulations")
-        bg_exptime = 30.0
+        #print("SETTING bg_exptime to 30 for RIMAS simulations")
+        #bg_exptime = 30.0
+        print("NJM SETTING bg_exptime to sky_exptime for RIMAS simulations")
+        bg_exptime = sky_exptime
     elif bg_subtraction_mode == "no":
         bg = np.zeros_like(sky_image)
         bg_exptime = 1.
@@ -210,7 +212,9 @@ def _sky_subtract_bg(obsset, sky_image,
         rp.PatternRowWiseBias
     ]
 
-    destriped_sky = rp.apply(sky_image2, pipe, mask=destripe_mask)
+    print("NJM REMOVING SKY IMAGE DESTRIPING")
+    #destriped_sky = rp.apply(sky_image2, pipe, mask=destripe_mask)
+    destriped_sky = sky_image2
 
     return destriped_sky
 

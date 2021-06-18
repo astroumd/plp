@@ -207,6 +207,7 @@ def identify_lines(obsset):
 
     from .line_identify_simple import match_lines1_pix
 
+    x0 = 0
     for o, s in zip(tgt_spec["orders"], tgt_spec["specs"]):
         if (o not in ref_map) or (o not in offsetfunc_map):
             wvl, indices, pixpos = [], [], []
@@ -222,6 +223,47 @@ def identify_lines(obsset):
 
             pix_list[dist > 1] = -1
             pixpos[msk] = pix_list
+            
+            #NJM Comment from HERE
+            '''
+            tmp = pix_list != -1
+            print("N_pix:", np.sum(tmp))
+            
+            s_ref = ref_spec["specs"][x0]
+            print("Order:", o, ref_spec["orders"][x0])
+            x0 += 1
+            import matplotlib.pyplot as plt
+            xvals = np.arange(len(s_ref)) + offsetfunc_map[o](0)
+            xvals0 = np.arange(len(s))
+            plt.figure('Spectra')
+            plt.plot(xvals + 866, np.array(s_ref), 'b', label='Reference')
+            plt.plot(xvals0 + 866, np.array(s)*10, 'g', label='Target')
+            #plt.plot(np.array(s), 'g', label='Target')
+            i = ref_pix_list[0]
+            plt.plot([i, i], [0, 20], 'k', label='Reference')
+            for i in ref_pix_list[dist <= 10000]:
+                if i >= 0 and i < len(s):
+                    plt.plot([i, i], [0, 200], 'k')
+            i = pix_list[0]
+            plt.plot([i, i], [0, 15], 'r', label='Target')
+            for i in pix_list[dist <= 1]:
+                plt.plot([i, i], [0, 150], 'r')
+            plt.legend(loc=0, prop={'size': 12})
+            plt.xlim([0, 200])
+            #plt.show()
+
+            plt.figure('<=1')
+            plt.scatter(ref_pix_list[dist <= 1], np.ones_like(ref_pix_list[dist <= 1]), marker='o')
+            plt.scatter(pix_list[dist <= 1], 1.1*np.ones_like(pix_list[dist <= 1]), marker='x')
+            plt.xlim([0, 500])
+            
+            plt.figure('All')
+            plt.scatter(ref_pix_list, np.ones_like(ref_pix_list), marker='o')
+            plt.scatter(pix_list, 1.1*np.ones_like(pix_list), marker='x')
+            plt.xlim([0, 500])
+            plt.show()
+            '''
+            #NJM Comment to HERE
 
         identified_lines_tgt.append_order_info(o, wvl, indices, pixpos)
 
@@ -346,6 +388,39 @@ def find_affine_transform(obsset):
 
     xy_list_ref = identified_lines_tgt.get_xy_list_from_wvllist(echellogram)
 
+    #diffs = np.zeros(len(xy_list_tgt))
+    #for i in range(len(xy_list_tgt)):
+    #    diffs[i] = xy_list_tgt[0][0] - xy_list_ref[0][0]
+
+    print("COMMENTING OUT TEST XY LIST PLOT")
+    '''
+    print("TTT0:", xy_list_tgt[0])
+    print("TTT1:", xy_list_tgt[1])
+    print("TTT2:", xy_list_tgt[2])
+
+    print("UUU0:", xy_list_ref[0])
+    print("UUU1:", xy_list_ref[1])
+    print("UUU2:", xy_list_ref[2])
+    
+    #TEST LINES
+    import matplotlib.pyplot as plt
+    for xy0, xy1 in zip(xy_list_ref, xy_list_tgt):
+        plt.figure('Lines')
+        plt.scatter(xy0[0], xy0[1], marker='x', color='k')
+        plt.scatter(xy1[0], xy1[1], marker='o', color='r')
+        plt.figure('Arrow')
+        plt.arrow(xy0[0], xy0[1], 5*(xy1[0]-xy0[0]), 5*(xy1[1]-xy0[1]), width=0.1)
+    plt.show()
+    '''
+
+    #_ = _get_ref_spec_name(obsset.recipe_name)
+    #ref_spec_key, ref_identified_lines_key = _
+    #ref_spec = obsset.rs.load_ref_data(ref_spec_key)
+    #tgt_spec = obsset.load(DESCS["ONED_SPEC_JSON"])
+    
+    #plt.figure()
+    #plt.plot(ref_spec['specs'][0])
+   
     assert len(xy_list_tgt) == len(xy_list_ref)
 
     from .fit_affine import fit_affine_clip
@@ -362,7 +437,7 @@ def find_affine_transform(obsset):
 
 
 def _get_wavelength_solutions(affine_tr_matrix, zdata,
-                              new_orders):
+                              new_orders, nx=2048):
     """
     new_orders : output orders
 
@@ -377,22 +452,39 @@ def _get_wavelength_solutions(affine_tr_matrix, zdata,
     affine_tr = matplotlib.transforms.Affine2D()
     affine_tr.set_matrix(affine_tr_matrix)
 
+    do_print = False
     d_x_wvl = {}
     for order, z in zdata.items():
         xy_T = affine_tr.transform(np.array([z.x, z.y]).T)
+        if do_print:
+            print("X:", z.x[953:955])
+            print("Y:", z.y[953:955])
+            print("WVL:", z.wvl[953:955])
+            print("XT:", xy_T[953:955, 0])
+            do_print = False
+            tmp0 = z.wvl
+            tmp1 = xy_T[:, 0]
+
         x_T = xy_T[:, 0]
         d_x_wvl[order] = (x_T, z.wvl)
 
     _xl, _ol, _wl = get_ordered_line_data(d_x_wvl)
+
+    #idx = np.logical_and(_xl > 400, _xl < 1600)
+    idx = np.logical_and(_xl > int(0.2*nx), _xl < int(0.8*nx))
+    _xl2 = _xl[idx]
+    _ol2 = _ol[idx]
+    _wl2 = _wl[idx]
+
     # _xl : pixel
     # _ol : order
     # _wl : wvl * order
 
-    x_domain = [0, 2047]
+    x_domain = [0, nx-1]
     # orders = igrins_orders[band]
     # y_domain = [orders_band[0]-2, orders_band[-1]+2]
     y_domain = [new_orders[0], new_orders[-1]]
-    p, m = fit_2dspec(_xl, _ol, _wl, x_degree=4, y_degree=3,
+    p, m = fit_2dspec(_xl2, _ol2, _wl2, x_degree=4, y_degree=3,
                       x_domain=x_domain, y_domain=y_domain)
 
     # if 0:
@@ -402,13 +494,28 @@ def _get_wavelength_solutions(affine_tr_matrix, zdata,
     #     check_fit(fig, xl, yl, zl, p, orders_band, d_x_wvl)
     #     fig.tight_layout()
 
-    xx = np.arange(2048)
+    xx = np.arange(nx)
     wvl_sol = []
     for o in new_orders:
         oo = np.empty_like(xx)
         oo.fill(o)
         wvl = p(xx, oo) / o
         wvl_sol.append(list(wvl))
+    print("COMMENTED OUT PLOT IN procedures_register._get_wavelength_solutions")
+    '''
+    print("wvl_sol:", wvl_sol[4][950:955])
+    import matplotlib.pyplot as plt
+    oo2 = np.ones_like(tmp1)*30
+    wvl2 = p(tmp1, oo2) / 30.0
+    plt.figure()
+    plt.plot(tmp1, tmp0, 'b', label='Affine Transformation')
+    plt.plot(xx, wvl_sol[4], 'g', label='2D Cheby Fit')
+    plt.xlim([950, 960])
+    plt.ylim([1.3084, 1.3086])
+    plt.legend(loc=0, prop={'size': 12})
+    plt.figure()
+    plt.plot(tmp1, tmp0 - wvl2)
+    '''
 
     # if 0:
     #     json.dump(wvl_sol,
@@ -440,7 +547,32 @@ def transform_wavelength_solutions(obsset):
 
     wvl_sol = _get_wavelength_solutions(affine_tr_matrix,
                                         echellogram.zdata,
-                                        orders)
+                                        orders, nx=obsset.detector.nx)
+
+    #TEST WAVELENGTH
+    import matplotlib.pyplot as plt
+    #plt.show()
+    plt.figure('Wavelength Solution')
+    plt.plot(wvl_sol[4+0], 'b', label='Wvl Sol')
+    plt.plot(echellogram_data['wvl_list'][0], 'g', label='Echellogram')
+    for i in range(1, 15):
+        plt.plot(wvl_sol[4+i], 'b')
+        plt.plot(echellogram_data['wvl_list'][i], 'g')
+    plt.xlabel('X Index')
+    plt.ylabel('Frequency')
+    plt.legend(loc=0, prop={'size': 12})
+
+
+    plt.figure('Wavelength Diff')
+    for i in range(15):
+        diff = wvl_sol[4+i] - np.array(echellogram_data['wvl_list'][i])
+        denom = np.array(wvl_sol[4+i][1:]) - np.array(wvl_sol[4+i][:-1])
+        #plt.plot(diff/wvl_sol[4+i]*100, label=str(i))
+        plt.plot(diff[:-1]/denom*100, label=str(i))
+    plt.xlabel('X Index')
+    plt.ylabel('% Diff')
+    plt.legend(loc=0, prop={'size': 12})
+    #plt.show()
 
     obsset.store(DESCS["WVLSOL_V0_JSON"],
                  data=dict(orders=orders, wvl_sol=wvl_sol))
@@ -457,6 +589,8 @@ def _make_order_flat(flat_normed, flat_mask, orders, order_map):
     # flat_normed  = flaton_products[FLAT_NORMED_DESC][0].data
     # flat_mask = flaton_products[FLAT_MASK_DESC].data
 
+    nx = len(flat_normed)
+    
     import scipy.ndimage as ni
     slices = ni.find_objects(order_map)
 
@@ -492,7 +626,8 @@ def _make_order_flat(flat_normed, flat_mask, orders, order_map):
                              get_order_boundary_indices)
 
     s_list = [get_smoothed_order_spec(s) for s in mean_order_specs]
-    i1i2_list = [get_order_boundary_indices(s, s0)
+
+    i1i2_list = [get_order_boundary_indices(s, s0, nx=nx)
                  for s, s0 in zip(mean_order_specs, s_list)]
     # p_list = [get_order_flat1d(s, i1, i2) for s, (i1, i2) \
     #          in zip(s_list, i1i2_list)]
@@ -523,7 +658,7 @@ def _make_order_flat(flat_normed, flat_mask, orders, order_map):
 
     with np.errstate(invalid="ignore"):
         flat_im[flat_im < 0.5] = np.nan
-
+    
     # from storage_descriptions import (ORDER_FLAT_IM_DESC,
     #                                   ORDER_FLAT_JSON_DESC)
 

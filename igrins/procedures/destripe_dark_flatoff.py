@@ -22,7 +22,7 @@ def make_initial_dark(data_list, bg_mask):
     return dark3
 
 
-def model_bg(dark3, destripe_mask):
+def model_bg(dark3, destripe_mask, nx=2048, ny=None):
 
     # model the backgroound
     V = dark3
@@ -30,7 +30,8 @@ def model_bg(dark3, destripe_mask):
     xc, yc, v, std = estimate_background(V, destripe_mask,
                                          di=di, min_pixel=min_pixel)
 
-    nx = ny = 2048
+    if ny is None:
+        ny = nx
     ZI3 = get_interpolated_cubic(nx, ny, xc, yc, v)
 
     return ZI3

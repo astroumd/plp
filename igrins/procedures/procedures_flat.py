@@ -113,13 +113,15 @@ def obsset_combine_flat_off_step2(obsset):
     """
     # destripe=True):
 
+    print("NJM CHECK FLAT OFF STEP2 BG MODEL FOR 4096")
+
     obsset_off = obsset.get_subset("OFF")
     flat_off_hdu = obsset_off.load_fits_sci_hdu(DESCS["FLAT_OFF"])
     flat_off = flat_off_hdu.data
     helper = get_obsset_helper(obsset)
     destripe_mask = helper.get("destripe_mask")
 
-    bg_model = dh.model_bg(flat_off, destripe_mask)
+    bg_model = dh.model_bg(flat_off, destripe_mask, nx=obsset.detector.nx)
     header = flat_off_hdu.header.copy()
     header["NCOMBINE"] = len(obsset.obsids)
     flat_off_bg_hdul = HDUList([PrimaryHDU(data=bg_model,
@@ -489,7 +491,8 @@ def make_bias_mask(obsset):
     orders = list(range(1, len(bottomup_solutions)+1))
 
     from .apertures import Apertures
-    ap = Apertures(orders, bottomup_solutions, domain_list=domain_list)
+    ap = Apertures(orders, bottomup_solutions, domain_list=domain_list, nx=obsset.detector.nx,
+                   ny=obsset.detector.ny)
 
     order_map2 = ap.make_order_map(mask_top_bottom=True)
 
