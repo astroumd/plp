@@ -102,7 +102,7 @@ def gen_echellogram(order_map_file, oned_wavemap_file, output_file, aggregation_
         'wvl_list': wavelengths, 'x_list': [np.arange(len(wave)).tolist() for wave in wavelengths], 'y_list': [],
         'orders': orders
     }
-    y_index_image = np.asarray([np.arange(2048) for i in range(2048)])
+    y_index_image = np.asarray([np.arange(order_map_image.shape[0]) for i in range(order_map_image.shape[0])])
     if aggregation_axis == 0:
         y_index_image = y_index_image.transpose()
     for order in orders:
@@ -418,21 +418,23 @@ def gen_even_spaced_lines_csv_file(
 
 
 if __name__ == '__main__':
-    order_map = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\echelle\YJ_order_map_extended.fits'
-    wavemap   = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\echelle\YJ_wavmap_extended.fits'
-    spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\echelle simulator\simulations\20210304\ohlines\ohlines.fits'
+    order_map = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\echelle_h4rg\YJ_order_map_extended.fits'
+    wavemap   = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\echelle_h4rg\YJ_wavmap_extended.fits'
+    # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\echelle simulator\simulations\20210304\ohlines\ohlines.fits'
     # spectrum = r'C:\Users\durba\Documents\echelle\simulations\20210316\even_spaced_25-stuermer-1000s.fits'
     # spectrum = r'C:\Users\durba\Documents\echelle\simulations\20210316\even_spaced_10.fits'
     # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\echelle simulator\simulations\20201008\ohlines\ohlines.fits'
     # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\echelle simulator\simulations\20201008\rimas.0026.YJ.C0.fits'
+    spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\echelle simulator\simulations\20210513\rimas.0026.YJ.C0.fits'
     ohline_dat = r'C:\Users\durba\PycharmProjects\plp\master_calib\igrins\ohlines.dat'
     # ohline_dat = 'even_spaced_25.dat'
     # ohline_dat = 'even_spaced_10.dat'
     centroid_solutions_file = r'..\calib\primary\20201008\FLAT_rimas.0000.YJ.C0.centroid_solutions.json'
 
     # output_dir = 'pickle_fit_test_med_oh'
-    output_dir = 'even_spaced_25-stuermer'
+    # output_dir = 'even_spaced_25-stuermer'
     # output_dir = 'even_spaced_10-stuermer'
+    output_dir = 'h4rg'
     output_dir = os.path.join(output_dir, 'pickle_fit__no_repeats')
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
@@ -477,11 +479,11 @@ if __name__ == '__main__':
     #
     gen_echellogram_fit_wvlsol(
         echellogram_output_file, updated_identified_lines_output_filename, ref_indices_output_file,
-        fit_wvlsol_echellogram_output_filename, 2048,
-        centroid_solutions_file, 3,
+        fit_wvlsol_echellogram_output_filename, 4096,
+        # centroid_solutions_file, 3,
         fit_output_file=fit_output_filename,
         pixel_degree=pix_deg, order_degree=order_deg, pickle_output_file=fit_wvlsol_pickle_output_filename,
-        p_init_pickle=p_init_pickle_filename
+        # p_init_pickle=p_init_pickle_filename
     )
 
     plot_echellogram_error(fit_output_filename)
