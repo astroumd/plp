@@ -5,7 +5,6 @@ import scipy.ndimage as ni
 
 
 def estimate_background(data, msk, di=24, min_pixel=10):
-    import scipy.ndimage as ni
 
     def get_sky_points1(data, msk, di, i0):
         """
@@ -63,7 +62,6 @@ def estimate_background(data, msk, di=24, min_pixel=10):
         return sky_points
 
 
-
     #di = 24
     sky_points_all = []
     for i0 in range(0, 2048, di):
@@ -81,12 +79,11 @@ def estimate_background(data, msk, di=24, min_pixel=10):
     #return xc[m], yc[m], v[m], std[m]
     return xc, yc, v, std
 
-if 0:
-    #from scipy.interpolate import Rbf
-    #rbf = Rbf(xc, yc, v, epsilon=2)
-    ti = np.arange(0, 2048)
-    XI, YI = np.meshgrid(ti, ti)
-
+#if 0:
+#    #from scipy.interpolate import Rbf
+#    #rbf = Rbf(xc, yc, v, epsilon=2)
+#    ti = np.arange(0, 2048)
+#    XI, YI = np.meshgrid(ti, ti)
 
 
 def get_interpolated_rbf(nx, ny, xc, yc, v, smooth=1.e-12, nsample=16, nr=1000):

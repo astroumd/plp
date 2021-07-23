@@ -38,7 +38,11 @@ def get_guard_column_pattern(d, pattern_noise_recipes=None):
 # pipes_dark2 = [pipes[k] for k in list(pipes)[2:3]]
 
 
-def remove_pattern_from_guard(d, recipes=None):
+def remove_pattern_from_guard(d, recipes=None, nx=2048):
+
+    if nx != 2048:
+        print("SKIPING PATTERN REMOVAL BECAUSE NX=", nx)
+        return d
 
     if recipes is None:
         recipes = ['amp_wise_bias_r2', 'p64_0th_order']

@@ -8,9 +8,6 @@ from astropy.io.fits import Card, HDUList, PrimaryHDU
 
 from .. import get_obsset_helper, DESCS
 
-from ..utils.image_combine import image_median as stsci_median
-from ..procedures import destripe_dark_flatoff as dh
-
 from ..utils.json_helper import json_dumps
 from ..utils.image_combine import image_median
 
@@ -116,13 +113,15 @@ def obsset_combine_flat_off_step2(obsset):
     """
     # destripe=True):
 
+    print("NJM CHECK FLAT OFF STEP2 BG MODEL FOR 4096")
+
     obsset_off = obsset.get_subset("OFF")
     flat_off_hdu = obsset_off.load_fits_sci_hdu(DESCS["FLAT_OFF"])
     flat_off = flat_off_hdu.data
     helper = get_obsset_helper(obsset)
     destripe_mask = helper.get("destripe_mask")
 
-    bg_model = dh.model_bg(flat_off, destripe_mask)
+    bg_model = dh.model_bg(flat_off, destripe_mask, nx=obsset.detector.nx)
     header = flat_off_hdu.header.copy()
     header["NCOMBINE"] = len(obsset.obsids)
     flat_off_bg_hdul = HDUList([PrimaryHDU(data=bg_model,
@@ -139,7 +138,8 @@ def obsset_combine_flat_off_step2(obsset):
 
     final_dark = dh.make_dark_with_bg(data_list,
                                       bg_model,
-                                      destripe_mask)
+                                      destripe_mask,
+                                      expt=obsset.expt.lower())
 
     # flat_off_hdul = obsset_off.get_hdul_to_write(([], final_dark))
     flat_off_hdu.data = final_dark
@@ -208,7 +208,7 @@ def combine_flat_on(obsset):
 
     # data_list1 = [dh.sub_p64_from_guard(d) for d in data_list]
 
-    # flat_on = stsci_median(data_list1)
+    # flat_on = image_median(data_list1)
     # flat_on = dh.make_flaton(data_list)
     cube = make_initial_flat_on(data_list, expt=obsset.expt)
     flat_on = image_median(cube)
@@ -310,6 +310,8 @@ def make_deadpix_mask(obsset,  # helper, band, obsids,
         deadpix_mask_old = f[1].data.astype(bool)
 
     # main routine
+    print("SETTING DEADPIX_MASK_OLD TO NONE")
+    deadpix_mask_old = None
     r = _make_deadpix_mask(flat_on, flat_std, hotpix_mask,
                            deadpix_mask_old,
                            deadpix_thresh=deadpix_thresh,
@@ -489,7 +491,8 @@ def make_bias_mask(obsset):
     orders = list(range(1, len(bottomup_solutions)+1))
 
     from .apertures import Apertures
-    ap = Apertures(orders, bottomup_solutions, domain_list=domain_list)
+    ap = Apertures(orders, bottomup_solutions, domain_list=domain_list, nx=obsset.detector.nx,
+                   ny=obsset.detector.ny)
 
     order_map2 = ap.make_order_map(mask_top_bottom=True)
 

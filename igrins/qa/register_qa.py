@@ -10,7 +10,7 @@ def produce_qa(obsset, outtype="pdf"):
 
     order_flat_json = obsset.load("order_flat_json")
     
-    fig_list = check_order_flat(order_flat_json)
+    fig_list = check_order_flat(order_flat_json, nx=obsset.detector.nx)
 
     from igrins import DESCS
 
@@ -18,11 +18,9 @@ def produce_qa(obsset, outtype="pdf"):
     obsdate, band = obsset.get_resource_spec()
     groupname = get_zeropadded_groupname(obsset.groupname)
     outroot = "SDC{}_{}_{}_{}".format(band, obsdate, groupname, _outroot)
-    #print("SSS:", section, outroot, outtype)
-    #zzz
     save_figlist(obsset, fig_list, section, outroot, outtype)
 
-def check_order_flat(order_flat_json):
+def check_order_flat(order_flat_json, nx=2048):
 
     from ..procedures.trace_flat import (prepare_order_trace_plot,
                                          check_order_trace1, check_order_trace2)
@@ -47,7 +45,7 @@ def check_order_flat(order_flat_json):
                in zip(s_list, i1i2_list)]
 
     fig_list, ax_list = prepare_order_trace_plot(s_list)
-    x = np.arange(2048)
+    x = np.arange(nx)
     for s, i1i2, ax in zip(mean_order_specs, i1i2_list, ax_list):
         check_order_trace1(ax, x, s, i1i2)
 

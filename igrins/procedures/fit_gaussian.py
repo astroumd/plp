@@ -50,7 +50,15 @@ def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
 
     xx = x[sl]
     yy = s[sl]
+
+    print("NOTE: SHIFTING MINIMUM OF SPECTRA TO ZERO FOR EASIER BOUNDS FOR FITTING. SHOULD I BE DOING THIS?")
+    print("IF BOUNDS FAIL, IS THERE AN ISSUE WITH THE SPECTRA?")
+    print("STARTED DOING THIS BECAUSE FOR AT LEAST ONE LINE, MAXIMUM VALUE WAS <0 WHICH CAUSED BOUNDING ISSUES WITH FITS")
+    ymin = min(yy)
+    yy -= ymin
+
     ymax = max(yy)
+
     #yy = yy / ymax
     dcenters0 = lines - lines[0]
 

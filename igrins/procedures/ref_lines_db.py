@@ -438,8 +438,6 @@ class RefLinesCollection:
             _ = ref_lines.fit(s, x, update_self, ref_sigma=ref_sigma)
             fitted_pixels_list.append(_)
 
-        print("TTT")
-
         return fitted_pixels_list
 
 
