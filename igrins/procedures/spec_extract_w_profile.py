@@ -85,6 +85,7 @@ def extract_spec_using_profile(ap, profile_map,
                                   slitoffset_map=slitoffset_map)
 
     # update variance map
+    variance_map_old = variance_map
     variance_map = get_updated_variance(variance_map, variance_map0, synth_map,
                                         gain)
     # get cosmicray mask
@@ -114,10 +115,14 @@ def extract_spec_using_profile(ap, profile_map,
     # extract spec
 
     # profile_map is not used for shifting.
+    shifted_old = shifted
     shifted = get_xshifted_all(ap, profile_map, variance_map,
                                data_minus_flattened, slitoffset_map,
                                debug=False)
 
+    print("Ignoring attempt to remove cosmic rays")
+    print("REMOVING SECOND CALL TO EXTRACT STELLAR")
+    '''
     _ = ap.extract_stellar_from_shifted(ordermap_bpixed,
                                         shifted.profile_map,
                                         shifted.variance,
@@ -127,6 +132,7 @@ def extract_spec_using_profile(ap, profile_map,
                                         remove_negative=remove_negative)
 
     s_list, v_list = _
+    '''
 
     if extraction_mode == "simple":
 

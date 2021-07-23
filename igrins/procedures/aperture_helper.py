@@ -50,6 +50,7 @@ def get_aperture_from_obsset(obsset, orders=None):
         orders = list(range(len(bottomup_solutions)))
 
     aperture = Apertures(orders, bottomup_solutions,
-                         basename=basename, domain_list=domain_list)
+                         basename=basename, domain_list=domain_list,
+                         nx=obsset.detector.nx, ny=obsset.detector.ny)
 
     return aperture

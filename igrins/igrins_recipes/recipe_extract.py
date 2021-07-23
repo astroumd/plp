@@ -51,11 +51,13 @@ def _get_do_ab_from_recipe_name(obsset):
 
 
 def estimate_slit_profile_stellar(obsset,
-                                  x1=800, x2=2048-800,
+                                  x1=800, x2=None,
                                   do_ab="recipe",
                                   slit_profile_mode="1d"):
 
     do_ab = _get_do_ab_from_recipe_name(obsset)
+    if x2 is None:
+        x2 = obsset.detector.nx - x1
     estimate_slit_profile(obsset,
                           x1=x1, x2=x2,
                           do_ab=do_ab, slit_profile_mode=slit_profile_mode)

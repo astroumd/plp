@@ -195,8 +195,10 @@ def make_combined_images(obsset,
         print("skipped")
         return
 
+    nx = obsset.detector.nx
+
     _make_combined_images(obsset, allow_no_b_frame=allow_no_b_frame,
-                          cache_only=True)
+                          cache_only=True, nx=nx)
 
 
 def subtract_interorder_background(obsset, di=24, min_pixel=40):
@@ -231,7 +233,7 @@ def estimate_slit_profile(obsset,
                           do_ab=True, slit_profile_mode="1d"):
 
     #TODO: Check to see what I need to change for RIMAS
-    #Might need to change x-range of slits
+    #NJM Might need to change x-range of slits (aka increase default value for x1???)
     if x2 is None:
         x2 = obsset.detector.nx - x1
 
@@ -441,6 +443,20 @@ def extract_stellar_spec(obsset, extraction_mode="optimal",
 
     s_list, v_list, cr_mask, aux_images = _
 
+    #NJM REMOVE EVENTUALLY
+    print("SSS:", len(s_list), len(s_list[0]))
+    import matplotlib.pyplot as plt
+    plt.figure("S_LIST")
+    i = 0
+    for s in s_list[4:-4]:
+        plt.plot(s, label=str(i+30))
+        i += 1
+    plt.legend(loc=0, prop={'size': 12})
+
+    plt.figure("AFGGS")
+    plt.imshow(profile_map)
+    plt.show()
+
     if calculate_sn:
         # calculate S/N per resolution
         wvl_solutions = helper.get("wvl_solutions")
@@ -609,6 +625,17 @@ def extract_extended_spec1(obsset, data,
                              debug=False)
 
     s_list, v_list, cr_mask, aux_images = _
+
+    #NJM REMOVE EVENTUALLY
+    print("SSS:", len(s_list), len(s_list[0]))
+    import matplotlib.pyplot as plt
+    plt.figure("s_list")
+    i = 0
+    for s in s_list:
+        plt.plot(s, label=str(i))
+        i += 1
+    plt.legend(loc=0, prop={'size': 12})
+    plt.show()
 
     return s_list, v_list, cr_mask, aux_images
 

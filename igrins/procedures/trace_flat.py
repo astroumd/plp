@@ -643,7 +643,7 @@ def get_smoothed_order_spec(s):
     return s0
 
 
-def get_order_boundary_indices(s1, s0=None):
+def get_order_boundary_indices(s1, s0=None, nx=2048):
     # x = np.arange(len(s))
 
     # select finite number only. This may happen when orders go out of
@@ -661,7 +661,7 @@ def get_order_boundary_indices(s1, s0=None):
 
     k1, k2 = nonzero_indices[[0, -1]]
     k1 = max(k1, 4)
-    k2 = min(k2, 2047-4)
+    k2 = min(k2, nx-5) #2047-4
     s = s1[k1:k2+1]
 
     if s0 is None:
