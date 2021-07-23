@@ -35,7 +35,8 @@ class ShiftX(object):
 
 
 def get_rectified_2dspec(data, order_map, bottom_up_solutions,
-                         conserve_flux=False, height=0):
+                         conserve_flux=False, height=0,
+                         domain=None):
 
     # sl = slice(0, 2048), slice(0, 2048)
     data = data.copy()
@@ -48,13 +49,20 @@ def get_rectified_2dspec(data, order_map, bottom_up_solutions,
 
     from scipy.interpolate import interp1d
 
-    def get_shifted(data, normalize=False, height=0):
+    def get_shifted(data, normalize=False, height=0, domain=None):
 
         acc_data = np.add.accumulate(data, axis=0)
         ny, nx = acc_data.shape
         yy = np.arange(ny)
-        xx = np.arange(0, nx)
-
+        #xx = np.arange(0, nx)
+        if domain is None:
+            domain = [(0, nx-1) for i in range(len(bottom_up_solutions))]
+            nxp = nx
+        else:
+            nxp = 0
+            for d in domain:
+                nxp = max(d[1] - d[0] + 1, nxp)
+                
         # Do not use assume_sorted, it results in incorrect interpolation.
         d0_acc_interp = [interp1d(yy, dd,
                                   bounds_error=False)
@@ -65,7 +73,9 @@ def get_rectified_2dspec(data, order_map, bottom_up_solutions,
         if height == 0:
             max_height = 0
 
-            for c in bottom_up_solutions:
+            for c, d in zip(bottom_up_solutions, domain):
+                #xx = np.arange(d[0], d[1]+1)
+                xx = np.arange(d[0], d[0]+nxp)
                 bottom = Polynomial(c[0][1])(xx)
                 up = Polynomial(c[1][1])(xx)
 
@@ -75,8 +85,10 @@ def get_rectified_2dspec(data, order_map, bottom_up_solutions,
             height = max_height
 
         d_factor = 1./height
-
-        for c in bottom_up_solutions:
+        
+        for c, d in zip(bottom_up_solutions, domain):
+            #xx = np.arange(d[0], d[1]+1)
+            xx = np.arange(d[0], d[0]+nxp)
             bottom = Polynomial(c[0][1])(xx)
             up = Polynomial(c[1][1])(xx)
             dh = (up - bottom) * d_factor  # * 0.02
@@ -100,7 +112,6 @@ def get_rectified_2dspec(data, order_map, bottom_up_solutions,
                        for (y1, y2) in bottom_up]
             d0_acc_shft = np.array([intp(yy) for yy, intp
                                     in zip(yy_list, d0_acc_interp)]).T
-
             # d0_shft = np.empty_like(d0_acc_shft)
             d0_shft = d0_acc_shft[1:, :]-d0_acc_shft[:-1, :]
             if normalize:
@@ -109,8 +120,8 @@ def get_rectified_2dspec(data, order_map, bottom_up_solutions,
 
         return d0_shft_list
 
-    d0_shft_list = get_shifted(data, height=height)
-    msk_shft_list = get_shifted(msk, normalize=conserve_flux, height=height)
+    d0_shft_list = get_shifted(data, height=height, domain=domain)
+    msk_shft_list = get_shifted(msk, normalize=conserve_flux, height=height, domain=domain)
 
     return d0_shft_list, msk_shft_list
 

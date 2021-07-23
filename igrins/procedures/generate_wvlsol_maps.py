@@ -65,6 +65,12 @@ def make_slitoffsetmap(obsset):
     hdul = obsset.get_hdul_to_write(([], offset_map))
     obsset.store("slitoffset_fits", hdul)
 
+    #NJM REMOVE
+    import matplotlib.pyplot as plt
+    plt.figure("Offset Slice")
+    plt.plot(offset_map[:, 2000])
+    plt.show()
+
 
 def make_wavelength_map(obsset):
 
