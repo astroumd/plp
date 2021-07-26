@@ -22,11 +22,16 @@ def _plot_source_spec(fig, tgt, objname=""):
     ax1a = fig.add_subplot(211)
     ax1b = fig.add_subplot(212, sharex=ax1a)
 
-    for wvl, s, sn in zip(tgt.um,
-                          tgt.spec, tgt.sn):
+    for wvl, s, sn, dn in zip(tgt.um,
+                              tgt.spec, tgt.sn, tgt.domain):
         #s[s<0] = np.nan
         #sn[sn<0] = np.nan
 
+        npts = dn[1] - dn[0] + 1
+        wvl = wvl[dn[0]:dn[1]+1]
+        s = s[:npts]
+        sn = sn[:npts]
+        
         ax1a.plot(wvl, s)
         ax1b.plot(wvl, sn)
 
@@ -40,9 +45,15 @@ def _plot_source_spec(fig, tgt, objname=""):
 def get_tgt_spec_cor(obsset, tgt, a0v, threshold_a0v, multiply_model_a0v):
     tgt_spec_cor = []
     #for s, t in zip(s_list, telluric_cor):
-    for s, t, t2 in zip(tgt.spec,
-                        a0v.spec,
-                        a0v.flattened):
+    for s, t, t2, dn in zip(tgt.spec,
+                            a0v.spec,
+                            a0v.flattened,
+                            tgt.domain):
+
+        npts = dn[1] - dn[0] + 1
+        s = s[:npts]
+        t = t[:npts]
+        t2 = t2[:npts]
 
         st = s/t
         msk = np.isfinite(t)
@@ -116,9 +127,15 @@ def _plot_div_a0v_spec(fig, tgt, obsset, a0v="GROUP2", a0v_obsid=None,
 
     #from ..libs.stddev_filter import window_stdev
 
-    for wvl, s, t in zip(tgt.um,
-                         tgt_spec_cor,
-                         a0v.flattened):
+    for wvl, s, t, dn in zip(tgt.um,
+                             tgt_spec_cor,
+                             a0v.flattened,
+                             tgt.domain):
+
+        npts = dn[1] - dn[0] + 1
+        wvl = wvl[dn[0]:dn[1]+1]
+        s = s[:npts]
+        t = t[:npts]
 
         ax2a.plot(wvl, t, "0.8", zorder=0.5)
         ax2b.plot(wvl, s, zorder=0.5)
@@ -204,7 +221,7 @@ def _save_to_html(config, groupname, tgt, utdate, band, orders_w_solutions,
         objroot = get_zeropadded_groupname(groupname)
         html_save(utdate, dirname, objroot, band,
                   orders_w_solutions, tgt.um,
-                  tgt.spec, tgt.sn, i1i2_list)
+                  tgt.spec, tgt.sn, i1i2_list, tgt.domain)
 
         if a0v is not None:
             objroot = get_zeropadded_groupname(groupname)+"A0V"
@@ -212,6 +229,7 @@ def _save_to_html(config, groupname, tgt, utdate, band, orders_w_solutions,
             html_save(utdate, dirname, objroot, band,
                       orders_w_solutions, tgt.um,
                       a0v.flattened, tgt_spec_cor, i1i2_list,
+                      tgt.domain,
                       spec_js_name="jj_a0v.js")
 
 
@@ -309,21 +327,27 @@ def plot_spec(obsset, interactive=False,
 
 def html_save(utdate, dirname, objroot, band,
               orders_w_solutions, wvl_solutions,
-              tgt_spec, tgt_sn, i1i2_list,
+              tgt_spec, tgt_sn, i1i2_list, tgt_dn,
               spec_js_name="jj.js"):
 
         wvl_list_html, s_list_html, sn_list_html = [], [], []
 
-        for wvl, s, sn, (i1, i2) in zip(wvl_solutions,
-                                        tgt_spec, tgt_sn,
-                                        i1i2_list):
+        print("REPLACING I1I2 LIST WITH CALCULATED DOMAIN")
+        print("BAD ORDERS ARE NOT DROPPED")
+        for wvl, s, sn, (i1, i2), dn in zip(wvl_solutions,
+                                            tgt_spec, tgt_sn,
+                                            i1i2_list, tgt_dn):
 
-            sl = slice(i1, i2)
-
-            wvl_list_html.append(wvl[sl])
-            s_list_html.append(s[sl])
-            sn_list_html.append(sn[sl])
-
+            #sl = slice(i1, i2)
+            #
+            #wvl_list_html.append(wvl[sl])
+            #s_list_html.append(s[sl])
+            #sn_list_html.append(sn[sl])
+           
+            npts = dn[1] - dn[0] + 1
+            wvl_list_html.append(wvl[dn[0]:dn[1]+1])
+            s_list_html.append(s[:npts])
+            sn_list_html.append(sn[:npts])
 
         save_for_html(dirname, objroot, band,
                       orders_w_solutions,

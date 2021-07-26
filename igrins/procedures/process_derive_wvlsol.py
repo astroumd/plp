@@ -2,10 +2,10 @@ import pandas as pd
 import numpy as np
 
 
-def _convert2wvlsol(p, orders_w_solutions):
+def _convert2wvlsol(p, orders_w_solutions, nx=2048):
 
     # derive wavelengths.
-    xx = np.arange(2048)
+    xx = np.arange(nx)
     wvl_sol = []
     for o in orders_w_solutions:
         oo = np.empty_like(xx)
@@ -97,10 +97,10 @@ def derive_wvlsol(obsset):
     helper = ResourceHelper(obsset)
     orders = helper.get("orders")
 
-    wvl_sol = _convert2wvlsol(p, orders)
+    wvl_sol = _convert2wvlsol(p, orders, nx=obsset.detector.nx)
     d = dict(orders=orders,
              wvl_sol=wvl_sol)
-
+    
     obsset.store("SKY_WVLSOL_JSON", d)
 
     fit_results["orders"] = orders

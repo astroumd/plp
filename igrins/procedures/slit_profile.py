@@ -77,7 +77,7 @@ def extract_slit_profile(ap, ordermap_bpixed, slitpos_map,
 
 def make_slitprofile_map(ap, profile,
                          ordermap, slitpos_map,
-                         frac_slit=None):
+                         frac_slit=None, fact=1):
 
     # helper = ResourceHelper(obsset)
 
@@ -89,6 +89,11 @@ def make_slitprofile_map(ap, profile,
     profile_map = ap.make_profile_map(ordermap,
                                       slitpos_map,
                                       profile)
+    
+    #print("CALLING MAKE_PROFILE_MAP2")
+    #profile_map = ap.make_profile_map2(ordermap,
+    #                                   slitpos_map,
+    #                                   profile, fact=fact)
 
     # select portion of the slit to extract
 
@@ -156,7 +161,7 @@ def estimate_slit_profile_1d(obsset,
     profile = _get_profile_func_from_dict(slit_profile_dict)
     profile_map = make_slitprofile_map(ap, profile,
                                        ordermap, slitpos_map,
-                                       frac_slit=None)
+                                       frac_slit=None, fact=2)
 
     hdul = obsset.get_hdul_to_write(([], profile_map))
     obsset.store("slitprofile_fits", hdul, cache_only=True)
