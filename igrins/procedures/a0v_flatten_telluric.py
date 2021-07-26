@@ -27,9 +27,17 @@ class TelluricTransmission(object):
         assert fn.endswith("npy")
 
         self._data = np.load(fn)
+        
+        print("TELLURIC TRANSMISSION HAS BEEN SET TO 1")
+        self._data[:, 1] = 1.0
+
         #self.dd = np.genfromtxt(fn)
-        self.trans = self._data[:,1]
-        self.wvl = air2vac(self._data[:,0]/1.e3)
+        self.trans = self._data[:, 1]
+        self.wvl = air2vac(self._data[:, 0]/1.e3)
+
+        print("MODIFYING EDGES OF WAVELENGTH SO INTERPOLATION WORKS")
+        self.wvl[0] = -0.5
+        self.wvl[-1] = 3.2
 
     def get_telluric_trans(self, wvl1, wvl2):
         i1, i2 = np.searchsorted(self.wvl, [wvl1, wvl2])
@@ -262,7 +270,7 @@ class SpecFlattener(object):
 
         ratio[:4] = np.nan
         ratio[-4:] = np.nan
-
+        
         ratio_msk = np.ma.array(ratio, mask=msk_i).filled(np.nan)
 
         try:
@@ -295,7 +303,7 @@ class SpecFlattener(object):
         f12 = np.array(lll)
 
         fitted_continuum = f12*s1m*s_a0v
-
+        
         return msk_i, msk_sv, fitted_continuum
 
     def plot_fitted(self, w1, s1_orig, s_a0v, tt,
@@ -530,7 +538,7 @@ def plot_flattend_a0v(spec_flattener, w, s_orig, of_list, data_list,
 
 def get_a0v_flattened(a0v_interp1d, tel_interp1d_f,
                       wvl, s_list, orderflat_response,
-                      figout=None):
+                      domain_list, figout=None):
 
     # a0v_interp1d = self.get_a0v_interp1d(extractor)
     # tel_interp1d_f = self.get_tel_interp1d_f(extractor, wvl)
@@ -549,13 +557,23 @@ def get_a0v_flattened(a0v_interp1d, tel_interp1d_f,
     ccc = []
     _interim_result = []
 
-
-    for w1, s1_orig, of in zip(wvl, s_list,
-                               orderflat_response):
+    npts_orig = len(s_list[0])
+    
+    for w1, s1_orig, of, domain in zip(wvl, s_list,
+                                       orderflat_response,
+                                       domain_list):
 
         of = np.array(of).astype("d")
+
+        #Reduce the size of the arrays to the correct size
+        npts = domain[1] - domain[0] + 1
+        w1 = w1[domain[0]:domain[1]+1]
+        of = of[domain[0]:domain[1]+1]
+        s1_orig = s1_orig[:npts]
+
         # print("(%5.3f~%5.3f)" % (w1[0], w1[-1]), end="")
         s1_a0v = spec_flattener.get_s_a0v(w1, dw_opt)
+
         tt1 = spec_flattener.get_tel_trans(w1, dw_opt, gw_opt)
 
         try:
@@ -570,11 +588,25 @@ def get_a0v_flattened(a0v_interp1d, tel_interp1d_f,
             _interim_result.append((w1, s1_orig, of, s1_a0v, tt1, _))
             msk_i, msk_sv, fitted_continuum = _
             ccc.append((fitted_continuum, msk_sv, s1_a0v, tt1))
+  
+    #For some reason this is making a 1D array with Object dtype and not a 2D array
+    #continuum_array = np.array([np.copy(c).resize(npts_orig) for c, m, a, t in ccc])
+    #mask_array = np.array([np.copy(m).resize(npts_orig) for c, m, a, t in ccc])
+    #a0v_array = np.array([np.copy(a).resize(npts_orig) for c, m, a, t in ccc])
+    #teltrans_array = np.array([np.copy(t).resize(npts_orig) for c, m, a, t in ccc])
 
-    continuum_array = np.array([c for c, m, a, t in ccc])
-    mask_array = np.array([m for c, m, a, t in ccc])
-    a0v_array = np.array([a for c, m, a, t in ccc])
-    teltrans_array = np.array([t for c, m, a, t in ccc])
+    norders = len(ccc)
+    continuum_array = np.zeros([norders, npts_orig])
+    mask_array = np.zeros([norders, npts_orig])
+    a0v_array = np.zeros([norders, npts_orig])
+    teltrans_array = np.zeros([norders, npts_orig])
+    for i, c_test in enumerate(ccc):
+        c, m, a, t = c_test
+        npts = len(c)
+        continuum_array[i, :npts] = c
+        mask_array[i, :npts] = m
+        a0v_array[i, :npts] = a
+        teltrans_array[i, :npts] = t
 
     flattened_s = s_list/continuum_array
     # if self.fill_nan is not None:
@@ -586,6 +618,7 @@ def get_a0v_flattened(a0v_interp1d, tel_interp1d_f,
                  ("mask", mask_array),
                  ("a0v_norm", a0v_array),
                  ("model_teltrans", teltrans_array),
+                 ("domain_list", np.array(domain_list)),
                  ]
 
 

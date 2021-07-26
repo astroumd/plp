@@ -141,6 +141,13 @@ class ResourceHelper(object):
 
         return ap
 
+    @resource("domain_list")
+    def get_domain_list(self, obsset):
+        bottom_up_solutions_ = obsset.load_resource_for("aperture_definition")
+        domain_list = bottom_up_solutions_["domain"]
+
+        return domain_list
+
 
 # if 0:
 #     rm = ResourceManager()

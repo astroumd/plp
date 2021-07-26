@@ -30,6 +30,26 @@ class OnedSpecHelper(object):
         return spec
 
     @lazyprop
+    def domain(self):
+        header = self._spec_hdu_list[0].header
+
+        domain = []
+        i = 0
+        continue_loop = True
+        while continue_loop:
+            str_lo = str(i) + '_LO'
+            str_hi = str(i) + '_HI'
+            
+            try:
+                domain0 = [header[str_lo], header[str_hi]]
+                domain.append(domain0)
+                i += 1
+            except:
+                continue_loop = False
+        
+        return domain
+
+    @lazyprop
     def um(self):
         # um = list(self._spec_hdu_list[1].data)
         um = self._spec_hdu_list[1].data

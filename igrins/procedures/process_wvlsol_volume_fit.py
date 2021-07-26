@@ -104,6 +104,30 @@ def volume_fit(obsset):
 
     poly, params = _volume_poly_fit(points, scalar, orders, names)
 
+    #NJM REMOVE
+    '''
+    values_test = {}
+    values_test['pixel'] = np.array([965.096049, 965.096049, 965.096049, 965.096049])
+    values_test['order'] = np.array([32.0, 32.0, 32.0, 32.0])
+    values_test['slit'] = np.array([0.2, 0.4, -0.2, -0.4])
+    off1 = poly.multiply(values_test, params[0])
+    print("FIT")
+    print("TTT0:", values_test['pixel'])
+    print("UUU0:", values_test['order'])
+    print("VVV0:", values_test['slit'])
+    print("PREF1:", off1)
+    print("OFFSET0:", off1*values_test['slit'])
+    print("INPUT")
+    print("TTT:", np.array(points['pixel'])[20:24])
+    print("UUU:", np.array(points['order'])[20:24])
+    print("VVV:", np.array(points['slit'])[20:24])
+    print("SCALAR:", np.array(scalar)[20:24])
+    print("OFFSET:", np.array(scalar)[20:24]*np.array(points['slit'])[20:24])
+    zzz
+    from IPython import embed; embed()
+    zzz
+    '''
+
     if 0:
         #values = dict(zip(names, [pixels, orders, slit_pos]))
         offsets_fitted = poly.multiply(points0, params[0])
