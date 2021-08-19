@@ -16,8 +16,23 @@ from igrins.procedures.find_peak import find_peaks
 from igrins.procedures.process_derive_wvlsol import fit_wvlsol
 
 
-def gen_oned_spec(order_map_file, twod_spectrum_file, output_file, aggregation_axis=0, aggregation=np.nanmedian):
+def gen_oned_spec(
+    order_map_file, twod_spectrum_file, output_file, aggregation_axis=0, aggregation=np.nanmedian
+):
+    """
+    Creates a one dimensional spectrum using
+    Parameters
+    ----------
+    order_map_file :
+    twod_spectrum_file :
+    output_file :
+    aggregation_axis :
+    aggregation :
 
+    Returns
+    -------
+
+    """
     order_map_image = ExistingImage(order_map_file, fits_image_hdu=0).image
     spectrum_image = ExistingImage(twod_spectrum_file, fits_image_hdu=0).image
     gen_oned_spec_image(
