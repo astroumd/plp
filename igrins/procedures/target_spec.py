@@ -195,8 +195,10 @@ def make_combined_images(obsset,
         print("skipped")
         return
 
+    nx = obsset.detector.nx
+
     _make_combined_images(obsset, allow_no_b_frame=allow_no_b_frame,
-                          cache_only=True)
+                          cache_only=True, nx=nx)
 
 
 def subtract_interorder_background(obsset, di=24, min_pixel=40):
@@ -231,7 +233,7 @@ def estimate_slit_profile(obsset,
                           do_ab=True, slit_profile_mode="1d"):
 
     #TODO: Check to see what I need to change for RIMAS
-    #Might need to change x-range of slits
+    #NJM Might need to change x-range of slits (aka increase default value for x1???)
     if x2 is None:
         x2 = obsset.detector.nx - x1
 
@@ -270,40 +272,78 @@ def get_wvl_header_data(obsset, wavelength_increasing_order=False):
     return header.copy(), hdu.data, convert_data
 
 
-def store_1dspec(obsset, v_list, s_list, sn_list=None):
+def store_1dspec(obsset, v_list, s_list, sn_list=None, domain_list=None):
 
     basename_postfix = obsset.basename_postfix
 
     wvl_header, wvl_data, convert_data = get_wvl_header_data(obsset)
 
-    d = np.array(v_list)
+    def add_domain_header(hdul, domain_list):
+        for i, domain in enumerate(domain_list):
+            str_lo = str(i) + '_LO'
+            str_hi = str(i) + '_HI'
+            hdul[0].header[str_lo] = domain[0]
+            hdul[0].header[str_hi] = domain[1]
+
+        return hdul
+
+    if domain_list is not None:
+        #spectra are different sizes for each order. Must pad
+        #spectra so they are all the same size
+        max_val = 0
+        for s in s_list:
+            max_val = max(max_val, len(s))
+        d = np.zeros([len(v_list), max_val])
+        for i, v in enumerate(v_list):
+            n = len(v)
+            d[i, :n] = v
+    else:
+        d = np.array(v_list)
     v_data = convert_data(d.astype("float32"))
 
     hdul = obsset.get_hdul_to_write(([], v_data))
     wvl_header.update(hdul[0].header)
     hdul[0].header = wvl_header
+    if domain_list is not None:
+        hdul = add_domain_header(hdul, domain_list)
     hdul[0].verify(option="silentfix")
 
     obsset.store("VARIANCE_FITS", hdul,
                  postfix=basename_postfix)
 
     if sn_list is not None:
-        d = np.array(sn_list)
+        if domain_list is not None:
+            d = np.zeros([len(sn_list), max_val])
+            for i, sn in enumerate(sn_list):
+                n = len(sn)
+                d[i, :n] = sn
+        else:
+            d = np.array(sn_list)
         sn_data = convert_data(d.astype("float32"))
 
         hdul = obsset.get_hdul_to_write(([], sn_data))
         wvl_header.update(hdul[0].header)
         hdul[0].header = wvl_header
+        if domain_list is not None:
+            hdul = add_domain_header(hdul, domain_list)
         obsset.store("SN_FITS", hdul,
                      postfix=basename_postfix)
 
-    d = np.array(s_list)
+    if domain_list is not None:
+        d = np.zeros([len(s_list), max_val])
+        for i, s in enumerate(s_list):
+            n = len(s)
+            d[i, :n] = s
+    else:
+        d = np.array(s_list)
     s_data = convert_data(d.astype("float32"))
 
     hdul = obsset.get_hdul_to_write(([], s_data),
                                     ([], convert_data(wvl_data)))
     wvl_header.update(hdul[0].header)
     hdul[0].header = wvl_header
+    if domain_list is not None:
+        hdul = add_domain_header(hdul, domain_list)
     hdul[0].verify(option="silentfix")
 
     obsset.store("SPEC_FITS", hdul,
@@ -351,6 +391,7 @@ def store_2dspec(obsset,
 
     bottom_up_solutions_ = obsset.load_resource_for("aperture_definition")
     bottom_up_solutions = bottom_up_solutions_["bottom_up_solutions"]
+    domain_list = bottom_up_solutions_["domain"]
 
     helper = ResourceHelper(obsset)
     ordermap_bpixed = helper.get("ordermap_bpixed")
@@ -360,7 +401,8 @@ def store_2dspec(obsset,
                              ordermap_bpixed,
                              bottom_up_solutions,
                              conserve_flux=conserve_flux,
-                             height=height_2dspec)
+                             height=height_2dspec,
+                             domain=domain_list)
     d0_shft_list, msk_shft_list = _
 
     with np.errstate(invalid="ignore"):
@@ -378,7 +420,8 @@ def store_2dspec(obsset,
                              ordermap_bpixed,
                              bottom_up_solutions,
                              conserve_flux=conserve_flux,
-                             height=height_2dspec)
+                             height=height_2dspec,
+                             domain=domain_list)
     d0_shft_list, msk_shft_list = _
 
     with np.errstate(invalid="ignore"):
@@ -441,14 +484,46 @@ def extract_stellar_spec(obsset, extraction_mode="optimal",
 
     s_list, v_list, cr_mask, aux_images = _
 
+    #NJM REMOVE EVENTUALLY
+    print("NJM COMMENTED OUT AFGGS PLOT")
+    '''
+    print("SSS:", len(s_list), len(s_list[0]))
+    import matplotlib.pyplot as plt
+    plt.figure("S_LIST")
+    i = 0
+    for s in s_list[4:-4]:
+        plt.plot(s, label=str(i+30))
+        i += 1
+    plt.legend(loc=0, prop={'size': 12})
+
+    plt.figure("AFGGS")
+    plt.imshow(profile_map)
+    plt.show()
+    '''
+
     if calculate_sn:
         # calculate S/N per resolution
         wvl_solutions = helper.get("wvl_solutions")
 
-        sn_list = []
-        for wvl, s, v in zip(wvl_solutions,
-                             s_list, v_list):
+        print("NJM SORTING DOMAIN_LIST THOUGH IT IS PROBABLY ALREADY SORTED")
+        print("WHEN CONVERTING FROM DICTIONARY")
+        key_list = []
+        domain_list = []
+        for key in ap.domain_dict:
+            key_list.append(key)
+            domain_list.append(ap.domain_dict[key])
+        idx_sort = np.argsort(key_list)
+        domain_list_sort = []
+        for idx in idx_sort:
+            domain_list_sort.append(domain_list[idx])
+        #domain_list_sort = domain_list[idx_sort]
 
+        sn_list = []
+        for wvl, s, v, domain in zip(wvl_solutions,
+                                     s_list, v_list,
+                                     domain_list_sort):
+
+            wvl = wvl[domain[0]:domain[1]+1]
             dw = np.gradient(wvl)
             pixel_per_res_element = (wvl/40000.)/dw
             # print pixel_per_res_element[1024]
@@ -461,7 +536,7 @@ def extract_stellar_spec(obsset, extraction_mode="optimal",
     else:
         sn_list = None
 
-    store_1dspec(obsset, v_list, s_list, sn_list=sn_list)
+    store_1dspec(obsset, v_list, s_list, sn_list=sn_list, domain_list=domain_list_sort)
 
     hdul = obsset.get_hdul_to_write(([], data_minus),
                                     ([], aux_images["synth_map"]))
@@ -609,6 +684,17 @@ def extract_extended_spec1(obsset, data,
                              debug=False)
 
     s_list, v_list, cr_mask, aux_images = _
+
+    #NJM REMOVE EVENTUALLY
+    print("SSS:", len(s_list), len(s_list[0]))
+    import matplotlib.pyplot as plt
+    plt.figure("s_list")
+    i = 0
+    for s in s_list:
+        plt.plot(s, label=str(i))
+        i += 1
+    plt.legend(loc=0, prop={'size': 12})
+    plt.show()
 
     return s_list, v_list, cr_mask, aux_images
 

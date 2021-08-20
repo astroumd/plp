@@ -13,13 +13,15 @@ def _gauss0_w_dcenters(xx, params, dcenters):
         for d_center in dcenters:
             y_models.append(np.exp(-(((xx - (center + d_center))/sigma)**2*0.5)))
 
-    return height*np.array(y_models).sum(axis=0) + background
+    ncenters = len(dcenters)
+
+    return height*np.array(y_models).sum(axis=0)/ncenters + background
 
 
 def _gauss_w_dcenters(xx, yy, params, dcenters):
     return np.sum((yy - _gauss0_w_dcenters(xx, params, dcenters))**2)
 
-
+x00 = None
 def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
                         do_plot=False):
     """
@@ -48,7 +50,15 @@ def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
 
     xx = x[sl]
     yy = s[sl]
+
+    #print("NOTE: SHIFTING MINIMUM OF SPECTRA TO ZERO FOR EASIER BOUNDS FOR FITTING. SHOULD I STILL BE DOING THIS?")
+    #print("I NEEDED TO DO IT BEFORE BECAUSE I WAS USING BAD BG EXPOSURE TIME WHEN REMOVING BG")
+    #print("IF BOUNDS FAIL, IS THERE AN ISSUE WITH THE SPECTRA?")
+    ymin = min(yy)
+    yy -= ymin
+
     ymax = max(yy)
+
     #yy = yy / ymax
     dcenters0 = lines - lines[0]
 
@@ -78,8 +88,43 @@ def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
     from scipy.optimize import fmin_tnc
     sol_ = fmin_tnc(_gauss, params0,
                     bounds=list(zip(params_min, params_max)),
-                    approx_grad=True, disp=0,
-                    )
+                    approx_grad=True, disp=0)
+
+    #TODO: NJM REMOVE
+    #if np.abs(lines[0] - 967.12534935) < 0.01:
+    if np.abs(lines[0] - 2384.16) < 0.01:
+        global x00
+        params_opt = sol_[0]
+        model = _gauss0_w_dcenters(xx, params_opt, dcenters0)
+        model0 = _gauss0_w_dcenters(xx, params0, dcenters0)
+        import matplotlib.pyplot as plt
+        #plt.figure()
+        plt.plot(xx, yy, 'b', label='Input')
+        plt.plot(xx, model, 'r', label='Best Fit')
+        plt.plot(xx, model0, 'g', label='Init Guess')
+        if x00 is None:
+            x00 = params_opt[0]
+        plt.plot([x00, x00], [0, params_opt[2]], 'k')
+        plt.legend(loc=0, prop={'size':  12})
+        #plt.plot(xx, model1, 'm')
+        print("LINES IN FIT_GAUSSIAN:", lines, params_opt[0], params_opt[0]-x00)
+
+        #plt.figure()
+        #plt.plot(x, s)
+        #plt.show()
+
+    #TODO: NJM REMOVE
+    '''
+    if len(lines) == 2:
+        if np.abs(lines[0] - 1107.53680408) < 0.001 and np.abs(lines[1] - 1107.61295184) < 0.001:
+            params_opt = sol_[0]
+            print("params_opt:", params_opt)
+            print("dcenter0:", dcenters0)
+            #yy_opt = _gauss0_w_dcenters(xx, params_opt, dcenters0)
+            #print("ABC:", np.shape(xx), np.shape(yy_opt))
+            #plt.plot(xx, yy_opt, 'r')
+            plt.show()
+    '''
 
     if do_plot:
         import matplotlib.pyplot as plt

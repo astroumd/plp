@@ -48,6 +48,8 @@ class A0VSpec(object):
 
         self.wvl = wvl
 
+        print("WVLINPUT:", np.min(wvl), np.max(wvl))
+
         self.flux = flux
         self.cont = cont
 
@@ -81,6 +83,8 @@ class A0VSpec(object):
                        flux_masked,
                        bounds_error=False
                        )
+
+        print("WVLA0V:", wvl1, wvl2)
 
         return spl
 

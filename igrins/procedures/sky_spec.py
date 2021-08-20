@@ -185,7 +185,11 @@ def _sky_subtract_bg(obsset, sky_image,
         bg_hdu = obsset.load_resource_sci_hdu_for(("flat_off",
                                                    DESCS["FLAT_OFF_BG"]))
         bg = bg_hdu.data
-        bg_exptime = float(bg_hdu.header["exptime"])
+        #bg_exptime = float(bg_hdu.header["exptime"])
+        #print("SETTING bg_exptime to 30 for RIMAS simulations")
+        #bg_exptime = 30.0
+        print("NJM SETTING bg_exptime to sky_exptime for RIMAS simulations")
+        bg_exptime = sky_exptime
     elif bg_subtraction_mode == "no":
         bg = np.zeros_like(sky_image)
         bg_exptime = 1.
@@ -208,7 +212,9 @@ def _sky_subtract_bg(obsset, sky_image,
         rp.PatternRowWiseBias
     ]
 
-    destriped_sky = rp.apply(sky_image2, pipe, mask=destripe_mask)
+    print("NJM REMOVING SKY IMAGE DESTRIPING")
+    #destriped_sky = rp.apply(sky_image2, pipe, mask=destripe_mask)
+    destriped_sky = sky_image2
 
     return destriped_sky
 
@@ -280,6 +286,11 @@ def extract_spectra_multi(obsset):
     ap = get_simple_aperture_from_obsset(obsset, orders=orders)
 
     def make_hdu(s_up, s_down, data):
+        #data_out = np.array(data)
+        #save_domain = data_out.ndim == 1
+        len_data = [len(tmp) for tmp in data]
+        save_domain = len(np.unique(len_data)) != 1
+
         h = [("NSLIT", n_slice_one_direction*2 + 1),
              ("FSLIT_DN", s_down),
              ("FSLIT_UP", s_up),
@@ -288,21 +299,43 @@ def extract_spectra_multi(obsset):
              ("B_ORDER", ap.orders[0]),
              ("E_ORDER", ap.orders[-1]), ]
 
-        return (h, np.array(data))
+        if save_domain:
+            lens = []
+            for s in data:
+                lens.append(len(s))
+            maxlen = np.max(lens)
+            data2 = []
+            for s, l in zip(data, lens):
+                s2 = np.zeros(maxlen)
+                s2[:l] = s
+                data2.append(s2)
+            data_out = np.array(data2)
+
+            domain_dict = ap.domain_dict
+            for key in domain_dict:
+                domain_lo, domain_hi = domain_dict[key]
+                str_key_lo = str(key) + '_LO'
+                str_key_hi = str(key) + '_HI'
+                h.append((str_key_lo, domain_lo))
+                h.append((str_key_hi, domain_hi))
+        else:
+            data_out = np.array(data)
+
+        return (h, data_out)
 
     hdu_list = []
 
-    s_center = ap.extract_spectra_v2(data,
+    s_center = ap.extract_spectra_v3(data,
                                      slice_center[0], slice_center[1])
 
     hdu_list.append(make_hdu(slice_center[0], slice_center[1], s_center))
 
     for s1, s2 in slice_up:
-        s = ap.extract_spectra_v2(data, s1, s2)
+        s = ap.extract_spectra_v3(data, s1, s2)
         hdu_list.append(make_hdu(s1, s2, s))
 
     for s1, s2 in slice_down:
-        s = ap.extract_spectra_v2(data, s1, s2)
+        s = ap.extract_spectra_v3(data, s1, s2)
         hdu_list.append(make_hdu(s1, s2, s))
 
     hdul = obsset.get_hdul_to_write(*hdu_list)

@@ -20,7 +20,10 @@ def publish_html(obsset):
     dirname = config.get_value("HTML_PATH", utdate)
 
     env = Environment(loader=FileSystemLoader('jinja_templates'))
-    template = env.get_template('index.html')
+    if obsset.expt.lower() == 'rimas':
+        template = env.get_template('index_rimas.html')
+    else:
+        template = env.get_template('index.html')
 
     #sources = make_html(utdate, dirname)
 
@@ -57,6 +60,8 @@ def publish_html(obsset):
 
     p = "igrins_spec_%sA0V_%s.html" % (objroot, band)
     if os.path.exists(os.path.join(dirname, p)):
+        print("DIRNAME, P:", dirname, p)
+        print("url_%s_A0V" % band)
         source["url_%s_A0V" % band] = p
             
 

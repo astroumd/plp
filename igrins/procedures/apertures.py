@@ -59,6 +59,9 @@ class Apertures(object):
         self.yi = np.arange(ny)
         self.xi = np.arange(nx)
 
+        self.nx = nx
+        self.ny = ny
+
         self.basename = basename
 
     def __call__(self, order, pixels, frac=0.5):
@@ -77,7 +80,7 @@ class Apertures(object):
             domain = self.domain_dict[order_i]
             pixel_b = np.array(pixel) + domain[0]
             pixel_y = self.apcoeffs[order_i](pixel_b)
-            xy2.extend(zip(pixel, pixel_y))
+            xy2.extend(zip(pixel_b, pixel_y))
 
         if nan_filter is not None:
             xy2 = np.compress(nan_filter, xy2, axis=0)
@@ -121,9 +124,10 @@ class Apertures(object):
 
         return order_map
 
-    def make_slitpos_map(self):
+    def make_slitpos_map(self, fact=None):
 
         xx, yy = self.xi, self.yi
+        print("XX:", xx)
 
         bottom_list = [self.apcoeffs[o](xx, 0.) for o in self.orders]
         top_list = [self.apcoeffs[o](xx, 1.) for o in self.orders]
@@ -133,23 +137,26 @@ class Apertures(object):
             slitpos_map1.fill(np.nan)
             for order, bottom, top in zip(self.orders,
                                           bottom_list, top_list):
+                domain = self.domain_dict[order]
                 m_up = yy > bottom[i1]
                 m_down = yy < top[i1]
-                m_order = m_up & m_down
+                m_left = i1 <= domain[1]
+                m_right = i1 >= domain[0]
+                m_order = m_up & m_down & m_left & m_right
                 slit_pos = (yy[m_order] - bottom[i1])/(top[i1] - bottom[i1])
                 slitpos_map1[m_order] = slit_pos
 
             return slitpos_map1
 
-        order_map = np.hstack([_g(i1).reshape((-1, 1)) for i1 in xx])
+        slitpos_map = np.hstack([_g(i1).reshape((-1, 1)) for i1 in xx])
 
-        return order_map
+        return slitpos_map
 
     def make_order_map_old(self, frac1=0., frac2=1.):
         """
         This one is significantly slower than make_order_map.
         """
-        yy, xx = np.indices((2048, 2048))
+        yy, xx = np.indices((self.ny, self.nx))
         # order_maps = []
         order_map = np.zeros_like(yy)
         for o in self.orders:
@@ -180,7 +187,7 @@ class Apertures(object):
         """
        
         s_list = []
-        nx = len(data)
+        nx = self.nx
         for o in self.orders_to_extract:
             domain = self.domain_dict[o]
             xx = np.arange(domain[0], domain[1]+1)
@@ -196,29 +203,29 @@ class Apertures(object):
                 warnings.filterwarnings('ignore', r'All-NaN slice')
 
                 s = [np.nanmedian(data[down[i]:up[i], xx[i]]) for i in range(len(xx))]
-
             s_list.append(s)
 
         return s_list
 
     def extract_spectra_v2(self, data, f1=0., f2=1.):
 
-        xx = np.arange(2048)
+        nx = self.nx
+        xx = np.arange(nx)
 
         s_list = []
         for o in self.orders_to_extract:
             yy1 = self.apcoeffs[o](xx, frac=f1)
             yy2 = self.apcoeffs[o](xx, frac=f2)
 
-            down = np.clip((yy1+0.5).astype("i"), 0, 2048)
-            up = np.clip((yy2+0.5).astype("i"), 0, 2048)
+            down = np.clip((yy1+0.5).astype("i"), 0, nx)
+            up = np.clip((yy2+0.5).astype("i"), 0, nx)
 
             import warnings
             with warnings.catch_warnings():
                 warnings.filterwarnings('ignore', r'Mean of empty slice')
                 warnings.filterwarnings('ignore', r'All-NaN slice')
 
-                s = [np.nanmedian(data[down[i]:up[i], i]) for i in range(2048)]
+                s = [np.nanmedian(data[down[i]:up[i], i]) for i in range(nx)]
 
             s_list.append(s)
 
@@ -288,7 +295,7 @@ class Apertures(object):
         slices = ni.find_objects(ordermap)
 
         for o in self.orders_to_extract:
-            sl = slices[o-1][0], slice(0, 2048)
+            sl = slices[o-1][0], slice(0, self.nx)
             msk = (ordermap[sl] == o)
 
             profile_map1 = np.ma.array(profile_map[sl],
@@ -333,7 +340,9 @@ class Apertures(object):
         #     hl.append(pyfits.PrimaryHDU())
 
         for o in self.orders_to_extract:
-            sl = slices[o-1][0], slice(0, 2048)
+            domain = self.domain_dict[o]
+            #sl = slices[o-1][0], slice(0, 2048)
+            sl = slices[o-1][0], slice(domain[0], domain[1]+1)
             msk = (ordermap_bpixed[sl] == o) & msk1[sl]
 
             profile_map1 = profile_map[sl].copy()
@@ -391,6 +400,20 @@ class Apertures(object):
 
             s_list.append(s)
             v_list.append(v)
+            
+            if o == 43:
+                import matplotlib.pyplot as plt
+                plt.figure("Order 43")
+                plt.plot(s)
+
+                plt.figure("Sum_Weighted_Spectra1")
+                plt.plot(sum_weighted_spectra1)
+
+                plt.figure("Sum_Weights1")
+                plt.plot(sum_weights1)
+                plt.title('Profile**2 / Variance')
+
+            #import matpl
 
             # if SAVE_PROFILE:
             #     hl.append(pyfits.ImageHDU(np.array([sum_weighted_spectra1,
@@ -420,7 +443,8 @@ class Apertures(object):
             hl.append(pyfits.PrimaryHDU())
 
         for o in self.orders_to_extract:
-            sl = slices[o-1][0], slice(0, 2048)
+            domain = self.domain_dict[o]
+            sl = slices[o-1][0], slice(domain[0], domain[1]+1)
             msk = (ordermap_bpixed[sl] == o) & msk1[sl]
 
             profile_map1 = profile_map[sl].copy()
@@ -567,7 +591,8 @@ class Apertures(object):
         v_list = []
         slices = ni.find_objects(ordermap_bpixed)
         for o in self.orders:
-            sl = slices[o-1][0], slice(0, 2048)
+            domain = self.domain_dict[o]
+            sl = slices[o-1][0], slice(domain[0], domain[1]+1)
             msk = (ordermap_bpixed[sl] == o) & msk1[sl]
 
             profile_map1 = profile_map[sl].copy()
@@ -614,6 +639,135 @@ class Apertures(object):
         return s_list, v_list
 
 
+    def make_profile_map2(self, order_map, slitpos_map, lsf,
+                          slitoffset_map=None, fact=1):
+        """
+        lsf : callable object which takes (o, x, slit_pos)
+
+        o : order (integer)
+        x : detector position in dispersion direction
+        slit_pos : 0..1
+
+        x and slit_pos can be array.
+        """
+
+        ny, nx = slitpos_map.shape
+        ny, nx = fact*ny, fact*nx
+
+        #iy, ix = np.indices(slitpos_map.shape)
+        iy, ix = np.indices((ny, nx))
+
+        if slitoffset_map is not None:
+            ix = ix - slitoffset_map
+
+        profile_map = np.empty((ny, nx), "d")
+        profile_map.fill(np.nan)
+
+        order_map2 = order_map.repeat(fact, axis=0)
+        order_map2 = order_map.repeat(fact, axis=1)
+        order_map = order_map2
+
+        #Generate a new HRES slitpos_map
+        self.make_slitpos_map(fact=2)
+        zzz
+
+        slices = ni.find_objects(order_map)
+        for o in self.orders:
+            domain = self.domain_dict[o]
+            #sl = slices[o-1][0], slice(domain[0], domain[1]+1)
+            msk = (order_map[sl] == o)
+
+            profile1 = np.zeros(profile_map[sl].shape, "d")
+            profile1[msk] = lsf(o, ix[sl][msk], slitpos_map[sl][msk])
+            # TODO :make sure that renormalization is good thing to do.
+            profile_sum = np.abs(profile1).sum(axis=0)
+            #profile_sum = (profile1**2).sum(axis=0)
+            with np.errstate(invalid="ignore"):
+                profile1 /= profile_sum
+                #profile1 /= np.sqrt(profile_sum)
+            profile_map[sl][msk] = profile1[msk]
+
+        print("NJM COMMENTED OUT PLOTS IN AP.MAKE_PROFILE_MAP2")
+        '''
+        tmp = order_map != 43
+        #tmp = order_map != 105
+        profile2 = np.copy(profile_map)
+        profile2[tmp] = 0
+        spec = np.sum(profile2**2, axis=0)
+        import matplotlib.pyplot as plt
+        plt.figure("TESTA")
+        plt.plot(spec)
+
+        spec2 = np.sum(np.abs(profile2), axis=0)
+        plt.figure("TESTB")
+        plt.plot(spec2)
+
+        plt.figure("ORDER_MAP")
+        plt.imshow(order_map)
+
+        xxx = np.arange(4096)
+
+        d43 = self.domain_dict[43]
+        x43 = np.arange(d43[0], d43[1]+1)
+        
+        b43 = self.apcoeffs[43].bottom_solution(x43)
+        t43 = self.apcoeffs[43].up_solution(x43)
+
+        b43i = np.round(b43)
+        t43i = np.round(t43)
+
+        plt.figure("TESTC")
+        plt.plot(x43, t43, 'b')
+        plt.plot(x43, b43, 'b')
+        plt.plot(x43, t43i, 'g')
+        plt.plot(x43, b43i, 'g')
+        plt.plot(x43, spec[x43]*44000, 'k')
+
+        d43 = t43 - b43
+        d43i = t43i - b43i
+
+        plt.plot(x43, d43, 'b')
+        plt.plot(x43, d43i, 'g')
+
+        for i in range(0, 400, 10):
+            t43b = t43 + i #modify top
+            y0 = int(np.floor(np.min(b43)))
+            y1 = int(np.ceil(np.max(t43b)))
+            yvals = np.arange(y0, y1+1)
+            ny = y1 - y0 + 1
+            nx = len(x43)
+            slitpos43 = np.zeros([ny, nx])
+            iy2, ix2 = np.indices(slitpos43.shape)
+            slitpos43 = (iy2 - (b43[None, :] - y0)) / (t43b[None, :] - b43[None, :])
+            slitpos43[slitpos43 < 0] = 0
+            slitpos43[slitpos43 > 1] = 0
+            idx = slitpos43 == 0
+
+            profile_test = lsf(43, ix2, slitpos43)
+            profile_test[idx] = 0
+
+            profile_sum = np.abs(profile_test).sum(axis=0)
+            profile_test /= profile_sum
+
+            spec_test = np.sum(profile_test**2, axis=0)
+            spec_test /= np.max(spec_test)
+
+            plt.figure("TESTZZZ")
+            plt.plot(spec_test, label=str(i))
+
+        plt.figure("TESTZZZ")
+        plt.legend(loc=0, prop={'size': 12})
+
+        plt.figure("PROFILE")
+        zzz = np.linspace(0, 1, num=200)
+        profile_test = lsf(0, 0, zzz)
+        plt.plot(profile_test)
+
+        plt.show()
+        '''
+
+        return profile_map
+
     def make_profile_map(self, order_map, slitpos_map, lsf,
                          slitoffset_map=None):
         """
@@ -636,17 +790,100 @@ class Apertures(object):
 
         slices = ni.find_objects(order_map)
         for o in self.orders:
-            sl = slices[o-1][0], slice(0, 2048)
+            domain = self.domain_dict[o]
+            sl = slices[o-1][0], slice(domain[0], domain[1]+1)
             msk = (order_map[sl] == o)
 
             profile1 = np.zeros(profile_map[sl].shape, "d")
             profile1[msk] = lsf(o, ix[sl][msk], slitpos_map[sl][msk])
             # TODO :make sure that renormalization is good thing to do.
             profile_sum = np.abs(profile1).sum(axis=0)
+            #profile_sum = (profile1**2).sum(axis=0)
             with np.errstate(invalid="ignore"):
                 profile1 /= profile_sum
-
+                #profile1 /= np.sqrt(profile_sum)
             profile_map[sl][msk] = profile1[msk]
+
+        print("NJM COMMENTED OUT PLOTS IN AP.MAKE_PROFILE_MAP")
+        '''
+        tmp = order_map != 43
+        #tmp = order_map != 105
+        profile2 = np.copy(profile_map)
+        profile2[tmp] = 0
+        spec = np.sum(profile2**2, axis=0)
+        import matplotlib.pyplot as plt
+        plt.figure("TESTA")
+        plt.plot(spec)
+
+        spec2 = np.sum(np.abs(profile2), axis=0)
+        plt.figure("TESTB")
+        plt.plot(spec2)
+
+        plt.figure("ORDER_MAP")
+        plt.imshow(order_map)
+
+        xxx = np.arange(4096)
+
+        d43 = self.domain_dict[43]
+        x43 = np.arange(d43[0], d43[1]+1)
+        
+        b43 = self.apcoeffs[43].bottom_solution(x43)
+        t43 = self.apcoeffs[43].up_solution(x43)
+
+        b43i = np.round(b43)
+        t43i = np.round(t43)
+
+        plt.figure("TESTC")
+        plt.plot(x43, t43, 'b')
+        plt.plot(x43, b43, 'b')
+        plt.plot(x43, t43i, 'g')
+        plt.plot(x43, b43i, 'g')
+        plt.plot(x43, spec[x43]*44000, 'k')
+
+        d43 = t43 - b43
+        d43i = t43i - b43i
+
+        plt.plot(x43, d43, 'b')
+        plt.plot(x43, d43i, 'g')
+
+        print("AAA:", lsf(43, 2000, 0.5), lsf(35, 1500, 0.5))
+
+        for i in range(0, 400, 10):
+            t43b = t43 + i #modify top
+            y0 = int(np.floor(np.min(b43)))
+            y1 = int(np.ceil(np.max(t43b)))
+            yvals = np.arange(y0, y1+1)
+            ny = y1 - y0 + 1
+            nx = len(x43)
+            slitpos43 = np.zeros([ny, nx])
+            iy2, ix2 = np.indices(slitpos43.shape)
+            slitpos43 = (iy2 - (b43[None, :] - y0)) / (t43b[None, :] - b43[None, :])
+            slitpos43[slitpos43 < 0] = 0
+            slitpos43[slitpos43 > 1] = 0
+            idx = slitpos43 == 0
+
+            profile_test = lsf(43, ix2, slitpos43)
+            profile_test[idx] = 0
+
+            profile_sum = np.abs(profile_test).sum(axis=0)
+            profile_test /= profile_sum
+
+            spec_test = np.sum(profile_test**2, axis=0)
+            spec_test /= np.max(spec_test)
+
+            plt.figure("TESTZZZ")
+            plt.plot(spec_test, label=str(i))
+
+        plt.figure("TESTZZZ")
+        plt.legend(loc=0, prop={'size': 12})
+
+        plt.figure("PROFILE")
+        zzz = np.linspace(0, 1, num=200)
+        profile_test = lsf(0, 0, zzz)
+        plt.plot(profile_test)
+
+        plt.show()
+        '''
 
         return profile_map
 
@@ -665,6 +902,7 @@ class Apertures(object):
         s_list : list of specs
         """
 
+        ny, nx = slitpos_map.shape
         iy, ix = np.indices(slitpos_map.shape)
 
         if slitoffset_map is not None:
@@ -673,11 +911,12 @@ class Apertures(object):
         synth_map = np.empty(slitpos_map.shape, "d")
         synth_map.fill(np.nan)
 
-        xx = np.arange(2048)
-
         slices = ni.find_objects(order_map)
         for o, s in zip(self.orders, s_list):
-            sl = slices[o-1][0], slice(0, 2048)
+            domain = self.domain_dict[o]
+            xx = np.arange(domain[0], domain[1]+1)
+
+            sl = slices[o-1][0], slice(domain[0], domain[1]+1)
             msk = (order_map[sl] == o)
 
             msk_s = np.isfinite(s)
@@ -686,7 +925,7 @@ class Apertures(object):
 
             from scipy.interpolate import UnivariateSpline
             s_spline = UnivariateSpline(xx[msk_s], s[msk_s], k=3, s=0,
-                                        bbox=[0, 2047])
+                                        bbox=[0, nx-1])
 
             ixm = ix[sl][msk]
             #synth_map[sl][msk] = s_spline(ixm) * lsf(o, ixm, slitpos_map[sl][msk])

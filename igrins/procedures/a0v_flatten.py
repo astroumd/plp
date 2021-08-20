@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 
@@ -5,9 +7,13 @@ def _get_a0v_interp1d(obsset):
     vega_data = obsset.rs.load_ref_data("VEGA_SPEC")
     from .a0v_spec import A0VSpec
     a0v_spec = A0VSpec(vega_data)
-    a0v_interp1d = a0v_spec.get_flux_interp1d(1.3, 2.5,
+    print("REPLACING MIN/MAX WVL IN _GET_A0V_INTERP1D")
+    a0v_interp1d = a0v_spec.get_flux_interp1d(0.3, 3.0,
                                               flatten=False,
                                               smooth_pixel=32)
+    #a0v_interp1d = a0v_spec.get_flux_interp1d(1.3, 2.5,
+    #                                          flatten=False,
+    #                                          smooth_pixel=32)
     return a0v_interp1d
 
 
@@ -18,6 +24,8 @@ def flatten_a0v(obsset, fill_nan=None):  # refactor of get_a0v_flattened
     helper = ResourceHelper(obsset)
 
     wvl_solutions = helper.get("wvl_solutions")  # extractor.wvl_solutionsw
+    domain_list = helper.get("domain_list")
+
     tel_interp1d_f = get_tel_interp1d_f(obsset, wvl_solutions)
 
     a0v_interp1d = _get_a0v_interp1d(obsset)
@@ -30,7 +38,8 @@ def flatten_a0v(obsset, fill_nan=None):  # refactor of get_a0v_flattened
 
     from .a0v_flatten_telluric import get_a0v_flattened
     data_list = get_a0v_flattened(a0v_interp1d, tel_interp1d_f,
-                                  wvl_solutions, s_list, orderflat_response)
+                                  wvl_solutions, s_list, orderflat_response,
+                                  domain_list)
 
     if fill_nan is not None:
         flattened_s = data_list[0][1]
@@ -90,6 +99,7 @@ def get_tel_interp1d_f(obsset, wvl_solutions):
     # telfit_outname = "telluric/transmission-795.20-288.30-41.9-45.0-368.50-3.90-1.80-1.40.%s" % extractor.band
     # telfit_outname_npy = telfit_outname+".npy"
     telfit_outname_npy = obsset.rs.query_ref_data_path("TELFIT_MODEL")
+    telfit_outname_npy = telfit_outname_npy.replace('/', os.path.sep)
     # telfit_outname_npy = obsset.rs.query_ref_data_path("VEGA_SPEC")
     from ..igrins_libs.logger import debug
 

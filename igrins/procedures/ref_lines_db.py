@@ -25,7 +25,7 @@ def get_ref_wavelengths(ohlines, line_indices):
     return ref_wvl
 
 
-def get_ref_pixels(ref_wvl, wvlsol0, x=None):
+def get_ref_pixels(ref_wvl, wvlsol0, x=None, domain=None):
     """
     Given the list of wavelengths tuples, return expected pixel
     positions from the initial wavelength solution of wvlsol0.
@@ -37,6 +37,16 @@ def get_ref_pixels(ref_wvl, wvlsol0, x=None):
     um2pixel = interp1d(wvlsol0, x, bounds_error=False)
 
     ref_pixel = [um2pixel(w) for w in ref_wvl]
+
+    ref_pixel2 = []
+    ref_wvl2 = []
+    if domain is not None:
+        for (pixel, wvl) in zip(ref_pixel, ref_wvl):
+            if np.min(pixel) > domain[0] and np.max(pixel) < domain[1]:
+                ref_pixel2.append(pixel)
+                ref_wvl2.append(wvl)
+        ref_pixel = ref_pixel2
+        ref_wvl = ref_wvl2
 
     # there could be cases when the ref lines fall out of bounds,
     # resulting nans.
@@ -105,9 +115,23 @@ def ref_lines_reidentify(ref_lines, s, x,
 
 
 def get_ref_list1(ohlines, line_indices,
-                  wvlsol0, x=None):
+                  wvlsol0, x=None, domain=None):
     ref_wvl = get_ref_wavelengths(ohlines, line_indices)
-    line_list = get_ref_pixels(ref_wvl, wvlsol0, x=x)
+    line_list = get_ref_pixels(ref_wvl, wvlsol0, x=x, domain=domain)
+   
+    #TODO: REMOVE
+    '''
+    if len(line_indices) > 0:
+        print("line_indices:", line_indices)
+        print("ref_wvl:", ref_wvl)
+        print("line_wvlsol0:", line_list)
+        import simplejson
+        fd = open('/Users/njmille2/RIMAS/Igrins/plp/master_calib/rimas/YJ_echellogram.json')
+        data = simplejson.load(fd)
+        wvl_ech = data['wvl_list'][0]
+        line_list2 = get_ref_pixels(ref_wvl, wvl_ech, x=x)
+        print("line_echellogram:", line_list2)
+    '''
 
     return line_list
 
@@ -254,7 +278,17 @@ class RefLinesDBBase:
         ref_lines_db = self
         order_list = sorted(spec.wvl_map.keys())
         wvl_list = [spec.wvl_map[o_] for o_ in order_list]
-        s_list = [spec.s_map[o_] for o_ in order_list]
+
+        s_list = []
+        for o_ in order_list:
+            s_tmp = np.zeros_like(spec.wvl_map[o_])
+            d = spec.domain[o_]
+            npts = d[1] - d[0] + 1
+            s_tmp[d[0]:d[1]+1] = spec.s_map[o_][:npts]
+            s_list.append(s_tmp)
+        self.domain = spec.domain
+        #s_list = [spec.s_map[o_] for o_ in order_list]
+        #d_liat = [spec.domain[o_] for o_ in order_list]
 
         x = np.arange(len(wvl_list[0]))
 
@@ -297,8 +331,8 @@ class SkyLinesDB(RefLinesDBBase):
             line_indices = []
 
         _ref_lines = get_ref_list1(ohlines_db, line_indices,
-                                  wvl, x=x)
-
+                                  wvl, x=x, domain=self.domain[o])
+       
         _ref_lines["order"] = o
 
         ref_lines = RefLines(_ref_lines)

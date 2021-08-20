@@ -2,10 +2,10 @@ import pandas as pd
 import numpy as np
 
 
-def _convert2wvlsol(p, orders_w_solutions):
+def _convert2wvlsol(p, orders_w_solutions, nx=2048):
 
     # derive wavelengths.
-    xx = np.arange(2048)
+    xx = np.arange(nx)
     wvl_sol = []
     for o in orders_w_solutions:
         oo = np.empty_like(xx)
@@ -18,7 +18,7 @@ def _convert2wvlsol(p, orders_w_solutions):
 
 from .ecfit import fit_2dspec
 
-def _fit_2d(xl, yl, zlo, xdeg=4, ydeg=3):
+def _fit_2d(xl, yl, zlo, xdeg=4, ydeg=3, p_init=None):
     """
     df: pixels, order, wavelength"""
 
@@ -33,7 +33,7 @@ def _fit_2d(xl, yl, zlo, xdeg=4, ydeg=3):
     fit_params = dict(x_degree=xdeg, y_degree=ydeg,
                       x_domain=x_domain, y_domain=y_domain)
 
-    p, m = fit_2dspec(xl[msk], yl[msk], zlo[msk], **fit_params)
+    p, m = fit_2dspec(xl[msk], yl[msk], zlo[msk], p_init=p_init, **fit_params)
 
     from .astropy_poly_helper import serialize_poly_model
     poly_2d = serialize_poly_model(p)
@@ -45,7 +45,7 @@ def _fit_2d(xl, yl, zlo, xdeg=4, ydeg=3):
     return p, fit_results
 
 
-def fit_wvlsol(df, xdeg=4, ydeg=3):
+def fit_wvlsol(df, xdeg=4, ydeg=3, p_init=None):
     """
     df: pixels, order, wavelength"""
     from .ecfit import fit_2dspec
@@ -58,7 +58,7 @@ def fit_wvlsol(df, xdeg=4, ydeg=3):
     # yl : order
     # zlo : wvl * order
 
-    p, fit_results = _fit_2d(xl, yl, zlo, xdeg=xdeg, ydeg=ydeg)
+    p, fit_results = _fit_2d(xl, yl, zlo, xdeg=xdeg, ydeg=ydeg, p_init=p_init)
     return p, fit_results
 
     # x_domain = [0, 2047]
@@ -97,10 +97,10 @@ def derive_wvlsol(obsset):
     helper = ResourceHelper(obsset)
     orders = helper.get("orders")
 
-    wvl_sol = _convert2wvlsol(p, orders)
+    wvl_sol = _convert2wvlsol(p, orders, nx=obsset.detector.nx)
     d = dict(orders=orders,
              wvl_sol=wvl_sol)
-
+    
     obsset.store("SKY_WVLSOL_JSON", d)
 
     fit_results["orders"] = orders

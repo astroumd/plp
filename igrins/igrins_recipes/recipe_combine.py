@@ -25,9 +25,13 @@ def _get_combined_image(obsset):
 
 
 def remove_pattern(data_minus, mask=None, remove_level=1,
-                   remove_amp_wise_var=True):
+                   remove_amp_wise_var=True, nx=2048):
 
-    d1 = remove_pattern_from_guard(data_minus)
+    if nx != 2048:
+        print("SKIPPING REMOVE_PATTERN BECAUSE NX =", nx)
+        return data_minus
+
+    d1 = remove_pattern_from_guard(data_minus, nx=nx)
 
     if remove_level == 2:
         d2 = apply_rp_2nd_phase(d1, mask=mask)
@@ -44,14 +48,14 @@ def remove_pattern(data_minus, mask=None, remove_level=1,
         print(ii)
         # ii = [9, 6]
 
-        new_shape = (32, 64, 2048)
+        new_shape = (32, 64, nx)
         mm = np.zeros(new_shape)
 
         for i1 in ii:
             mm1 = make_model_from_rfft(c, slice(i1, i1+1))
             mm += mm1[:, np.newaxis, :]
 
-        ddm = mm.reshape((-1, 2048))
+        ddm = mm.reshape((-1, nx))
 
         return d2 - ddm
 
@@ -130,7 +134,7 @@ def get_combined_images(obsset,
     return data_minus, data_plus
 
 
-def get_variances(data_minus, data_plus, gain):
+def get_variances(data_minus, data_plus, gain, nx=2048):
 
     """
     Return two variances.
@@ -141,12 +145,14 @@ def get_variances(data_minus, data_plus, gain):
     """
     from igrins.procedures.procedure_dark import get_per_amp_stat
 
+    print("UPDATE GUARDS FOR NX=4096???")
     guards = data_minus[:, [0, 1, 2, 3, -4, -3, -2, -1]]
 
-    qq = get_per_amp_stat(guards)
-
+    namp = nx // 64
+    qq = get_per_amp_stat(guards, namp=namp)
+ 
     s = np.array(qq["stddev_lt_threshold"]) ** 2
-    variance_per_amp = np.repeat(s, 64*2048).reshape((-1, 2048))
+    variance_per_amp = np.repeat(s, 64*nx).reshape((-1, nx))
 
     variance = variance_per_amp + np.abs(data_plus)/gain
 
@@ -201,7 +207,7 @@ def make_combined_images(obsset, allow_no_b_frame=False,
                          remove_level=2,
                          remove_amp_wise_var=False,
                          interactive=False,
-                         cache_only=False):
+                         cache_only=False, nx=2048):
 
     if remove_level == "auto":
         remove_level = 2
@@ -229,13 +235,15 @@ def make_combined_images(obsset, allow_no_b_frame=False,
 
     d2 = remove_pattern(data_minus_raw, mask=bias_mask,
                         remove_level=remove_level,
-                        remove_amp_wise_var=remove_amp_wise_var)
+                        remove_amp_wise_var=remove_amp_wise_var,
+                        nx=nx)
 
     dp = remove_pattern(data_plus, remove_level=1,
-                        remove_amp_wise_var=False)
+                        remove_amp_wise_var=False,
+                        nx=nx)
 
     gain = float(obsset.rs.query_ref_value("GAIN"))
-    variance_map0, variance_map = get_variances(d2, dp, gain)
+    variance_map0, variance_map = get_variances(d2, dp, gain, nx=nx)
 
     hdul = obsset.get_hdul_to_write(([], d2))
 
