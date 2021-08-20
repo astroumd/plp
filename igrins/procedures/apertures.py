@@ -295,7 +295,8 @@ class Apertures(object):
         slices = ni.find_objects(ordermap)
 
         for o in self.orders_to_extract:
-            sl = slices[o-1][0], slice(0, self.nx)
+            domain = self.domain_dict[o]
+            sl = slices[o-1][0], slice(domain[0], domain[1]+1)
             msk = (ordermap[sl] == o)
 
             profile_map1 = np.ma.array(profile_map[sl],
@@ -412,6 +413,7 @@ class Apertures(object):
                 plt.figure("Sum_Weights1")
                 plt.plot(sum_weights1)
                 plt.title('Profile**2 / Variance')
+                plt.show()
 
             #import matpl
 

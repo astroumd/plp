@@ -461,6 +461,17 @@ def extract_stellar_spec(obsset, extraction_mode="optimal",
     ordermap_bpixed = helper.get("ordermap_bpixed")
     slitpos_map = helper.get("slitposmap")
 
+    i0 = ordermap != 43
+    tmp_map = np.copy(data_minus)
+    tmp_map[i0] = 8
+    spec_tmp = np.sum(tmp_map, axis=0)
+    import matplotlib.pyplot as plt
+    plt.figure('SPEC_TMP')
+    plt.plot(spec_tmp)
+    plt.figure('DATA_MINUS')
+    plt.imshow(data_minus)
+    plt.show()
+
     # from .slit_profile import get_profile_func
     # profile = get_profile_func(obsset)
 
@@ -486,20 +497,18 @@ def extract_stellar_spec(obsset, extraction_mode="optimal",
 
     #NJM REMOVE EVENTUALLY
     print("NJM COMMENTED OUT AFGGS PLOT")
-    '''
-    print("SSS:", len(s_list), len(s_list[0]))
-    import matplotlib.pyplot as plt
-    plt.figure("S_LIST")
-    i = 0
-    for s in s_list[4:-4]:
-        plt.plot(s, label=str(i+30))
-        i += 1
-    plt.legend(loc=0, prop={'size': 12})
+    #print("SSS:", len(s_list), len(s_list[0]))
+    #import matplotlib.pyplot as plt
+    #plt.figure("S_LIST")
+    #i = 0
+    #for s in s_list[4:-4]:
+    #    plt.plot(s, label=str(i+30))
+    #    i += 1
+    #plt.legend(loc=0, prop={'size': 12})
 
-    plt.figure("AFGGS")
-    plt.imshow(profile_map)
-    plt.show()
-    '''
+    #plt.figure("AFGGS")
+    #plt.imshow(profile_map)
+    #plt.show()
 
     if calculate_sn:
         # calculate S/N per resolution
@@ -686,27 +695,32 @@ def extract_extended_spec1(obsset, data,
     s_list, v_list, cr_mask, aux_images = _
 
     #NJM REMOVE EVENTUALLY
-    print("SSS:", len(s_list), len(s_list[0]))
-    import matplotlib.pyplot as plt
-    plt.figure("s_list")
-    i = 0
-    for s in s_list:
-        plt.plot(s, label=str(i))
-        i += 1
-    plt.legend(loc=0, prop={'size': 12})
-    plt.show()
+    #print("SSS:", len(s_list), len(s_list[0]))
+    #import matplotlib.pyplot as plt
+    #plt.figure("s_list")
+    #i = 0
+    #for s in s_list:
+    #    plt.plot(s, label=str(i))
+    #    i += 1
+    #plt.legend(loc=0, prop={'size': 12})
+    #plt.show()
 
     return s_list, v_list, cr_mask, aux_images
 
 
-def extract_extended_spec(obsset, lacosmic_thresh=0.):
+def extract_extended_spec(obsset, lacosmic_thresh=0., calculate_sn=True):
 
     # refactored from recipe_extract.ProcessABBABand.process
+    
+    #TODO: Refactor to match extract_stellar_spec
+    helper = ResourceHelper(obsset)
+    ap = helper.get("aperture")
 
     from ..utils.load_fits import get_science_hdus
     postfix = obsset.basename_postfix
     hdul = get_science_hdus(obsset.load("COMBINED_IMAGE1",
                                         postfix=postfix))
+     
     data = hdul[0].data
 
     if len(hdul) == 3:
@@ -724,24 +738,40 @@ def extract_extended_spec(obsset, lacosmic_thresh=0.):
 
     s_list, v_list, cr_mask, aux_images = _
 
-    if 1:
+    if calculate_sn:
         # calculate S/N per resolution
         helper = ResourceHelper(obsset)
         wvl_solutions = helper.get("wvl_solutions")
+        
+        print("NJM SORTING DOMAIN_LIST THOUGH IT IS PROBABLY ALREADY SORTED")
+        print("WHEN CONVERTING FROM DICTIONARY")
+        key_list = []
+        domain_list = []
+        for key in ap.domain_dict:
+            key_list.append(key)
+            domain_list.append(ap.domain_dict[key])
+        idx_sort = np.argsort(key_list)
+        domain_list_sort = []
+        for idx in idx_sort:
+            domain_list_sort.append(domain_list[idx])
+        #domain_list_sort = domain_list[idx_sort]
 
         sn_list = []
-        for wvl, s, v in zip(wvl_solutions,
-                             s_list, v_list):
+        for wvl, s, v, domain in zip(wvl_solutions,
+                                     s_list, v_list,
+                                     domain_list_sort):
 
+            wvl = wvl[domain[0]:domain[1]+1]
             dw = np.gradient(wvl)
             pixel_per_res_element = (wvl/40000.)/dw
             # print pixel_per_res_element[1024]
             # len(pixel_per_res_element) = 2047. But we ignore it.
+
             sn = (s/v**.5)*(pixel_per_res_element**.5)
 
             sn_list.append(sn)
 
-    store_1dspec(obsset, v_list, s_list, sn_list=sn_list)
+    store_1dspec(obsset, v_list, s_list, sn_list=sn_list, domain_list=domain_list_sort)
 
     shifted = aux_images["shifted"]
 
