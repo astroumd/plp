@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 
@@ -97,6 +99,7 @@ def get_tel_interp1d_f(obsset, wvl_solutions):
     # telfit_outname = "telluric/transmission-795.20-288.30-41.9-45.0-368.50-3.90-1.80-1.40.%s" % extractor.band
     # telfit_outname_npy = telfit_outname+".npy"
     telfit_outname_npy = obsset.rs.query_ref_data_path("TELFIT_MODEL")
+    telfit_outname_npy = telfit_outname_npy.replace('/', os.path.sep)
     # telfit_outname_npy = obsset.rs.query_ref_data_path("VEGA_SPEC")
     from ..igrins_libs.logger import debug
 

@@ -18,7 +18,7 @@ def _convert2wvlsol(p, orders_w_solutions, nx=2048):
 
 from .ecfit import fit_2dspec
 
-def _fit_2d(xl, yl, zlo, xdeg=4, ydeg=3):
+def _fit_2d(xl, yl, zlo, xdeg=4, ydeg=3, p_init=None):
     """
     df: pixels, order, wavelength"""
 
@@ -33,7 +33,7 @@ def _fit_2d(xl, yl, zlo, xdeg=4, ydeg=3):
     fit_params = dict(x_degree=xdeg, y_degree=ydeg,
                       x_domain=x_domain, y_domain=y_domain)
 
-    p, m = fit_2dspec(xl[msk], yl[msk], zlo[msk], **fit_params)
+    p, m = fit_2dspec(xl[msk], yl[msk], zlo[msk], p_init=p_init, **fit_params)
 
     from .astropy_poly_helper import serialize_poly_model
     poly_2d = serialize_poly_model(p)
@@ -45,7 +45,7 @@ def _fit_2d(xl, yl, zlo, xdeg=4, ydeg=3):
     return p, fit_results
 
 
-def fit_wvlsol(df, xdeg=4, ydeg=3):
+def fit_wvlsol(df, xdeg=4, ydeg=3, p_init=None):
     """
     df: pixels, order, wavelength"""
     from .ecfit import fit_2dspec
@@ -58,7 +58,7 @@ def fit_wvlsol(df, xdeg=4, ydeg=3):
     # yl : order
     # zlo : wvl * order
 
-    p, fit_results = _fit_2d(xl, yl, zlo, xdeg=xdeg, ydeg=ydeg)
+    p, fit_results = _fit_2d(xl, yl, zlo, xdeg=xdeg, ydeg=ydeg, p_init=p_init)
     return p, fit_results
 
     # x_domain = [0, 2047]

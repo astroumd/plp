@@ -740,7 +740,7 @@ def get_mask_bg_pattern(flat_mask, bottom_up_solutions):
 
 
 def subtract_bg_pattern(d, bottomup_solutions, flat_mask, bpix_mask):
-    msk = get_mask_bg_pattern(flat_mask, bottom_up_solutions)
+    msk = get_mask_bg_pattern(flat_mask, bottomup_solutions)
     #d = d.copy()
     d_ma = np.ma.array(d, mask=msk|bpix_mask)
     s_vert = np.ma.median(d_ma, axis=0)
