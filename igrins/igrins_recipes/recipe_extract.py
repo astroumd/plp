@@ -8,7 +8,7 @@ from ..procedures.target_spec import (setup_extraction_parameters,
                                       estimate_slit_profile,
                                       extract_stellar_spec,
                                       extract_stellar_spec_pp,
-                                      extract_extended_spec,
+                                      extract_extended_spec_ver2,
                                       store_2dspec)
 
 # # from .target_spec import subtract_interorder_background
@@ -127,7 +127,7 @@ _steps_extended = [
     Step("Estimate slit profile (extended)", estimate_slit_profile,
          slit_profile_mode="uniform"),
     Step("Extract spectra (for extendeded)",
-         extract_extended_spec,
+         extract_extended_spec_ver2,
          lacosmic_thresh=0.,
          # extraction_mode="simple",
     ),

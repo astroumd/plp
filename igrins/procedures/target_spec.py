@@ -461,17 +461,6 @@ def extract_stellar_spec(obsset, extraction_mode="optimal",
     ordermap_bpixed = helper.get("ordermap_bpixed")
     slitpos_map = helper.get("slitposmap")
 
-    i0 = ordermap != 43
-    tmp_map = np.copy(data_minus)
-    tmp_map[i0] = 8
-    spec_tmp = np.sum(tmp_map, axis=0)
-    import matplotlib.pyplot as plt
-    plt.figure('SPEC_TMP')
-    plt.plot(spec_tmp)
-    plt.figure('DATA_MINUS')
-    plt.imshow(data_minus)
-    plt.show()
-
     # from .slit_profile import get_profile_func
     # profile = get_profile_func(obsset)
 
@@ -694,19 +683,7 @@ def extract_extended_spec1(obsset, data,
 
     s_list, v_list, cr_mask, aux_images = _
 
-    #NJM REMOVE EVENTUALLY
-    #print("SSS:", len(s_list), len(s_list[0]))
-    #import matplotlib.pyplot as plt
-    #plt.figure("s_list")
-    #i = 0
-    #for s in s_list:
-    #    plt.plot(s, label=str(i))
-    #    i += 1
-    #plt.legend(loc=0, prop={'size': 12})
-    #plt.show()
-
     return s_list, v_list, cr_mask, aux_images
-
 
 def extract_extended_spec(obsset, lacosmic_thresh=0., calculate_sn=True):
 
@@ -786,6 +763,93 @@ def extract_extended_spec(obsset, lacosmic_thresh=0., calculate_sn=True):
     #              cr_mask=cr_mask,
     #              conserve_flux=conserve_2d_flux,
     #              height_2dspec=height_2dspec)
+
+def extract_extended_spec_ver2(obsset, lacosmic_thresh=0., calculate_sn=True):
+    '''Matches extract_stellar_spec except for calling the different function
+    in spec_extract_w_profile
+    '''
+
+    helper = ResourceHelper(obsset)
+    ap = helper.get("aperture")
+
+    postfix = obsset.basename_postfix
+
+    #Load the data needed to extract the spectra
+    data_minus = obsset.load_fits_sci_hdu("COMBINED_IMAGE1",
+                                          postfix=postfix).data
+
+    orderflat = helper.get("orderflat")
+    data_minus_flattened = data_minus / orderflat
+
+    variance_map = obsset.load_fits_sci_hdu("combined_variance1",
+                                            postfix=postfix).data
+    variance_map0 = obsset.load_fits_sci_hdu("combined_variance0",
+                                             postfix=postfix).data
+
+    slitoffset_map = helper.get("slitoffsetmap")
+
+    ordermap = helper.get("ordermap")
+    ordermap_bpixed = helper.get("ordermap_bpixed")
+    slitpos_map = helper.get("slitposmap")
+
+    gain = float(obsset.rs.query_ref_value("gain"))
+
+    profile_map = obsset.load_fits_sci_hdu("slitprofile_fits",
+                                           postfix=postfix).data
+
+    #Extended-an/onoff uses the uniform profile and is the only difference
+    #from the stellar-ab/onoff observations
+    from .spec_extract_w_profile import extract_spec_uniform
+    _ = extract_spec_uniform(ap, profile_map,
+                             variance_map,
+                             variance_map0,
+                             data_minus_flattened,
+                             data_minus, orderflat,  #
+                             ordermap, ordermap_bpixed,
+                             slitpos_map,
+                             slitoffset_map,
+                             gain,
+                             lacosmic_thresh=lacosmic_thresh,
+                             debug=False)
+
+    s_list, v_list, cr_mask, aux_images = _
+
+    if calculate_sn:
+        wvl_solutions = helper.get("wvl_solutions")
+
+        print("NJM SORTING DOMAIN_LIST THOUGH IT IS PROBABLY ALREADY SORTED")
+        print("WHEN CONVERTING FROM DICTIONARY")
+        key_list = []
+        domain_list = []
+        for key in ap.domain_dict:
+            key_list.append(key)
+            domain_list.append(ap.domain_dict[key])
+        idx_sort = np.argsort(key_list)
+        domain_list_sort = []
+        for idx in idx_sort:
+            domain_list_sort.append(domain_list[idx])
+
+        sn_list = []
+        for wvl, s, v, domain in zip(wvl_solutions,
+                                     s_list, v_list,
+                                     domain_list_sort):
+
+            wvl = wvl[domain[0]:domain[1]+1]
+            dw = np.gradient(wvl)
+            pixel_per_res_element = (wvl/40000.)/dw
+
+            with np.errstate(invalid="ignore"):
+                sn = (s/v**.5)*(pixel_per_res_element**.5)
+
+            sn_list.append(sn)
+
+    store_1dspec(obsset, v_list, s_list, sn_list=sn_list, domain_list=domain_list_sort)
+
+    shifted = aux_images["shifted"]
+
+    _hdul = shifted.to_hdul()
+    hdul = obsset.get_hdul_to_write(*_hdul)
+    obsset.store("WVLCOR_IMAGE", hdul, postfix=obsset.basename_postfix)
 
 
 def _derive_data_for_slit_profile(ap, data_minus_flattened,
