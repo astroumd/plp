@@ -31,6 +31,10 @@ def _plot_source_spec(fig, tgt, objname=""):
         wvl = wvl[dn[0]:dn[1]+1]
         s = s[:npts]
         sn = sn[:npts]
+
+        #s = s[7:-7]
+        #sn = sn[7:-7]
+        #wvl = wvl[7:-7]
         
         ax1a.plot(wvl, s)
         ax1b.plot(wvl, sn)
@@ -136,6 +140,10 @@ def _plot_div_a0v_spec(fig, tgt, obsset, a0v="GROUP2", a0v_obsid=None,
         wvl = wvl[dn[0]:dn[1]+1]
         s = s[:npts]
         t = t[:npts]
+
+        #wvl = wvl[7:-7]
+        #s = s[7:-7]
+        #t = t[7:-7]
 
         ax2a.plot(wvl, t, "0.8", zorder=0.5)
         ax2b.plot(wvl, s, zorder=0.5)
@@ -332,8 +340,6 @@ def html_save(utdate, dirname, objroot, band,
 
         wvl_list_html, s_list_html, sn_list_html = [], [], []
 
-        print("REPLACING I1I2 LIST WITH CALCULATED DOMAIN")
-        print("BAD ORDERS ARE NOT DROPPED")
         for wvl, s, sn, (i1, i2), dn in zip(wvl_solutions,
                                             tgt_spec, tgt_sn,
                                             i1i2_list, tgt_dn):
@@ -343,11 +349,22 @@ def html_save(utdate, dirname, objroot, band,
             #wvl_list_html.append(wvl[sl])
             #s_list_html.append(s[sl])
             #sn_list_html.append(sn[sl])
+
+            #i1i2_list has 4, 4 for bad, extrapolated orders
+            if i1 == 4 and i2 == 4:
+                continue
            
             npts = dn[1] - dn[0] + 1
-            wvl_list_html.append(wvl[dn[0]:dn[1]+1])
-            s_list_html.append(s[:npts])
-            sn_list_html.append(sn[:npts])
+
+            wvl_tmp = wvl[dn[0]:dn[1]+1]
+            wvl_tmp = wvl_tmp[3:-3]
+            wvl_list_html.append(wvl_tmp)
+            s_list_html.append(s[3:npts-3])
+            sn_list_html.append(sn[3:npts-3])
+            
+            #wvl_list_html.append(wvl[dn[0]:dn[1]+1])
+            #s_list_html.append(s[:npts])
+            #sn_list_html.append(sn[:npts])
 
         save_for_html(dirname, objroot, band,
                       orders_w_solutions,
