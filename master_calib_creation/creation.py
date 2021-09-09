@@ -400,11 +400,23 @@ def gen_ref_indices(
 
 
 def index_matching(list1, list2):
+    """
+    Generates indices necessary to match 2 lists based on values
+
+    Parameters
+    ----------
+    list1 : list
+    list2 : list
+
+    Returns
+    -------
+
+    """
     if len(list1) != len(list2):
         raise ValueError('lists must be of the same length')
     index_list = []
     for v1 in list1:
-        for v2, i2 in zip(list2, range(len(list2))):
+        for i2, v2 in enumerate(list2):
             if v1 == v2:
                 index_list.append(i2)
                 continue
@@ -412,8 +424,19 @@ def index_matching(list1, list2):
 
 
 def get_orders_from_map(order_map_image):
+    """
+    Get unique values from order map
+
+    Parameters
+    ----------
+    order_map_image : np.array
+
+    Returns
+    -------
+
+    """
     orders = np.unique(order_map_image)
-    orders = orders[orders > orders.max() / 2]
+    orders = orders[np.logical_and(orders.astype(int) == orders, orders > 0)]
     return orders
 
 
