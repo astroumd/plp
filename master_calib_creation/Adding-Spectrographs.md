@@ -60,7 +60,37 @@ and the paths to the other calibration files.
     * VEGA_SPEC
     * DEFAULT_DEADPIX_MASK
 
+#### Example
+
+    [MASTER_CAL]
+    GAIN_H=2.0
+    GAIN_K=2.2
+    
+    REFDATE=20140525
+    
+    THAR_REFSPEC_JSON=%(REFDATE)s/ThAr/SDC%(BAND)s_%(REFDATE)s_0003.oned_spec.json
+    THAR_IDENTIFIED_LINES_V0_JSON=%(REFDATE)s/ThAr/ThAr_SDC%(BAND)s_%(REFDATE)s.identified_lines_v0.json
+    
+    SKY_REFSPEC_JSON=%(REFDATE)s/SKY/SDC%(BAND)s_%(REFDATE)s_0029.oned_spec.json
+    SKY_IDENTIFIED_LINES_V0_JSON=%(REFDATE)s/SKY/SKY_SDC%(BAND)s_%(REFDATE)s.identified_lines_v0.json
+    
+    ECHELLOGRAM_JSON=%(REFDATE)s/SDC%(BAND)s_%(REFDATE)s.echellogram.json
+    
+    TELL_WVLSOL_MODEL=TelluricModel.dat
+    TELFIT_MODEL=telluric/transmission-795.20-288.30-41.9-45.0-368.50-3.90-1.80-1.40.%(BAND)s.npy
+    
+    OHLINES_INDICES_JSON=ref_ohlines_indices_20140316.json
+    OHLINES_JSON=ohlines.dat
+    
+    HITRAN_BOOTSTRAP_K=hitran_bootstrap_K_20140316.json
+    
+    VEGA_SPEC=A0V/vegallpr25.50000resam5.npy
+    
+    DEFAULT_DEADPIX_MASK=deadpix_mask_20140316_%(BAND)s.fits
+
 ### One Dimensional Reference Spectrum JSON
+
+
 
 ### Identified Lines JSON
 
