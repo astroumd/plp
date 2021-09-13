@@ -16,6 +16,7 @@ and there are some convenient functions located withing [creation.py](./creation
 * [Master Calibration config](#master-calibration-config)
 * [One Dimensional Reference Spectrum JSON](#one-dimensional-reference-spectrum-json)
 * [Identified Lines JSON](#identified-lines-json)
+* [Reference ohlines indices](#reference-ohlines-indices)
 * [Echellogram JSON](#echellogram-json)
 * [Telluric Model dat](#telluric-model-dat)
 * [Telluric Transmission npy](#telluric-transmission-npy)
@@ -90,9 +91,64 @@ and the paths to the other calibration files.
 
 ### One Dimensional Reference Spectrum JSON
 
+#### Format
 
+* Two keywords:
+    * "specs"
+        * contains a list of lists for each spectral order
+        * each spectral order list contains a list of the intensity value for each position along the order. This list should have the same length as the detector dimensions, e.g. 2048 for H2RG, and 4096 for H4RG
+    * "orders"
+        * List of integers containing the spectral order number. The order of this list corresponds to the order of the "specs" list
+
+#### Example
+
+If you have a spectrograph with 2 spectral orders, and a detector array size of 8 pixels, your one dimensional reference spectrum could look something like this:
+
+    {
+    "specs": [
+        [0, 2, 3, 4, 5, 23, 495, 9483],
+        [1, 42, 56, 3245, 23, 2, 404.3, 0]
+    ],
+    "orders": [32, 33]
+    }
+
+#### Relevant creation.py functions
+
+1) `master_calib_creation.creation.gen_oned_spec` - generates one dimensional reference spectra, as decribed above. Function requires the following inputs:
+    1) `order_map_file` - the spectral order number for each pixel in FITS format
+    2) `twod_spectrum_file` - the spectrum that needs reduced
+    3) `output_file` - the output JSON file path
+    4) `aggregation_axis` - the numpy axis along which the spectrum should be reduced, default is 0
+    5) `aggregation` - aggregation type desired for the reduction, default is nanmedian
 
 ### Identified Lines JSON
+
+Calibration file that correlates wavelength, pixel position along each order and the reference line from the lines list.
+
+#### Format
+
+* 5 keywords
+    * "orders"
+        * List of integers containing the spectral order number. The order of this list corresponds to the order of the "specs" list
+    * "pixpos_list"
+        * contains a list of lists for each spectral order
+        * each spectral order list contains a list of the pixel position along the spectral order for each identified line
+    * "ref_indices_list"
+        * contains a list of lists for each spectral order
+        * each spectral order list contains a list of the identified line from the "ref_name" file along the spectral order for each identified line
+    * "wvl_list"
+        * contains a list of lists for each spectral order
+        * each spectral order list contains a list of the wavelength in microns along the spectral order for each identified line
+    * "ref_name"
+        * reference containing the lines list for the given source
+
+#### Example
+
+    
+
+### Reference ohlines indices
+
+
 
 ### Echellogram JSON
 
@@ -103,3 +159,5 @@ and the paths to the other calibration files.
 ### Vega Spectrum npy
 
 ### Dead Pixel Mask FITS
+
+Binary pixel mask detailing which pixels are dead, and require interpolation
