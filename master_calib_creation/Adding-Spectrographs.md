@@ -16,6 +16,7 @@ and there are some convenient functions located withing [creation.py](./creation
 * [Master Calibration config](#master-calibration-config)
 * [One Dimensional Reference Spectrum JSON](#one-dimensional-reference-spectrum-json)
 * [Identified Lines JSON](#identified-lines-json)
+* [Reference Lines dat file](#reference-lines-dat-file)
 * [Reference ohlines indices](#reference-ohlines-indices)
 * [Echellogram JSON](#echellogram-json)
 * [Telluric Model dat](#telluric-model-dat)
@@ -121,6 +122,8 @@ If you have a spectrograph with 2 spectral orders, and a detector array size of 
     4) `aggregation_axis` - the numpy axis along which the spectrum should be reduced, default is 0
     5) `aggregation` - aggregation type desired for the reduction, default is nanmedian
 
+### Reference Lines dat file
+
 ### Identified Lines JSON
 
 Calibration file that correlates wavelength, pixel position along each order and the reference line from the lines list.
@@ -140,11 +143,53 @@ Calibration file that correlates wavelength, pixel position along each order and
         * contains a list of lists for each spectral order
         * each spectral order list contains a list of the wavelength in microns along the spectral order for each identified line
     * "ref_name"
-        * reference containing the lines list for the given source
+        * path to reference containing the lines list for the given source
 
 #### Example
 
-    
+Given the following reference dat file, containing a lines list and the subsequent identified line data for each of the orders
+
+*foo_lines.dat*
+
+|line_number	|wvl	|intensity	|
+|---	|---	|---	|
+|0  	|0.95321	|1.2e-7	|
+|1  	|0.96213	|1.5e-5	|
+|2  	|0.97341	|1.2e-3	|
+|3  	|0.98312	|9.3e-1	|
+|4  	|0.99999	|4.5e-8	|
+|5  	|0.10001	|3.2e-9	|
+
+*Order 30 table*
+
+|pixpos	|ref_indices	|wvl	|
+|---	|---	|---	|
+|350	|0	|0.95321	|
+|450	|1	|0.96213	|
+|900	|2	|0.97341	|
+
+*Order 31 table*
+
+|pixpos	|ref_indices	|wvl	|
+|---	|---	|---	|
+|425	|3	|0.98312	|
+|540	|4	|0.99999	|
+|542	|5	|0.10001	|
+
+With those inputs, the output identified lines JSON file would be look like this:
+
+    {
+    "orders": [30, 31],
+    "pixpos_list": [[350, 450, 900],[425, 540, 542]],
+    "wvl_list": [[0.95321, 0.96213, 0.97341],[0.98312, 0.99999, 0.10001]],
+    "ref_indices_list": [[0, 1, 2], [3, 4, 5]],
+    "ref_name": "foo_lines.dat"
+    }
+
+#### Relevant creation.py functions
+
+1) `master_calib_creation.creation.gen_identified_lines` - generates one dimensional reference spectra, as decribed above. Function requires the following inputs:
+    1) `order_map_file` - the spectral order number for each pixel in FITS format
 
 ### Reference ohlines indices
 
