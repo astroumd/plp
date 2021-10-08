@@ -381,16 +381,13 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
     return centroid_list
 
 
-def trace_aperture_chebyshev(xy_list, domain=None):
+def trace_aperture_chebyshev(xy_list, domain):
     """
     a list of (x_array, y_array).
 
     y_array must be a masked array
     """
     import numpy.polynomial.chebyshev as cheb
-
-    if domain is None:
-        domain = [0, 2047]
 
     domain_order = {}
     # we first fit the all traces with 2d chebyshev polynomials
@@ -546,18 +543,17 @@ def get_matched_slices(yc_down_list, yc_up_list):
 def trace_centroids_chebyshev(centroid_bottom_list,
                               centroid_up_list,
                               domain, nx, ref_x=None):
-    # from .trace_aperture import trace_aperture_chebyshev
     #TODO: See difference in domain and nx variables
 
     if ref_x is None:
         ref_x = 0.5 * (domain[0] + domain[-1])
 
     _ = trace_aperture_chebyshev(centroid_bottom_list,
-                                 domain=domain)
+                                 domain)
     sol_bottom_list, sol_bottom_list_full, domain_bottom_list = _
 
     _ = trace_aperture_chebyshev(centroid_up_list,
-                                 domain=domain)
+                                 domain)
     sol_up_list, sol_up_list_full, domain_up_list = _
 
     yc_down_list = [s(ref_x) for s in sol_bottom_list_full]
