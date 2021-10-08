@@ -74,10 +74,10 @@ class GridInterpolator(object):
 
         return z_gridded
 
-def show_grided_image(ax, gi, xl, yl, zl, orders):
+def show_grided_image(ax, gi, xl, yl, zl, nx, orders):
     import matplotlib
 
-    extent = [0, 2048, orders[0]-1, orders[-1]+1]
+    extent = [0, nx, orders[0]-1, orders[-1]+1]
 
     z_max, z_min = zl.max(), zl.min()
     norm = matplotlib.colors.Normalize(vmin=z_min, vmax=z_max)
@@ -88,7 +88,7 @@ def show_grided_image(ax, gi, xl, yl, zl, orders):
               extent=extent, norm=norm)
 
     ax.scatter(xl, yl, 10, c=zl, norm=norm)
-    ax.set_xlim(0, 2048)
+    ax.set_xlim(0, nx)
     ax.set_ylim(orders[0]-1, orders[-1]+1)
 
 def fit_2dspec(xl, yl, zl, x_degree=4, y_degree=3,
@@ -117,11 +117,11 @@ def fit_2dspec(xl, yl, zl, x_degree=4, y_degree=3,
     return p, m
 
 
-def get_dx(xl, yl, zl, orders, p):
+def get_dx(xl, yl, zl, orders, p, nx):
     dlambda_order = {}
     for o in orders:
         wvl_minmax = p([0, 2047], [o]*2) / o
-        dlambda = (wvl_minmax[1] - wvl_minmax[0]) / 2048.
+        dlambda = (wvl_minmax[1] - wvl_minmax[0]) / nx
         dlambda_order[o] = dlambda
 
     dlambda = [dlambda_order[y1] for y1 in yl]
@@ -130,7 +130,7 @@ def get_dx(xl, yl, zl, orders, p):
     return dx
 
 
-def get_dx_from_identified_lines(p, identified_lines):
+def get_dx_from_identified_lines(p, identified_lines, nx):
     dpix_list = {}
     for i, oh in sorted(identified_lines.items()):
         oh = identified_lines[i]
@@ -138,16 +138,16 @@ def get_dx_from_identified_lines(p, identified_lines):
         wvl = p(oh[0], [o]*len(oh[0])) / o
 
         wvl_minmax = p([0, 2047], [o]*2) / o
-        dlambda = (wvl_minmax[1] - wvl_minmax[0]) / 2048.
+        dlambda = (wvl_minmax[1] - wvl_minmax[0]) / nx
 
         dpix_list[i] = (oh[1] - wvl)/dlambda
 
     return dpix_list
 
 def check_fit(fig, xl, yl, zl, p, orders,
-              identified_lines):
+              identified_lines, nx):
 
-    xi = np.linspace(0, 2048, 256+1)
+    xi = np.linspace(0, nx, 256+1)
     yi = np.linspace(orders[0]-1, orders[-1]+1, len(orders)*10)
     #yi = orders
     gi = GridInterpolator(xi, yi)
@@ -170,8 +170,8 @@ def check_fit(fig, xl, yl, zl, p, orders,
         o = i #orders[i]
         wvl = p(oh[0], [o]*len(oh[0])) / o
 
-        wvl_minmax = p([0, 2047], [o]*2) / o
-        dlambda = (wvl_minmax[1] - wvl_minmax[0]) / 2048.
+        wvl_minmax = p([0, nx-1], [o]*2) / o
+        dlambda = (wvl_minmax[1] - wvl_minmax[0]) / nx
 
         ax3.plot(oh[0], (oh[1] - wvl)/dlambda, "o-")
 
@@ -180,8 +180,8 @@ def check_fit(fig, xl, yl, zl, p, orders,
     ax2.axhline(orders[0], linestyle=":", color="0.5")
     ax2.axhline(orders[-1], linestyle=":", color="0.5")
 
-    ax.set_xlim(0, 2048)
-    ax2.set_xlim(0, 2048)
+    ax.set_xlim(0, nx)
+    ax2.set_xlim(0, nx)
     ax3.set_ylim(-1, 1)
 
     ax.set_xlabel("x-pixel")
@@ -190,10 +190,10 @@ def check_fit(fig, xl, yl, zl, p, orders,
     ax3.set_ylabel(r"$\Delta\lambda$ [pixel]")
 
 
-def check_fit_simple(fig, xl, yl, zl, p, orders):
+def check_fit_simple(fig, xl, yl, zl, p, orders, nx):
     #import matplotlib.pyplot as plt
 
-    xi = np.linspace(0, 2048, 256+1)
+    xi = np.linspace(0, nx, 256+1)
     yi = np.linspace(orders[0]-1, orders[-1]+1, len(orders)*10)
     #yi = orders
     gi = GridInterpolator(xi, yi)
@@ -253,7 +253,7 @@ if __name__ == "__main__":
     # yl : order
     # zl : wvl * order
 
-    x_domain = [0, 2047]
+    x_domain = [0, nx-1]
     y_domain = [orders[0]-2, orders[-1]+2]
     p, m = fit_2dspec(xl, yl, zl, x_degree=4, y_degree=3)
 
@@ -269,7 +269,7 @@ if __name__ == "__main__":
     fig.savefig("ecfit_%s_fig1.png" % postfix)
 
     if 0:
-        xx = np.arange(0, 2048)
+        xx = np.arange(0, nx)
         wvl_list = []
         figure()
         for o in igrins_orders[band]:

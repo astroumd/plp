@@ -183,7 +183,7 @@ def test_plot():
         xi = np.indices(mmm.shape)[-1]
         if min_order is None:
             min_order = o2d[mmm].min()
-        indx = (o2d[mmm]-min_order)*2048 + xi[mmm]
+        indx = (o2d[mmm]-min_order)*nx + xi[mmm]
 
         s2 = np.empty(mmm.shape, dtype=float)
         s2.fill(np.nan)
@@ -213,7 +213,7 @@ def test_plot():
     # o2 = np.percentile(ap.orders, ap.orders[i2])
 
     xx = np.array([ap(o, 1024, .5) for o in ap.orders])
-    i1, i2 = np.searchsorted(xx, [128, 2048-128])
+    i1, i2 = np.searchsorted(xx, [128, nx-128])
     o1, o2 = ap.orders[i1], ap.orders[i2]
     #o1, o2 = 0, 999
     #o1, o2 = 79, 81

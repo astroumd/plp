@@ -65,7 +65,7 @@ def get_combined_image(obsset):
              ("COMB_PAR", combine_par,
               "parameters for image combine")
     ]
-
+    
     return sky_data, cards
 
 
@@ -160,10 +160,8 @@ def _sky_subtract_bg_list(obsset, sky_image_list,
 
     for sky_image in sky_image_list:
         sky_image2 = sky_image - bg_data_norm * sky_exptime
-        # destriped_sky = rp.apply(sky_image, pipe, mask=destripe_mask)
 
         if destripe_mode == "guard":
-            # destriped_sky = rp.sub_guard_column(sky_image2)
             destriped_sky = sub_bg64_from_guard(sub_p64_from_guard(sky_image2))
         elif destripe_mode is not None:
             destriped_sky = rp.apply(sky_image2, pipe, mask=destripe_mask)
@@ -215,7 +213,7 @@ def _sky_subtract_bg(obsset, sky_image,
     print("NJM REMOVING SKY IMAGE DESTRIPING")
     #destriped_sky = rp.apply(sky_image2, pipe, mask=destripe_mask)
     destriped_sky = sky_image2
-
+    
     return destriped_sky
 
 
@@ -236,9 +234,6 @@ def _make_combined_image_sky(obsset, bg_subtraction_mode="flat"):
 
 def extract_spectra(obsset, comb_type='combined_sky'):
     """extract spectra"""
-
-    # caldb = helper.get_caldb()
-    # master_obsid = obsids[0]
 
     data = obsset.load_fits_sci_hdu(DESCS[comb_type]).data
     data = np.nan_to_num(data)
@@ -279,6 +274,11 @@ def extract_spectra_multi(obsset):
 
     data = obsset.load_fits_sci_hdu(DESCS["combined_sky"]).data
 
+    print("COMMENTING OUT PLOTS OF MULTISPECTRA")
+    #import matplotlib.pyplot as plt
+    #plt.figure("COMBINED_SKY")
+    #plt.imshow(data)
+
     # just to retrieve order information
     wvlsol_v0 = obsset.load_resource_for("wvlsol_v0")
     orders = wvlsol_v0["orders"]
@@ -286,8 +286,6 @@ def extract_spectra_multi(obsset):
     ap = get_simple_aperture_from_obsset(obsset, orders=orders)
 
     def make_hdu(s_up, s_down, data):
-        #data_out = np.array(data)
-        #save_domain = data_out.ndim == 1
         len_data = [len(tmp) for tmp in data]
         save_domain = len(np.unique(len_data)) != 1
 
@@ -325,18 +323,29 @@ def extract_spectra_multi(obsset):
 
     hdu_list = []
 
+    #plt.figure('SPECTRAS')
+
     s_center = ap.extract_spectra_v3(data,
                                      slice_center[0], slice_center[1])
+
+    #lab = 0.5*(slice_center[0] + slice_center[1])
+    #plt.plot(s_center[10], label=str(lab))
 
     hdu_list.append(make_hdu(slice_center[0], slice_center[1], s_center))
 
     for s1, s2 in slice_up:
         s = ap.extract_spectra_v3(data, s1, s2)
         hdu_list.append(make_hdu(s1, s2, s))
+        #lab = 0.5*(s1 + s2)
+        #plt.plot(s[10], label=str(lab))
 
     for s1, s2 in slice_down:
         s = ap.extract_spectra_v3(data, s1, s2)
         hdu_list.append(make_hdu(s1, s2, s))
+        #lab = 0.5*(s1 + s2)
+        #plt.plot(s[10], label=str(lab))
+    #plt.legend(loc=0, prop={'size': 12})
+    #plt.show()
 
     hdul = obsset.get_hdul_to_write(*hdu_list)
 

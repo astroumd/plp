@@ -20,7 +20,7 @@ def produce_qa(obsset, outtype="pdf"):
     outroot = "SDC{}_{}_{}_{}".format(band, obsdate, groupname, _outroot)
     save_figlist(obsset, fig_list, section, outroot, outtype)
 
-def check_order_flat(order_flat_json, nx=2048):
+def check_order_flat(order_flat_json, nx):
 
     from ..procedures.trace_flat import (prepare_order_trace_plot,
                                          check_order_trace1, check_order_trace2)

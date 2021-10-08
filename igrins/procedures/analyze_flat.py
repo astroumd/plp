@@ -110,7 +110,7 @@ def _get_fwhm(imderiv, bottom, bottom_peak, width):
     # zz.fill(np.nan)
     zz = np.zeros(2*width, dtype="d")
 
-    nn = imderiv.shape[0]  # 2048
+    nn = imderiv.shape[0] #size of array
 
     sl = [slice(int(y0) - width, int(y0) + width)
           if np.isfinite(y0) else slice(0, 0)
@@ -208,7 +208,7 @@ if False:
 
     oi = 10
     clf()
-    x = np.arange(2048)
+    x = np.arange(nx)
     plot(np.ma.array(ys["1st_moment"]["bottom"][oi] - ap(ap.orders[oi], x, 0),
                      mask=msk2[oi]))
 

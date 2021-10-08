@@ -23,6 +23,9 @@ def get_wat_spec(orders, wvl_sol):
     WAT header
     wvl_sol should be a list of Chebyshev polynomials.
     """
+    
+    print("FIX GET_WAT_SPEC: WAVELENGTH STUFF IS BAD")
+    print("WAVELENGTHS OUTSIDE OF FITTED REGIONS ARE PROBABLY NOT GOOD")
 
     # specN = ap beam dtype w1 dw nw z aplow aphigh
     specN_tmpl = "{ap} {beam} {dtype} {w1} {dw} {nw} {z} {aplow} {aphigh}"
@@ -31,13 +34,14 @@ def get_wat_spec(orders, wvl_sol):
     from itertools import count
     for ap_num, o, wsol in zip(count(1), orders, wvl_sol):
         specN = "spec%d" % ap_num
+        domain = wsol.domain
 
         d = dict(ap=ap_num,
                  beam=o,
                  dtype=2,
                  w1=wsol(0),
-                 dw=(wsol(2047)-wsol(0))/2048.,
-                 nw=2048,
+                 dw=(wsol(4096)-wsol(0))/4096.,
+                 nw=4096,
                  z=0.,
                  aplow=0.,
                  aphigh=1.

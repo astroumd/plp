@@ -1,8 +1,4 @@
 import numpy as np
-# import scipy.ndimage as ni
-
-# from ..utils.image_combine import image_median
-# from ..igrins_libs.resource_helper_igrins import ResourceHelper
 
 from ..pipeline.steps import Step
 
@@ -12,8 +8,6 @@ from ..procedures.procedure_dark import (apply_rp_2nd_phase,
 
 from ..procedures.ro_pattern_fft import (get_amp_wise_rfft,
                                          make_model_from_rfft)
-# from ..procedures.ro_pattern_fft import (get_amp_wise_rfft,
-#                                          make_model_from_rfft)
 from .gui_combine import setup_gui, factory_pattern_remove_n_smoothed
 
 
@@ -25,7 +19,7 @@ def _get_combined_image(obsset):
 
 
 def remove_pattern(data_minus, mask=None, remove_level=1,
-                   remove_amp_wise_var=True, nx=2048):
+                   remove_amp_wise_var=True, nx=4096):
 
     if nx != 2048:
         print("SKIPPING REMOVE_PATTERN BECAUSE NX =", nx)

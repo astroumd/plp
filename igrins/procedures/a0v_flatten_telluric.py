@@ -28,8 +28,8 @@ class TelluricTransmission(object):
 
         self._data = np.load(fn, allow_pickle=True)
         
-        print("TELLURIC TRANSMISSION HAS BEEN SET TO 1")
-        self._data[:, 1] = 1.0
+        #print("TELLURIC TRANSMISSION HAS BEEN SET TO 1")
+        #self._data[:, 1] = 1.0
 
         #self.dd = np.genfromtxt(fn)
         self.trans = self._data[:, 1]

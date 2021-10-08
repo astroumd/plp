@@ -147,7 +147,7 @@ def plot_solutions1(fig1, flat,
 
 
 def plot_solutions2(fig2, cent_bottomup_list,
-                    bottom_up_solutions, nx=2048):
+                    bottom_up_solutions, nx):
 
     # x_indices = np.arange(flat.shape[1])
 
@@ -179,34 +179,15 @@ def plot_solutions2(fig2, cent_bottomup_list,
 
 def plot_trace_solutions(fig1, fig2, flat_normed,
                          flatcentroid_sol_json,
-                         # trace_solution_products,
-                         # trace_solution_products_plot
                          ):
-
-    # from storage_descriptions import (FLAT_NORMED_DESC,
-    #                                   FLATCENTROID_SOL_JSON_DESC)
-
-    # flat_normed = flaton_products[FLAT_NORMED_DESC].data
-    # _d = trace_solution_products[FLATCENTROID_SOL_JSON_DESC]
 
     bottom_up_solutions_ = flatcentroid_sol_json["bottom_up_solutions"]
 
     from .polynomials import nested_convert_to_poly
     bottom_up_solutions = nested_convert_to_poly(bottom_up_solutions_)
 
-    # for b, d in bottom_up_solutions_:
-    #     import numpy.polynomial as P
-    #     assert b[0] == "poly"
-    #     assert d[0] == "poly"
-    #     bp = P.Polynomial(b[1])
-    #     dp = P.Polynomial(d[1])
-    #     bottom_up_solutions.append((bp, dp))
-
-    # from .qa_flat import plot_solutions1, plot_solutions2
     fig1 = plot_solutions1(fig1, flat_normed,
                            bottom_up_solutions)
-
-    # _d = trace_solution_products_plot[FLATCENTROID_SOL_JSON_DESC]
 
     bottom_up_solutions_qa_ = flatcentroid_sol_json["bottom_up_solutions_qa"]
     bottom_up_solutions_qa = nested_convert_to_poly(bottom_up_solutions_qa_)
@@ -248,8 +229,6 @@ def plot_qa_flat(obsset, ax1, ax2):
 
 
 def produce_qa(obsset, outtype="pdf"):
-    # , params, _process, exptime=None):
-    # import matplotlib.pyplot as plt
 
     from matplotlib.figure import Figure
     from ..quicklook.qa_helper import (save_figlist, check_outtype)
@@ -259,12 +238,9 @@ def produce_qa(obsset, outtype="pdf"):
 
     figlist = []
     fig = Figure(figsize=(12, 6))
-    # import matplotlib.pyplot as plt
-    # fig = plt.figure(figsize=(12, 6))
 
     ax1 = fig.add_subplot(121)
     ax2 = fig.add_subplot(122)
-    # ax3 = fig.add_subplot(133)
 
     im_deriv, line_detected, im_flat, line_modeled = \
         plot_qa_flat(obsset, ax1, ax2)
@@ -312,7 +288,6 @@ def run_interactive(obsset, params):
                 im.set_visible(False)
 
     from ..utils.gui_box_helper import setup_basic_gui
-    # from ..utils.gui_box_helper import WidgetSet, Input, Radio, Check, Button
     from ..utils.gui_box_helper import Radio
     widgets = [
         Radio("image_kind",
@@ -354,18 +329,12 @@ def main_interactive():
                         frametypes=["OFF"]*10 + ["ON"]*10,
                         config_file=config_file)
 
-    # from igrins import DESCS
-
-    # produce_qa(obsset)
-
     params = dict(image_kind="flat", line_kind="modeled")
 
     interactive = True
     if interactive:
 
         params = run_interactive(obsset, params)
-        # , params, _process_sky,
-        #                          exptime=exptime)
 
         to_save = params.pop("to_save", False)
         if not to_save:

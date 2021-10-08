@@ -1,16 +1,7 @@
 from __future__ import print_function
 
-# import Libs.manual as m
-# reload(m)
-# import Libs.ap_tracing as m2
-# reload(m2)
-# import os
 import numpy as np
-
-# import astropy.io.fits as pyfits
 import scipy.ndimage as ni
-
-# import itertools
 
 from . import badpixel as bp
 
@@ -554,7 +545,7 @@ def get_matched_slices(yc_down_list, yc_up_list):
 
 def trace_centroids_chebyshev(centroid_bottom_list,
                               centroid_up_list,
-                              domain, ref_x=None, nx=2048):
+                              domain, nx, ref_x=None):
     # from .trace_aperture import trace_aperture_chebyshev
     #TODO: See difference in domain and nx variables
 

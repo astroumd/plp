@@ -12,3 +12,7 @@ class RIMASDetector(Detector):
     #print("RIMAS DETECTOR AT 2048")
     #nx = 2048
     #ny = 2048
+
+class RIMASH2RGDetector(Detector):
+    nx = 2048
+    ny = 2048

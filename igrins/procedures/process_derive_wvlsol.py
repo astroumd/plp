@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 
-def _convert2wvlsol(p, orders_w_solutions, nx=2048):
+def _convert2wvlsol(p, orders_w_solutions, nx):
 
     # derive wavelengths.
     xx = np.arange(nx)
@@ -18,7 +18,7 @@ def _convert2wvlsol(p, orders_w_solutions, nx=2048):
 
 from .ecfit import fit_2dspec
 
-def _fit_2d(xl, yl, zlo, xdeg=4, ydeg=3, p_init=None, nx=2048):
+def _fit_2d(xl, yl, zlo, nx, xdeg=4, ydeg=3, p_init=None):
     """
     df: pixels, order, wavelength"""
 
@@ -42,7 +42,7 @@ def _fit_2d(xl, yl, zlo, xdeg=4, ydeg=3, p_init=None, nx=2048):
     return p, fit_results
 
 
-def fit_wvlsol(df, xdeg=4, ydeg=3, p_init=None, nx=2048):
+def fit_wvlsol(df, nx, xdeg=4, ydeg=3, p_init=None):
     """
     df: pixels, order, wavelength"""
     from .ecfit import fit_2dspec
@@ -55,7 +55,7 @@ def fit_wvlsol(df, xdeg=4, ydeg=3, p_init=None, nx=2048):
     # yl : order
     # zlo : wvl * order
 
-    p, fit_results = _fit_2d(xl, yl, zlo, xdeg=xdeg, ydeg=ydeg, p_init=p_init, nx=nx)
+    p, fit_results = _fit_2d(xl, yl, zlo, nx, xdeg=xdeg, ydeg=ydeg, p_init=p_init)
     return p, fit_results
 
 
@@ -69,13 +69,13 @@ def derive_wvlsol(obsset):
     msk = df["slit_center"] == 0.5
     dfm = df[msk]
 
-    p, fit_results = fit_wvlsol(dfm, nx=nx)
+    p, fit_results = fit_wvlsol(dfm, nx)
 
     from ..igrins_libs.resource_helper_igrins import ResourceHelper
     helper = ResourceHelper(obsset)
     orders = helper.get("orders")
 
-    wvl_sol = _convert2wvlsol(p, orders, nx=obsset.detector.nx)
+    wvl_sol = _convert2wvlsol(p, orders, nx)
     d = dict(orders=orders,
              wvl_sol=wvl_sol)
     
