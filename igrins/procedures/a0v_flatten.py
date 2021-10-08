@@ -4,16 +4,18 @@ import numpy as np
 
 
 def _get_a0v_interp1d(obsset):
+    """Generate an interpolation function for the input VEGA spectra
+    """
+
     vega_data = obsset.rs.load_ref_data("VEGA_SPEC")
     from .a0v_spec import A0VSpec
     a0v_spec = A0VSpec(vega_data)
     print("REPLACING MIN/MAX WVL IN _GET_A0V_INTERP1D")
+    #Original code used 1.3, 2.5. We needed to increase the range
+    #because of the larger frequency coverage in these detectors
     a0v_interp1d = a0v_spec.get_flux_interp1d(0.3, 3.0,
                                               flatten=False,
                                               smooth_pixel=32)
-    #a0v_interp1d = a0v_spec.get_flux_interp1d(1.3, 2.5,
-    #                                          flatten=False,
-    #                                          smooth_pixel=32)
     return a0v_interp1d
 
 
@@ -69,48 +71,18 @@ def store_a0v_results(obsset, a0v_flattened_data):
     obsset.store("spec_fits_flattened", hdul)
 
 
-# if 0:
-
-#     # orderflat_response = extractor.orderflat_json["fitted_responses"]
-
-#     # tgt_basename = extractor.pr.tgt_basename
-#     # igr_path = extractor.igr_path
-#     # figout = igr_path.get_section_filename_base("QA_PATH",
-#     #                                             "flattened_"+tgt_basename) + ".pdf"
-
-#     from igrins.libs.a0v_flatten import get_a0v_flattened
-#     data_list = get_a0v_flattened(a0v_interp1d, tel_interp1d_f,
-#                                     wvl, s_list, orderflat_response,
-#                                     figout=figout)
-
-#     if self.fill_nan is not None:
-#         flattened_s = data_list[0][1]
-#         flattened_s[~np.isfinite(flattened_s)] = self.fill_nan
-
-#     return data_list
-
-
 def get_tel_interp1d_f(obsset, wvl_solutions):
+    """Generates an interpolation function for the telluric transmission model
+    """
 
-    # from ..libs.master_calib import get_master_calib_abspath
-    # fn = get_master_calib_abspath("telluric/LBL_A15_s0_w050_R0060000_T.fits")
-    # self.telluric = pyfits.open(fn)[1].data
-
-    # telfit_outname = "telluric/transmission-795.20-288.30-41.9-45.0-368.50-3.90-1.80-1.40.%s" % extractor.band
-    # telfit_outname_npy = telfit_outname+".npy"
     telfit_outname_npy = obsset.rs.query_ref_data_path("TELFIT_MODEL")
     telfit_outname_npy = telfit_outname_npy.replace('/', os.path.sep)
-    # telfit_outname_npy = obsset.rs.query_ref_data_path("VEGA_SPEC")
+    
     from ..igrins_libs.logger import debug
 
     debug("loading TELFIT_MODEL: {}".format(telfit_outname_npy))
 
-    # if 0:
-    #     dd = np.genfromtxt(telfit_outname)
-    #     np.save(open(telfit_outname_npy, "w"), dd[::10])
-
     from .a0v_flatten_telluric import TelluricTransmission
-    # _fn = get_master_calib_abspath(telfit_outname_npy)
     tel_trans = TelluricTransmission(telfit_outname_npy)
 
     wvl_solutions = np.array(wvl_solutions)

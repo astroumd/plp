@@ -158,7 +158,6 @@ def get_smooth_continuum(s, wvl=None):
     wvl : required for masking our some absorption features
     """
 
-    # from .trace_flat import get_finite_boundary_indices
     k1, k2 = _get_finite_boundary_indices(s)
     if k1 == k2:
         r = np.empty(len(s), dtype="d")
@@ -246,41 +245,3 @@ if __name__ == "__main__":
         #ax3.set_ylim(-0.02, 0.05)
 
 
-
-if 0:
-    #for s1, a0v1, wvl1 in zip(specs, dd, wvl_sol):
-        #s1 = specs[ii]
-        #a0v1 = dd[ii]
-
-        from .trace_flat import get_finite_boundary_indices
-        k1, k2 = get_finite_boundary_indices(s1)
-        sl = slice(k1, k2+1)
-
-        #s1m = ni.median_filter(np.array(s1[sl]), 150)
-
-        s1m = np.array(s1[sl])
-
-        wvl11 = np.array(wvl1[sl])
-        for ww1, ww2 in [(1.9112, 1.9119),
-                         (1.91946, 1.92139),
-                         (1.92826, 1.92901),
-                         (1.92372, 1.92457)]:
-            msk = (ww1 < wvl11) & (wvl11 < ww2)
-            s1m[msk] = np.nan
-
-
-        f12 = sv_iter(s1m, winsize1=351, winsize2=91)
-
-
-        if 0:
-            ww = get(s1[sl], f12)
-            ax2.plot(ww)
-            s1m2 = s1m/ww
-            f12 = sv_iter(s1m2, winsize1=351, winsize2=71)
-
-            f12[f12 < f12.max() * 0.05] = np.nan
-            #ax2.plot(s1[sl] / f12, zorder=0.2, color="0.5")
-            #ax1.plot(s1[sl], color="0.8")
-            #ax1.plot(f12)
-        else:
-            s1m2 = s1m

@@ -496,10 +496,6 @@ def make_bias_mask(obsset):
 
     order_map2 = ap.make_order_map(mask_top_bottom=True)
 
-    # from igrins.libs.storage_descriptions import FLAT_MASK_DESC
-    # flat_mask = igr_storage.load1(FLAT_MASK_DESC,
-    #                               flat_on_filenames[0])
-
     flat_mask = obsset_on.load(DESCS["flat_mask"])
     bias_mask = flat_mask & (order_map2 > 0)
 
@@ -514,6 +510,7 @@ def update_db(obsset):
     obsset_off.add_to_db("flat_off")
     obsset_on.add_to_db("flat_on")
 
+# Copy of the steps for reference
 # steps = [Step("Combine Flat-Off", combine_flat_off),
 #          Step("Hotpix Mask", make_hotpix_mask,
 #               sigma_clip1=100, sigma_clip2=5),

@@ -4,7 +4,7 @@ import numpy as np
 import scipy.ndimage as ni
 
 
-def estimate_background(data, msk, di=24, min_pixel=10):
+def estimate_background(data, msk, di=24, min_pixel=10, nx=2048):
 
     def get_sky_points1(data, msk, di, i0):
         """
@@ -64,7 +64,7 @@ def estimate_background(data, msk, di=24, min_pixel=10):
 
     #di = 24
     sky_points_all = []
-    for i0 in range(0, 2048, di):
+    for i0 in range(0, nx, di):
         sky_points1 = get_sky_points1(data, msk, di, i0)
         sky_points_all.extend(sky_points1)
 

@@ -3,6 +3,8 @@ import scipy.ndimage as ni
 
 from ..utils.image_combine import image_median
 from ..igrins_libs.resource_helper_igrins import ResourceHelper
+from ..igrins_recipes.recipe_combine import (make_combined_images
+                                             as _make_combined_images)
 
 
 def _get_int_from_config(obsset, kind, default):
@@ -41,9 +43,7 @@ def _get_combined_image(obsset):
     data_list = [hdu.data for hdu in obsset.get_hdus()]
 
     return np.sum(data_list, axis=0)
-# def _get_combined_image(obsset):
-#     data_list = [hdu.data for hdu in obsset.get_hdus()]
-#     return image_median(data_list)
+    #return image_median(data_list)
 
 
 def get_destriped(obsset,
@@ -114,70 +114,6 @@ def get_variance_map_deprecated(obsset, data_minus, data_plus):
     # added from the simulated spectra.
     # variance : variance with poisson noise.
     return variance_map0, variance_map
-
-
-# def make_combined_images(obsset,
-#                          destripe_pattern=64,
-#                          use_destripe_mask=True,
-#                          sub_horizontal_median=True,
-#                          allow_no_b_frame=False):
-
-#     ab_mode = obsset.recipe_name.endswith("AB")
-
-#     obsset_a = obsset.get_subset("A", "ON")
-#     obsset_b = obsset.get_subset("B", "OFF")
-
-#     na, nb = len(obsset_a.obsids), len(obsset_b.obsids)
-#     if ab_mode and (na != nb):
-#         raise RuntimeError("For AB nodding, number of A and B should match!")
-
-#     if na == 0:
-#         raise RuntimeError("No A Frame images are found")
-
-#     if nb == 0 and not allow_no_b_frame:
-#         raise RuntimeError("No B Frame images are found")
-
-#     if nb == 0:
-#         a_data = _get_combined_image(obsset_a)
-#         data_minus = a_data
-
-#     else:  # nb > 0
-#         # a_b != 1 for the cases when len(a) != len(b)
-#         a_b = float(na) / float(nb)
-
-#         a_data = _get_combined_image(obsset_a)
-#         b_data = _get_combined_image(obsset_b)
-
-#         data_minus = a_data - a_b * b_data
-
-#     if destripe_pattern is not None:
-
-#         data_minus = get_destriped(obsset,
-#                                    data_minus,
-#                                    destripe_pattern=destripe_pattern,
-#                                    use_destripe_mask=use_destripe_mask,
-#                                    sub_horizontal_median=sub_horizontal_median)
-
-#     if nb == 0:
-#         data_plus = a_data
-#     else:
-#         data_plus = (a_data + (a_b**2)*b_data)
-
-#     variance_map0, variance_map = get_variance_map(obsset,
-#                                                    data_minus, data_plus)
-
-#     # hdul = obsset.get_hdul_to_write(([], data_minus))
-#     # obsset.store("combined_image1", data=hdul, cache_only=True)
-
-#     hdul = obsset.get_hdul_to_write(([], variance_map0))
-#     obsset.store("combined_variance0", data=hdul, cache_only=True)
-
-#     hdul = obsset.get_hdul_to_write(([], variance_map))
-#     obsset.store("combined_variance1", data=hdul, cache_only=True)
-
-
-from ..igrins_recipes.recipe_combine import (make_combined_images
-                                             as _make_combined_images)
 
 
 def make_combined_images(obsset,
@@ -366,29 +302,6 @@ def store_2dspec(obsset,
 
     wvl_header, wvl_data, convert_data = get_wvl_header_data(obsset)
 
-    # wvl_header, wvl_data, convert_data = \
-    #             self.get_wvl_header_data(igr_storage,
-    #                                      extractor)
-
-    # from ..libs.load_fits import open_fits
-    # f_obj = open_fits(extractor.obj_filenames[0])
-    # f_obj[0].header.extend(wvl_header)
-
-    # # tgt_basename = extractor.pr.tgt_basename
-    # tgt_basename = mastername
-
-    # from ..libs.storage_descriptions import FLATCENTROID_SOL_JSON_DESC
-    # cent = igr_storage.load1(FLATCENTROID_SOL_JSON_DESC,
-    #                          extractor.basenames["flat_on"])
-    # fn = ("calib/primary/20140525/"
-    #       "FLAT_SDCK_20140525_0074.centroid_solutions.json")
-    # #cent = json.load(open(fn))
-    # _bottom_up_solutions = cent["bottom_up_solutions"]
-    # old_orders = extractor.get_old_orders()
-    # _o_s = dict(zip(old_orders, _bottom_up_solutions))
-    # new_bottom_up_solutions = [_o_s[o] for o in \
-    #                            extractor.orders_w_solutions]
-
     bottom_up_solutions_ = obsset.load_resource_for("aperture_definition")
     bottom_up_solutions = bottom_up_solutions_["bottom_up_solutions"]
     domain_list = bottom_up_solutions_["domain"]
@@ -444,6 +357,8 @@ def extract_stellar_spec(obsset, extraction_mode="optimal",
     ap = helper.get("aperture")
 
     postfix = obsset.basename_postfix
+
+    #Load all the maps that used in the spectra extraction
     data_minus = obsset.load_fits_sci_hdu("COMBINED_IMAGE1",
                                           postfix=postfix).data
 
@@ -461,14 +376,13 @@ def extract_stellar_spec(obsset, extraction_mode="optimal",
     ordermap_bpixed = helper.get("ordermap_bpixed")
     slitpos_map = helper.get("slitposmap")
 
-    # from .slit_profile import get_profile_func
-    # profile = get_profile_func(obsset)
-
     gain = float(obsset.rs.query_ref_value("gain"))
 
     profile_map = obsset.load_fits_sci_hdu("slitprofile_fits",
                                            postfix=postfix).data
 
+    #Extract spectra using the calculated 2D profile and the loaded
+    #data files
     from .spec_extract_w_profile import extract_spec_using_profile
     _ = extract_spec_using_profile(ap, profile_map,
                                    variance_map,
@@ -485,26 +399,26 @@ def extract_stellar_spec(obsset, extraction_mode="optimal",
     s_list, v_list, cr_mask, aux_images = _
 
     #NJM REMOVE EVENTUALLY
-    print("NJM COMMENTED OUT AFGGS PLOT")
-    #print("SSS:", len(s_list), len(s_list[0]))
-    #import matplotlib.pyplot as plt
-    #plt.figure("S_LIST")
-    #i = 0
-    #for s in s_list[4:-4]:
-    #    plt.plot(s, label=str(i+30))
-    #    i += 1
-    #plt.legend(loc=0, prop={'size': 12})
+    #print("NJM COMMENTED OUT AFGGS PLOT")
+    print("SSS:", len(s_list), len(s_list[0]))
+    import matplotlib.pyplot as plt
+    plt.figure("S_LIST")
+    i = 0
+    for s in s_list[4:-4]:
+        plt.plot(s, label=str(i+30))
+        i += 1
+    plt.legend(loc=0, prop={'size': 12})
 
-    #plt.figure("AFGGS")
-    #plt.imshow(profile_map)
-    #plt.show()
+    plt.figure("AFGGS")
+    plt.imshow(profile_map)
+    plt.show()
 
     if calculate_sn:
         # calculate S/N per resolution
         wvl_solutions = helper.get("wvl_solutions")
 
-        print("NJM SORTING DOMAIN_LIST THOUGH IT IS PROBABLY ALREADY SORTED")
-        print("WHEN CONVERTING FROM DICTIONARY")
+        #NJM: SORTING DOMAIN_LIST THOUGH IT IS PROBABLY ALREADY SORTED
+        #WHEN CONVERTING FROM DICTIONARY
         key_list = []
         domain_list = []
         for key in ap.domain_dict:

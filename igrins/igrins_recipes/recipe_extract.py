@@ -11,23 +11,7 @@ from ..procedures.target_spec import (setup_extraction_parameters,
                                       extract_extended_spec_ver2,
                                       store_2dspec)
 
-# # from .target_spec import subtract_interorder_background
-# # from .target_spec import xshift_images
-# from .target_spec import estimate_slit_profile
-# from .target_spec import extract_stellar_spec
-# from .target_spec import extract_extended_spec
-# # from .target_spec import update_slit_profile  # This needs furthe fix
-# from .target_spec import store_2dspec
 from ..procedures.a0v_flatten import flatten_a0v
-
-# def update_distortion_db(obsset):
-
-#     db = obsset.add_to_db("distortion")
-
-
-# def update_wvlsol_db(obsset):
-
-#     db = obsset.add_to_db("wvlsol")
 
 from ..pipeline.steps import Step
 
@@ -90,8 +74,6 @@ _steps_stellar = [
     Step("Estimate slit profile (stellar)",
          estimate_slit_profile_stellar,
          slit_profile_mode="1d"),
-    # Step("Extract spectra (for extendeded)",
-    #      extract_extended_spec),
     Step("Extract spectra (for stellar)",
          extract_stellar_spec,
          extraction_mode="optimal"),
@@ -131,8 +113,6 @@ _steps_extended = [
          lacosmic_thresh=0.,
          # extraction_mode="simple",
     ),
-    # Step("Extract spectra (for stellar)",
-    #      extract_stellar_spec),
     Step("Generate Rectified 2d-spec", store_2dspec)
 ]
 

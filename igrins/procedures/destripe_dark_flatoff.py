@@ -28,7 +28,8 @@ def model_bg(dark3, destripe_mask, nx=2048, ny=None):
     V = dark3
     di, min_pixel = 24, 40
     xc, yc, v, std = estimate_background(V, destripe_mask,
-                                         di=di, min_pixel=min_pixel)
+                                         di=di, min_pixel=min_pixel,
+                                         nx=nx)
 
     if ny is None:
         ny = nx

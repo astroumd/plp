@@ -1,13 +1,9 @@
 from __future__ import print_function
 
-# from collections import namedtuple
 import warnings
 
 import numpy as np
 import matplotlib  # Affine class is used
-# import scipy.ndimage as ni
-
-# from astropy.io.fits import Card
 
 from .. import DESCS
 from ..igrins_libs.resource_helper_igrins import ResourceHelper
@@ -15,14 +11,8 @@ from ..utils.load_fits import get_first_science_hdu
 
 from .aperture_helper import get_simple_aperture_from_obsset
 
-# from .sky_spec import make_combined_image_sky, extract_spectra
-# these are used by recipes
-
 
 def _get_ref_spec_name(recipe_name):
-
-    # if recipe_name is None:
-    #     recipe_name = self.recipe_name
 
     if (recipe_name in ["SKY"]) or recipe_name.endswith("_AB"):
         ref_spec_key = "SKY_REFSPEC_JSON"
@@ -58,8 +48,6 @@ def _match_order(src_spectra, ref_spectra):
 def identify_orders(obsset):
 
     ref_spec_key, _ = _get_ref_spec_name(obsset.recipe_name)
-    # from igrins.libs.master_calib import load_ref_data
-    # ref_spectra = load_ref_data(helper.config, band,
 
     ref_spec_path, ref_spectra = obsset.rs.load_ref_data(ref_spec_key,
                                                          get_path=True)
@@ -87,7 +75,6 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst):
     from scipy.signal import correlate
     offsets = []
     cor_list = []
-    #center = nx/2.
     nxs = []
 
     for s_src, s_dst in zip(thar_spec_src, thar_spec_dst):
@@ -97,7 +84,6 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst):
         nxs.append(nx)
         center = nx / 2.
 
-        import warnings
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -107,7 +93,6 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst):
         offset = center - np.argmax(cor)
         offsets.append(offset)
 
-    # from skimage.measure import ransac, LineModel
     from .skimage_measure_fit import ransac, LineModel
 
     xi = np.arange(len(offsets))
@@ -224,47 +209,6 @@ def identify_lines(obsset):
             pix_list[dist > 1] = -1
             pixpos[msk] = pix_list
             
-            #NJM Comment from HERE
-            '''
-            tmp = pix_list != -1
-            print("N_pix:", np.sum(tmp))
-            
-            s_ref = ref_spec["specs"][x0]
-            print("Order:", o, ref_spec["orders"][x0])
-            x0 += 1
-            import matplotlib.pyplot as plt
-            xvals = np.arange(len(s_ref)) + offsetfunc_map[o](0)
-            xvals0 = np.arange(len(s))
-            plt.figure('Spectra')
-            plt.plot(xvals + 866, np.array(s_ref), 'b', label='Reference')
-            plt.plot(xvals0 + 866, np.array(s)*10, 'g', label='Target')
-            #plt.plot(np.array(s), 'g', label='Target')
-            i = ref_pix_list[0]
-            plt.plot([i, i], [0, 20], 'k', label='Reference')
-            for i in ref_pix_list[dist <= 10000]:
-                if i >= 0 and i < len(s):
-                    plt.plot([i, i], [0, 200], 'k')
-            i = pix_list[0]
-            plt.plot([i, i], [0, 15], 'r', label='Target')
-            for i in pix_list[dist <= 1]:
-                plt.plot([i, i], [0, 150], 'r')
-            plt.legend(loc=0, prop={'size': 12})
-            plt.xlim([0, 200])
-            #plt.show()
-
-            plt.figure('<=1')
-            plt.scatter(ref_pix_list[dist <= 1], np.ones_like(ref_pix_list[dist <= 1]), marker='o')
-            plt.scatter(pix_list[dist <= 1], 1.1*np.ones_like(pix_list[dist <= 1]), marker='x')
-            plt.xlim([0, 500])
-            
-            plt.figure('All')
-            plt.scatter(ref_pix_list, np.ones_like(ref_pix_list), marker='o')
-            plt.scatter(pix_list, 1.1*np.ones_like(pix_list), marker='x')
-            plt.xlim([0, 500])
-            plt.show()
-            '''
-            #NJM Comment to HERE
-
         identified_lines_tgt.append_order_info(o, wvl, indices, pixpos)
 
     # REF_TYPE = "OH"
@@ -275,95 +219,6 @@ def identify_lines(obsset):
     #                                   "IDENTIFIED_LINES")
     obsset.store(DESCS["IDENTIFIED_LINES_JSON"],
                  identified_lines_tgt.data)
-
-# def update_db(obsset):
-
-#     obsset_off = obsset.get_subset("OFF")
-#     obsset_on = obsset.get_subset("ON")
-
-#     obsset_off.add_to_db("flat_off")
-#     obsset_on.add_to_db("flat_on")
-
-
-###
-
-# def process_band(utdate, recipe_name, band,
-#                  groupname,
-#                  obsids, frametypes, aux_infos,
-#                  config_name, **kwargs):
-
-#     if recipe_name.upper() != "SKY_AB":
-#         if recipe_name.upper().endswith("_AB") and not kwargs.pop("do_ab"):
-#             logger.info("ignoring {}:{}".format(recipe_name, groupname))
-#             return
-
-#     from .. import get_caldb, get_obsset
-#     caldb = get_caldb(config_name, utdate)
-#     obsset = get_obsset(caldb, band, recipe_name, obsids, frametypes)
-
-#     # STEP 1 :
-#     # make combined image
-
-#     if recipe_name.upper() in ["SKY"]:
-#         pass
-#     elif recipe_name.upper().endswith("_AB"):
-#         pass
-#     elif recipe_name.upper() in ["THAR"]:
-#         pass
-#     else:
-#         msg = ("recipe_name {} not supported "
-#                "for this recipe").format(recipe_name)
-#         raise ValueError(msg)
-
-#     if recipe_name.upper() in ["THAR"]:
-#         make_combined_image_thar(obsset)
-#     else:
-#         make_combined_image_sky(obsset)
-
-#     # Step 2
-
-#     # load simple-aperture (no order info; depends on
-
-#     extract_spectra(obsset)
-
-#     ## aperture trace from Flat)
-
-#     ## extract 1-d spectra from ThAr
-
-#     # Step 3:
-#     ## compare to reference ThAr data to figure out orders of each strip
-#     ##  -  simple correlation w/ clipping
-
-#     identify_orders(obsset)
-
-#     # Step 4:
-#     ##  - For each strip, measure x-displacement from the reference
-#     ##    spec. Fit the displacement as a function of orders.
-#     ##  - Using the estimated displacement, identify lines from the spectra.
-#     identify_lines(obsset)
-
-#     # Step 6:
-
-#     ## load the reference echellogram, and find the transform using
-#     ## the identified lines.
-
-#     from .find_affine_transform import find_affine_transform
-#     find_affine_transform(obsset)
-
-#     from ..libs.transform_wvlsol import transform_wavelength_solutions
-#     transform_wavelength_solutions(obsset)
-
-#     # Step 8:
-
-#     ## make order_map and auxilary files.
-
-#     save_orderflat(obsset)
-
-#     # save figures
-
-#     save_figures(obsset)
-
-#     save_db(obsset)
 
 def find_affine_transform(obsset):
 
@@ -388,39 +243,6 @@ def find_affine_transform(obsset):
 
     xy_list_ref = identified_lines_tgt.get_xy_list_from_wvllist(echellogram)
 
-    #diffs = np.zeros(len(xy_list_tgt))
-    #for i in range(len(xy_list_tgt)):
-    #    diffs[i] = xy_list_tgt[0][0] - xy_list_ref[0][0]
-
-    print("COMMENTING OUT TEST XY LIST PLOT")
-    '''
-    print("TTT0:", xy_list_tgt[0])
-    print("TTT1:", xy_list_tgt[1])
-    print("TTT2:", xy_list_tgt[2])
-
-    print("UUU0:", xy_list_ref[0])
-    print("UUU1:", xy_list_ref[1])
-    print("UUU2:", xy_list_ref[2])
-    
-    #TEST LINES
-    import matplotlib.pyplot as plt
-    for xy0, xy1 in zip(xy_list_ref, xy_list_tgt):
-        plt.figure('Lines')
-        plt.scatter(xy0[0], xy0[1], marker='x', color='k')
-        plt.scatter(xy1[0], xy1[1], marker='o', color='r')
-        plt.figure('Arrow')
-        plt.arrow(xy0[0], xy0[1], 5*(xy1[0]-xy0[0]), 5*(xy1[1]-xy0[1]), width=0.1)
-    plt.show()
-    '''
-
-    #_ = _get_ref_spec_name(obsset.recipe_name)
-    #ref_spec_key, ref_identified_lines_key = _
-    #ref_spec = obsset.rs.load_ref_data(ref_spec_key)
-    #tgt_spec = obsset.load(DESCS["ONED_SPEC_JSON"])
-    
-    #plt.figure()
-    #plt.plot(ref_spec['specs'][0])
-   
     assert len(xy_list_tgt) == len(xy_list_ref)
 
     from .fit_affine import fit_affine_clip
@@ -433,7 +255,6 @@ def find_affine_transform(obsset):
 
     obsset.store(DESCS["ALIGNING_MATRIX_JSON"],
                  data=d)
-# from .find_affine_transform import find_affine_transform
 
 
 def _get_wavelength_solutions(affine_tr_matrix, zdata,
@@ -446,7 +267,7 @@ def _get_wavelength_solutions(affine_tr_matrix, zdata,
     solution.
 
     """
-    #TODO: Input limited domain range for wavelength for RIMAS
+    #TODO: Input limited domain range for wavelength for RIMAS. Might not need to
     from .ecfit import get_ordered_line_data, fit_2dspec  # , check_fit
 
     affine_tr = matplotlib.transforms.Affine2D()
@@ -487,13 +308,6 @@ def _get_wavelength_solutions(affine_tr_matrix, zdata,
     p, m = fit_2dspec(_xl2, _ol2, _wl2, x_degree=4, y_degree=3,
                       x_domain=x_domain, y_domain=y_domain)
 
-    # if 0:
-    #     import matplotlib.pyplot as plt
-    #     fig = plt.figure(figsize=(12, 7))
-    #     orders_band = sorted(zdata.keys())
-    #     check_fit(fig, xl, yl, zl, p, orders_band, d_x_wvl)
-    #     fig.tight_layout()
-
     xx = np.arange(nx)
     wvl_sol = []
     for o in new_orders:
@@ -501,6 +315,7 @@ def _get_wavelength_solutions(affine_tr_matrix, zdata,
         oo.fill(o)
         wvl = p(xx, oo) / o
         wvl_sol.append(list(wvl))
+
     print("COMMENTED OUT PLOT IN procedures_register._get_wavelength_solutions")
     '''
     print("wvl_sol:", wvl_sol[4][950:955])
@@ -516,11 +331,6 @@ def _get_wavelength_solutions(affine_tr_matrix, zdata,
     plt.figure()
     plt.plot(tmp1, tmp0 - wvl2)
     '''
-
-    # if 0:
-    #     json.dump(wvl_sol,
-    #               open("wvl_sol_phase0_%s_%s.json" % \
-    #                    (band, igrins_log.date), "w"))
 
     return wvl_sol
 
@@ -549,6 +359,8 @@ def transform_wavelength_solutions(obsset):
                                         echellogram.zdata,
                                         orders, nx=obsset.detector.nx)
 
+    #TODO: REMOVE
+    '''
     #TEST WAVELENGTH
     import matplotlib.pyplot as plt
     #plt.show()
@@ -573,6 +385,7 @@ def transform_wavelength_solutions(obsset):
     plt.ylabel('% Diff')
     plt.legend(loc=0, prop={'size': 12})
     #plt.show()
+    '''
 
     obsset.store(DESCS["WVLSOL_V0_JSON"],
                  data=dict(orders=orders, wvl_sol=wvl_sol))
@@ -613,7 +426,6 @@ def _make_order_flat(flat_normed, flat_mask, orders, order_map):
 
         mmm = order_map[sl] == o
 
-        import warnings
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', r'Mean of empty slice')
 
@@ -629,16 +441,13 @@ def _make_order_flat(flat_normed, flat_mask, orders, order_map):
 
     i1i2_list = [get_order_boundary_indices(s, s0, nx=nx)
                  for s, s0 in zip(mean_order_specs, s_list)]
-    # p_list = [get_order_flat1d(s, i1, i2) for s, (i1, i2) \
-    #          in zip(s_list, i1i2_list)]
+    
     from .smooth_continuum import get_smooth_continuum
     s2_list = [get_smooth_continuum(s) for s, (i1, i2)
                in zip(s_list, i1i2_list)]
 
     # make flat
-    # x = np.arange(len(s_list[-1]))
     flat_im = np.ones(flat_normed.shape, "d")
-    # flat_im.fill(np.nan)
 
     fitted_responses = []
 
@@ -659,17 +468,6 @@ def _make_order_flat(flat_normed, flat_mask, orders, order_map):
     with np.errstate(invalid="ignore"):
         flat_im[flat_im < 0.5] = np.nan
     
-    # from storage_descriptions import (ORDER_FLAT_IM_DESC,
-    #                                   ORDER_FLAT_JSON_DESC)
-
-    # r = PipelineProducts("order flat")
-    # r.add(ORDER_FLAT_IM_DESC, PipelineImageBase([], flat_im))
-    # r.add(ORDER_FLAT_JSON_DESC,
-    #       PipelineDict(orders=orders,
-    #                    fitted_responses=fitted_responses,
-    #                    i1i2_list=i1i2_list,
-    #                    mean_order_specs=mean_order_specs))
-
     order_flat_dict = dict(orders=orders,
                            fitted_responses=fitted_responses,
                            i1i2_list=i1i2_list,
@@ -694,7 +492,6 @@ def save_orderflat(obsset):
 
     flat_mask = obsset.load_resource_for("flat_mask")
 
-    # from ..libs.process_flat import make_order_flat
     order_flat_im, order_flat_json = _make_order_flat(flat_normed,
                                                       flat_mask,
                                                       orders, order_map)
@@ -711,30 +508,23 @@ def save_orderflat(obsset):
 
 def save_figures(obsset):
 
-    #from igrins.libs.process_flat import check_order_flat
-
     order_flat_json = obsset.load_item("order_flat_json")
 
     fig_list = check_order_flat(order_flat_json)
 
     from ..quicklook.qa_helper import save_figlist, check_outtype
 
-    #dest_dir = obsset.query_item_path("qa_orderflat_dir",
-    #                                  subdir="orderflat")
-    
     obsdate, band = obsset.get_resource_spec()
     groupname = get_zeropadded_groupname(obsset.groupname)
     outroot = "SDC{}_{}_{}_{}".format(band, obsdate, groupname, _outroot)
     save_figlist(obsset, figlist, section, outroot, outtype)
 
 
-#TODO: Move to some other file????
+#TODO: Move to some other file???? WHY???
 def check_order_flat(order_flat_json):
 
     from .trace_flat import (prepare_order_trace_plot,
                              check_order_trace1, check_order_trace2)
-
-    # from storage_descriptions import ORDER_FLAT_JSON_DESC
 
     mean_order_specs = order_flat_json["mean_order_specs"]
 
@@ -771,9 +561,6 @@ def update_db(obsset):
     obsset.add_to_db("register")
 
 
-# from ..pipeline.steps import Step
-
-
 # steps = [Step("Make Combined Sky", make_combined_image_sky),
 #          Step("Extract Simple 1d Spectra", extract_spectra),
 #          Step("Identify Orders", identify_orders),
@@ -784,6 +571,3 @@ def update_db(obsset):
 #          Step("Update DB", update_db),
 # ]
 
-
-# if __name__ == "__main__":
-#     pass

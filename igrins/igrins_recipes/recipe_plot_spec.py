@@ -356,6 +356,9 @@ def html_save(utdate, dirname, objroot, band,
            
             npts = dn[1] - dn[0] + 1
 
+            #There are some issues with the edges of the spectra so
+            #we cut off the first and last 3 points.
+            #NJM: Working on understanding this
             wvl_tmp = wvl[dn[0]:dn[1]+1]
             wvl_tmp = wvl_tmp[3:-3]
             wvl_list_html.append(wvl_tmp)

@@ -23,7 +23,6 @@ def get_ordered_line_data(identified_lines, orders=None):
         o_l = zip(orders, identified_lines)
 
     for o, oh in sorted(o_l):
-
         x_list.extend(oh[0])
         y_list.extend([o] * len(oh[0]))
         z_list.extend(np.array(oh[1])*o)
