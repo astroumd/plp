@@ -258,7 +258,7 @@ def find_affine_transform(obsset):
 
 
 def _get_wavelength_solutions(affine_tr_matrix, zdata,
-                              new_orders, nx=2048):
+                              new_orders, nx=4096):
     """
     new_orders : output orders
 
@@ -268,7 +268,7 @@ def _get_wavelength_solutions(affine_tr_matrix, zdata,
 
     """
     #TODO: Input limited domain range for wavelength for RIMAS. Might not need to
-    from .ecfit import get_ordered_line_data, fit_2dspec  # , check_fit
+    from .ecfit import get_ordered_line_data, fit_2dspec
 
     affine_tr = matplotlib.transforms.Affine2D()
     affine_tr.set_matrix(affine_tr_matrix)
@@ -505,54 +505,6 @@ def save_orderflat(obsset):
     bias_mask = flat_mask & (order_map2 > 0)
 
     obsset.store(DESCS["bias_mask"], bias_mask)
-
-def save_figures(obsset):
-
-    order_flat_json = obsset.load_item("order_flat_json")
-
-    fig_list = check_order_flat(order_flat_json)
-
-    from ..quicklook.qa_helper import save_figlist, check_outtype
-
-    obsdate, band = obsset.get_resource_spec()
-    groupname = get_zeropadded_groupname(obsset.groupname)
-    outroot = "SDC{}_{}_{}_{}".format(band, obsdate, groupname, _outroot)
-    save_figlist(obsset, figlist, section, outroot, outtype)
-
-
-#TODO: Move to some other file???? WHY???
-def check_order_flat(order_flat_json):
-
-    from .trace_flat import (prepare_order_trace_plot,
-                             check_order_trace1, check_order_trace2)
-
-    mean_order_specs = order_flat_json["mean_order_specs"]
-
-    from .trace_flat import (get_smoothed_order_spec,
-                             get_order_boundary_indices,
-                             get_order_flat1d)
-
-    # these are duplicated from make_order_flat
-    s_list = [get_smoothed_order_spec(s) for s in mean_order_specs]
-    i1i2_list = [get_order_boundary_indices(s, s0) \
-                 for s, s0 in zip(mean_order_specs, s_list)]
-    # p_list = [get_order_flat1d(s, i1, i2) for s, (i1, i2) \
-    #           in zip(s_list, i1i2_list)]
-
-    from smooth_continuum import get_smooth_continuum
-    s2_list = [get_smooth_continuum(s) for s, (i1, i2) \
-               in zip(s_list, i1i2_list)]
-
-    fig_list, ax_list = prepare_order_trace_plot(s_list)
-    x = np.arange(2048)
-    for s, i1i2, ax in zip(mean_order_specs, i1i2_list, ax_list):
-        check_order_trace1(ax, x, s, i1i2)
-
-    for s, s2, ax in zip(mean_order_specs, s2_list, ax_list):
-        ax.plot(x, s2)
-        #check_order_trace2(ax, x, p)
-
-    return fig_list
 
 
 def update_db(obsset):
