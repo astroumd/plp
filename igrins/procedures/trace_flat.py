@@ -648,7 +648,7 @@ def get_order_boundary_indices(s1, s0=None, nx=2048):
 
     k1, k2 = nonzero_indices[[0, -1]]
     k1 = max(k1, 4)
-    k2 = min(k2, nx-5) #2047-4
+    k2 = min(k2, nx-5)
     s = s1[k1:k2+1]
 
     if s0 is None:
@@ -786,23 +786,7 @@ def get_order_flat1d(s, i1=None, i2=None):
 
     x = np.arange(len(s1))
 
-    if 0:
-
-        from astropy.modeling import models, fitting
-        p_init = models.Chebyshev1D(degree=6, window=[0, 2047])
-        fit_p = fitting.LinearLSQFitter()
-        p = fit_p(p_init, x[i1:i2][mmm[i1:i2]], s[i1:i2][mmm[i1:i2]])
-
     if 1:
-        # t= np.linspace(x[i1]+10, x[i2-1]-10, 10)
-        # p = LSQUnivariateSpline(x[i1:i2],
-        #                         s[i1:i2],
-        #                         t, bbox=[0, 2047])
-
-        # t= np.concatenate([[x[1],x[i1-5],x[i1],x[i1+5]],
-        #                    np.linspace(x[i1]+10, x[i2-1]-10, 10),
-        #                    [x[i2-5], x[i2], x[i2+5],x[-2]]])
-
         t_list = []
         if i1 > 10:
             t_list.append([x[1],x[i1]])
