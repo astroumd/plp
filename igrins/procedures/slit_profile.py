@@ -110,7 +110,7 @@ def make_slitprofile_map(ap, profile,
 
 
 def estimate_slit_profile_1d(obsset,
-                             x1=800, x2=2048-800,
+                             x1=800, x2=4096-800,
                              do_ab=True):
     """
     return a profile function

@@ -4,7 +4,7 @@ import numpy as np
 import scipy.ndimage as ni
 
 
-def estimate_background(data, msk, di=24, min_pixel=10, nx=2048):
+def estimate_background(data, msk, di=24, min_pixel=10, nx=4096):
 
     def get_sky_points1(data, msk, di, i0):
         """
@@ -78,12 +78,6 @@ def estimate_background(data, msk, di=24, min_pixel=10, nx=2048):
 
     #return xc[m], yc[m], v[m], std[m]
     return xc, yc, v, std
-
-#if 0:
-#    #from scipy.interpolate import Rbf
-#    #rbf = Rbf(xc, yc, v, epsilon=2)
-#    ti = np.arange(0, 2048)
-#    XI, YI = np.meshgrid(ti, ti)
 
 
 def get_interpolated_rbf(nx, ny, xc, yc, v, smooth=1.e-12, nsample=16, nr=1000):
@@ -192,7 +186,7 @@ if __name__ == "__main__":
 if 0:
     xc, yc, v, std = estimate_background(data, msk, di=24, min_pixel=40)
 
-    nx = ny = 2048
+    nx = ny = 2040+8
     # ZI = get_interpolated(nx, ny, xc, yc, v)
 
     ZI2 = get_interpolated_alglib(nx, ny, xc, yc, v, nlayer=2)
