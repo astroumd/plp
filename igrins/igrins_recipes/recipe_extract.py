@@ -48,7 +48,7 @@ def estimate_slit_profile_stellar(obsset,
 
 
 def estimate_slit_profile_extended(obsset,
-                                   x1=800, x2=2048-800,
+                                   x1=800, x2=4096-800,
                                    do_ab="recipe",
                                    slit_profile_mode="uniform"):
 

@@ -131,10 +131,8 @@ def make_combined_images(obsset,
         print("skipped")
         return
 
-    nx = obsset.detector.nx
-
     _make_combined_images(obsset, allow_no_b_frame=allow_no_b_frame,
-                          cache_only=True, nx=nx)
+                          cache_only=True)
 
 
 def subtract_interorder_background(obsset, di=24, min_pixel=40):

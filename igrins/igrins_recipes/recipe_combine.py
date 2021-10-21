@@ -128,7 +128,7 @@ def get_combined_images(obsset,
     return data_minus, data_plus
 
 
-def get_variances(data_minus, data_plus, gain, nx=2048):
+def get_variances(data_minus, data_plus, gain, nx=4096):
 
     """
     Return two variances.
@@ -201,7 +201,7 @@ def make_combined_images(obsset, allow_no_b_frame=False,
                          remove_level=2,
                          remove_amp_wise_var=False,
                          interactive=False,
-                         cache_only=False, nx=2048):
+                         cache_only=False):
 
     if remove_level == "auto":
         remove_level = 2
@@ -226,6 +226,8 @@ def make_combined_images(obsset, allow_no_b_frame=False,
 
         remove_level = params["remove_level"]
         remove_amp_wise_var = params["amp_wise"]
+    
+    nx = obsset.detector.nx
 
     d2 = remove_pattern(data_minus_raw, mask=bias_mask,
                         remove_level=remove_level,
