@@ -199,31 +199,10 @@ def fitted_lines_reidentify(fitted_lines, ref_lines, s, x,
     return fitted_pixels
 
 
-    # fitted_lines_update_pixel(fitted_lines, fitted_pixels,
-    #                           colname_pixel=colname_pixel,
-    #                           colname_params=colname_params)
-
-
-# def fitted_lines_update_pixel(fitted_lines, res,
-#                               colname_pixel="pixel",
-#                               colname_params=None):
-#     x_list0 = [params[0] for params, _, _ in res]
-#     x_list = x_list0 + fitted_lines["d_cent"]
-
-#     fitted_lines[colname_pixel] = x_list
-
-#     if colname_params is not None:
-#         fitted_lines[colname_params] = [p for p, _, _ in res]
-
-
-# ref_lines : pandas DataFrame
-
 class RefLinesDBBase:
     def __init__(self, ref_loader):
         self._refdata = None
         self.ref_loader = ref_loader
-        # from .igrins_config import get_config
-        # self.config = get_config(config)
 
     def _get_refdata(self):
 
@@ -380,10 +359,6 @@ class Test:
     def update_K(self, reidentified_lines_map,
                  orders_w_solutions,
                  wvl_solutions, s_list):
-        # fn = "hitran_bootstrap_K_%s.json" % self.refdate
-        # bootstrap_name = master_calib.get_master_calib_abspath(fn)
-        # import json
-        # bootstrap = json.load(open(bootstrap_name))
 
         from .master_calib import load_ref_data
         bootstrap = load_ref_data(config, band="K",
@@ -394,8 +369,7 @@ class Test:
         r, ref_pixel_list = hitran.reidentify(orders_w_solutions,
                                               wvl_solutions, s_list,
                                               bootstrap)
-        # json_name = "hitran_reidentified_K_%s.json" % igrins_log.date
-        # r = json.load(open(json_name))
+        
         for i, s in r.items():
             ss = reidentified_lines_map[int(i)]
             ss0 = np.concatenate([ss[0], s["pixel"]])
@@ -441,112 +415,9 @@ class RefLinesCollection:
         return fitted_pixels_list
 
 
-# class SpecReidentify:
-#     def __init__(self, ref_lines_db):
-
-#         self.wvl_map, self.s_map = {}, {}
-#         self.ref_lines_db = ref_lines_db
-
-#     def _load_wvl(self, band):
-
-#         fn = "../calib/primary/20140525/SDC%s_20140525_0003.wvlsol_v0.json" % band
-#         wvl_solution = json.load(open(fn))
-#         wvl_map = dict(zip(wvl_solution["orders"],
-#                            wvl_solution["wvl_sol"]))
-
-#         return wvl_map
-
-#     def _load_spec(self, band):
-
-#         fn = "../calib/primary/20140525/SDC%s_20140525_0029.oned_spec.json" % band
-#         s_list = json.load(open(fn))
-#         s_map = dict(zip(s_list["orders"],
-#                          s_list["specs"]))
-
-#         return s_map
-
-#     def get_spec_map(self, band):
-#         if band not in self.wvl_map:
-#             self.wvl_map[band] = self._load_wvl(band)
-
-#         if band not in self.s_map:
-#             self.s_map[band] = self._load_spec(band)
-
-#         wvl_map = self.wvl_map[band]
-#         s_map = self.s_map[band]
-
-#         return wvl_map, s_map
-
-#     def reidentify_order(self, band, o, wvl, s, x=None):
-
-#         if x is None:
-#             x = np.arange(len(wvl))
-
-#         ref_lines0 = self.ref_lines_db.get_ref_lines(band, o, wvl, x)
-
-#         fitted_lines = fitted_lines_init(ref_lines0)
-
-#         self.reidentify_order_add(ref_lines0, s, x,
-#                                   colname_pixel="pixel",
-#                                   colname_params="params",
-#                                   fitted_lines=fitted_lines)
-
-#         ref_lines = ref_lines0.copy()
-#         ref_lines_update_pixel(ref_lines,
-#                                fitted_lines["params"])
-
-#         return ref_lines, fitted_lines
-
-#     def reidentify_order_add(self, ref_lines, s, x,
-#                              colname_pixel,
-#                              colname_params,
-#                              fitted_lines=None):
-
-#         if fitted_lines is None:
-#             fitted_lines = fitted_lines_init(ref_lines)
-
-#         fitted_lines_reidentify(fitted_lines, ref_lines, s, x,
-#                                 colname_pixel=colname_pixel,
-#                                 colname_params=colname_params)
-
-#         return fitted_lines
-
-#     def reidentify_band(self, band):
-
-#         wvl_map, s_map = self.get_spec_map(band)
-#         ref_lines_list, fitted_lines_list = [], []
-
-#         for o in sorted(wvl_map.keys()):
-
-#             wvl = wvl_map[o]
-#             s = s_map[o]
-#             x = np.arange(len(wvl))
-
-#             _ = self.reidentify_order(band, o, wvl, s, x=x)
-#             ref_lines, fitted_lines = _
-
-#             if 0:
-#                 self.reidentify_order_add(ref_lines, s, x,
-#                                           colname_pixel,
-#                                           colname_params,
-#                                           fitted_lines=fitted_lines)
-
-#             ref_lines_list.append(ref_lines)
-#             fitted_lines_list.append(fitted_lines)
-
-#         ref_lines_master = pd.concat(ref_lines_list)
-#         fitted_lines_master = pd.concat(fitted_lines_list)
-
-#         return ref_lines_master, fitted_lines_master
-
-
-# from .recipe_helper import RecipeHelper
-
-
 def helper_load_spec(helper, band, obsid):
 
     caldb = helper.get_caldb()
-    #orders = caldb.load_resource_for((band, obsid), "orders")["orders"]
 
     basename = (band, obsid)
 
@@ -673,100 +544,3 @@ def draw_fig():
                      edgecolor="y")
 
 
-if 0:
-    ll = []
-    for r0, r1 in zip(ref_lines_col.ref_lines_list,
-                      ref_lines_col1.ref_lines_list):
-        if len(r0._ref_lines):
-            ll.extend(r0._ref_lines["pixel"] - r1._ref_lines["pixel"])
-
-
-if 0:
-    test_H()
-    test_K()
-
-    test_K_Hitran()
-
-    # t = TestFitH()
-    # t.test_single_order()
-    # t.test_all_order()
-
-# if 1:
-
-#     t = TestFitK()
-#     t.test_single_order()
-#     t.test_all_order()
-
-
-# if 0:
-#         utdate = 20140526
-#         obsid = 156
-#         band = "K"
-
-#         config_name = "../recipe.config"
-#         spec = SampleSpec(config_name, utdate, band, obsid)
-
-#         from hitran import Hitran
-#         med_filter = Hitran.get_median_filtered_spec
-
-#         o = 74
-
-#         s0 = spec.s_map[74]
-#         wvl = spec.wvl_map[74]
-#         s = med_filter(wvl, s0)
-#         x = np.arange(len(s))
-
-#         from igrins_config import get_config
-#         config = get_config("../recipe.config")
-
-#         from master_calib import load_ref_data
-#         bootstrap = load_ref_data(config, band="K",
-#                                   kind="HITRAN_BOOTSTRAP_K")
-
-#         ref_wvl = bootstrap[str(o)]["wavelength_grouped"]
-#         _ref_pixels = get_ref_pixels(ref_wvl, wvl, x=None)
-#         _ref_pixels["sigma_pixel"] = 5
-#         _ref_pixels["order"] = o
-
-#         ref_lines = RefLines(_ref_pixels)
-#         fitted_lines0 = ref_lines.fit(s, x, update_self=True)
-#         fitted_lines = ref_lines.fit(s, x, update_self=True)
-
-# if 0:
-#         ref_lines_db = SkyLinesDB(config=config_name)
-
-#         # test 1
-#         o = 115
-
-#         wvl, s = spec.wvl_map[o], spec.s_map[o]
-#         x = np.arange(len(wvl))
-
-#         ref_lines = ref_lines_db.get_ref_lines(band, o, wvl, x)
-#         ref_lines.line_centroids
-
-#         fitted_pixels = ref_lines.fit(s, x, update_self=True)
-
-#         fitted_pixels
-
-# if 0:
-#     #####
-
-
-#     wvlsol_2d = fitted_pixels_col.fit()
-
-#     fitted_pixels_col.diff(wvlsol_2d)
-
-
-# if 0:
-#     plot(wvl_map[o], s_map[o])
-
-#     ref_wvl = ref_lines_nested(ref_lines, "wavelength")
-#     for w in ref_wvl:
-#         plot(w, np.zeros_like(w), "ro-")
-
-# if 0:
-#     dd = {}
-#     for i, f in pd.groupby(fitted_pixels_master, "order"):
-#         dd[int(i)] = f["cent_pixel0"], f["cent_pixel0"] - f["pixels"]
-#         plot(f["pixels"], f["cent_pixel0"] - f["pixels"], "o", 
-#              label="%d" % i)
