@@ -80,12 +80,6 @@ def reidentify_lines_all2(s_list_dst, ref_lines_list,
 
         reidentified_lines.append(lines)
 
-    if 0:
-        dd = np.concatenate([[l1[-1] for l1 in lines_ if l1] \
-                             for lines_ in reidentified_lines])
-
-        hist(dd, bins=np.linspace(0, 4, 20))
-
     # make masks for distant matches
 
     msk_list = []
@@ -112,7 +106,6 @@ def reidentify_lines_all2(s_list_dst, ref_lines_list,
 def reidentify_lines_all(s_list, ref_positions_list,
                          sol_list_transform=None):
 
-    x = np.arange(2048)
     fit_results = []
 
     for ref_positions, s in zip(ref_positions_list, s_list):

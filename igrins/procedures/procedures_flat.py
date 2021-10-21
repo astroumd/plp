@@ -86,11 +86,16 @@ def obsset_combine_flat_off(obsset, destripe=True):
     band = get_band(obsset)
     rp_remove_mod, bg_y_slice = get_params(band)
 
-    if obsset.expt.lower() == 'rimas':
+    if obsset.expt.lower() == 'rimas' or obsset.expt.lower() == 'deveny':
         cards, flat_off = combine_flat_off_rimas(hdul, rp_remove_mod, bg_y_slice)
     else:
         cards, flat_off = combine_flat_off_cube_201909(hdul,
                                                        rp_remove_mod, bg_y_slice)
+
+    print("TSFF:", np.shape(flat_off))
+    import matplotlib.pyplot as plt
+    plt.figure("FLAT OFF")
+    plt.imshow(flat_off)
 
     hdu_cards = [Card(k, json_dumps(v)) for (k, v) in cards]
 
@@ -185,7 +190,7 @@ def make_initial_flat_on(data_list, expt='igrins'):
     if expt.lower() == 'igrins':
         cube = np.array([remove_pattern_from_guard(d1)
                          for d1 in data_list])
-    elif expt.lower() == 'rimas':
+    elif expt.lower() == 'rimas' or expt.lower() == 'deveny':
         print("FLAT ON RIMAS")
         recipes = ['amp_wise_bias_r2', 'p64_0th_order']
         #cube = np.array([remove_pattern_from_guard(d1, recipes=recipes, tmp=False, expt=expt)
@@ -205,6 +210,10 @@ def combine_flat_on(obsset):
     obsset_on = obsset.get_subset("ON")
 
     data_list = [hdu.data[:].astype(np.float) for hdu in obsset_on.get_hdus()]
+    
+    import matplotlib.pyplot as plt
+    plt.figure('TEST')
+    plt.imshow(data_list[0])
 
     # data_list1 = [dh.sub_p64_from_guard(d) for d in data_list]
 
@@ -212,6 +221,10 @@ def combine_flat_on(obsset):
     # flat_on = dh.make_flaton(data_list)
     cube = make_initial_flat_on(data_list, expt=obsset.expt)
     flat_on = image_median(cube)
+    
+    plt.figure("FLAT ON")
+    plt.imshow(flat_on)
+    plt.show()
 
     flat_std = np.std(data_list, axis=0)
 
@@ -366,7 +379,7 @@ def identify_order_boundaries(obsset):
     obsset_on.store(DESCS["FLAT_DERIV"], hdul)
 
 
-def _check_boundary_orders(cent_list, nx=2048):
+def _check_boundary_orders(cent_list, nx=4096):
 
     c_list = []
     for xc, yc in cent_list:

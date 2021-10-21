@@ -38,7 +38,6 @@ def get_rectified_2dspec(data, order_map, bottom_up_solutions,
                          conserve_flux=False, height=0,
                          domain=None):
 
-    # sl = slice(0, 2048), slice(0, 2048)
     data = data.copy()
     # resume from context does not work unless copying the data
 
