@@ -240,15 +240,6 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
     This will identify at most one object per order. For objects not included
     in this list, we find nearest object and associate it to them.
     """
-    # if 0:
-
-    #     pad=50,
-    #     bg_std=bg_std_norm
-    #     d_deriv=-flat_deriv
-    #     mmp=flat_deriv_neg_msk
-    #     d_deriv=flat_deriv
-    #     mmp=flat_deriv_pos_msk
-
     ny, nx = d_deriv.shape
 
     # We first identify objects
@@ -256,20 +247,7 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
     label_indx = np.arange(1, label_max+1, dtype="i")
     objects_found = ni.find_objects(im_labeled)
 
-    # from itertools import compress
-
     slice_map = dict(zip(label_indx, objects_found))
-
-    # if 0:
-    #     # make labeld image with small objects delted.
-    #     s = ni.measurements.sum(mmp, labels=im_labeled,
-    #                             index=label_indx)
-    #     tiny_traces = s < 10. # 0.1 * s.max()
-    #     mmp2 = im_labeled.copy()
-    #     for label_num in compress(label_indx, tiny_traces):
-    #         sl = slice_map[label_num]
-    #         mmp_sl = mmp2[sl]
-    #         mmp_sl[mmp_sl == label_num] = 0
 
     # We only traces solutions that are detected in the centeral colmn
 
@@ -417,23 +395,11 @@ def trace_aperture_chebyshev(xy_list, domain):
                      np.concatenate(y_list))
     p = fit_p(p_init, xxx, ooo, yyy)
 
-    # if 0:
-    #     ax1 = subplot(121)
-    #     for o, xy in enumerate(xy_list):
-    #         ax1.plot(x_list[o],
-    #                  y_list[o] - p(x_list[o], o+np.zeros_like(x_list[o])))
-
     for ii in range(3):  # number of iteration
         mmm = np.abs(yyy - p(xxx, ooo)) < 1
         # This need to be fixed with actual estimation of sigma.
 
         p = fit_p(p_init, xxx[mmm], ooo[mmm], yyy[mmm])
-
-    # if 0:
-    #     ax2=subplot(122, sharey=ax1)
-    #     for o, xy in enumerate(xy_list):
-    #         ax2=plot(x_list[o], y_list[o] - p(x_list[o],
-    #                                           o+np.zeros_like(x_list[o])))
 
     # Now we need to derive a 1d chebyshev for each order.  While
     # there should be an analitical way, here we refit the trace for
@@ -504,22 +470,6 @@ def trace_aperture_chebyshev(xy_list, domain):
         o_list_up.append(oi)
         domain_list_up.append(domain_order[ooo[-1]])
 
-    # if 0:
-    #     _get_f(next_orders)
-
-    #     oi = go_down_orders.pop(0)
-    #     y_m = p(xx, oo+ooo[0]-oi)
-    #     f = cheb.Chebyshev.fit(xx, y_m, x_degree, domain=domain)
-    #     if go_down_orders: # if not the last order
-    #         if np.all(y_m < domain[0]):
-    #             print("all negative at ", ooo[0]-oi)
-    #             go_down_orders = [oi+1]
-    #         else:
-    #             f_list_down.append(f)
-    #     else:
-    #         f_list_down.append(f)
-
-    # print(o_list_down[::-1] + ooo + o_list_up)
     return f_list, f_list_down[::-1] + f_list + f_list_up, domain_list_down[::-1] + domain_list + domain_list_up
 
 
@@ -630,7 +580,7 @@ def get_smoothed_order_spec(s):
     return s0
 
 
-def get_order_boundary_indices(s1, s0=None, nx=2048):
+def get_order_boundary_indices(s1, s0=None, nx=4096):
     # x = np.arange(len(s))
 
     # select finite number only. This may happen when orders go out of
