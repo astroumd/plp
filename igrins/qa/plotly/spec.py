@@ -168,17 +168,6 @@ def figure_frame_range(orders, wvls, specs, reverse_order=True):
         frame = {}
         #w = np.arange(len(w))
 
-        if 0:
-            data_dict = {
-                    'x': w,
-                    'y': s,
-                    'mode': 'lines',
-                    'name': "%d" % o,
-                    #'line': {'simplify': False},
-            }
-
-            frame['data'] = [data_dict]
-
         frame = _make_frame_xrange(o, w[0], w[-1])
         figure['frames'].append(frame)
 
