@@ -17,33 +17,27 @@ def savgol_filter(s, ws, n, **kwargs):
 
 def sg_filter(s1, winsize1=15, winsize2=11):
     s1m = ni.median_filter(s1, 11)
-    #s1m = s1
-
-    #winsize1 = 15
-    #winsize2 = 11
 
     f1 = savgol_filter(s1m, winsize1, 3)
 
     f1_std = np.nanstd(s1-f1)
 
-    if 0: # calculate weight
-        f1_mask = np.abs(s1-f1) > 2.*f1_std
-        f1_mask2 = ni.binary_opening(f1_mask, iterations=int(winsize2*0.2))
-        f1_mask3 = ni.binary_closing(f1_mask2, iterations=int(winsize2*0.2))
-        f1_mask4 = ni.binary_dilation(f1_mask3, iterations=int(winsize2))
+    #if 0: # calculate weight
+    #    f1_mask = np.abs(s1-f1) > 2.*f1_std
+    #    f1_mask2 = ni.binary_opening(f1_mask, iterations=int(winsize2*0.2))
+    #    f1_mask3 = ni.binary_closing(f1_mask2, iterations=int(winsize2*0.2))
+    #    f1_mask4 = ni.binary_dilation(f1_mask3, iterations=int(winsize2))
+    #
+    #    weight = ni.gaussian_filter(f1_mask4.astype("d"), winsize2)
+    #else:
+    fd2 = savgol_filter(s1m, winsize1, 3, deriv=2)
+    fd2_std = np.std(fd2)
+    f1_mask = np.abs(fd2) > 2.*fd2_std
 
-        weight = ni.gaussian_filter(f1_mask4.astype("d"), winsize2)
-    else:
-        fd2 = savgol_filter(s1m, winsize1, 3, deriv=2)
-        fd2_std = np.std(fd2)
-        f1_mask = np.abs(fd2) > 2.*fd2_std
+    f1_mask = f1_mask | (s1m < s1m.max()*0.4)
 
-        f1_mask = f1_mask | (s1m < s1m.max()*0.4)
-
-        f1_mask4 = ni.binary_dilation(f1_mask, iterations=int(winsize2))
-        #f1_mask4[:300] = True
-        #f1_mask4[-300:] = True
-        weight = ni.gaussian_filter(f1_mask4.astype("d"), winsize2*.5)
+    f1_mask4 = ni.binary_dilation(f1_mask, iterations=int(winsize2))
+    weight = ni.gaussian_filter(f1_mask4.astype("d"), winsize2*.5)
 
     # find a region where deviation is significant
 
@@ -54,17 +48,6 @@ def sg_filter(s1, winsize1=15, winsize2=11):
     else:
         f12 = f1
         weight = np.zeros(f12.shape)
-
-
-    if 0:
-        ax1.cla()
-        ax2.cla()
-        ax1.plot(f12)
-        ax2.plot(s1 - f1, color="0.5")
-        ax2.plot(s1 - f12)
-        ax2.plot(weight * f1_std*2)
-
-        ax2.set_ylim(-0.02, 0.02)
 
     return f12, f1_std
 
@@ -115,12 +98,6 @@ def get(s1_sl, f12):
     kk[~np.isfinite(kk)] = 0.
     kkr = np.fft.rfft(kk)
 
-    #kkr = np.fft.rfft(kk[512:512+1024])
-    #kkr0 = np.zeros(len(kk), dtype=complex)
-    #kkr0[:len(kkr)] = kkr
-    #fig = plt.figure(3)
-    #ax3 = fig.add_subplot(111)
-
     power_s = np.abs(kkr)**2
     power_s_max = np.max(power_s[2:])
     kkr[ power_s < power_s_max*0.4] = 0
@@ -137,15 +114,8 @@ def _get_finite_boundary_indices(s1):
 
     nx = len(s1)
 
-    # k1, k2 = np.nonzero(np.isfinite(s1))[0][[0, -1]]
-
-    # k1, k2 = np.nonzero(s1>0.)[0][[0, -1]]
     with np.errstate(invalid="ignore"):
         nonzero_indices = np.nonzero(s1 > 0.)[0]  # [[0, -1]]
-
-    # # return meaningless indices if non-zero spectra is too short
-    #  if len(nonzero_indices) < 5:
-    #      return 4, 4
 
     k1, k2 = nonzero_indices[[0, -1]]
     k1 = max(k1, 4)
@@ -192,56 +162,4 @@ def get_smooth_continuum(s, wvl=None):
         r[sl] = f12
 
     return r
-
-
-if __name__ == "__main__":
-    band = "K"
-    wvl_sol = json.load(open(os.path.join("calib", "primary", "20140525", "SKY_SDC%s_20140525_0029.wvlsol_v1.json" % (band,))))["wvl_sol"]
-
-
-    fig1 = figure(1)
-    clf()
-    ax1 = fig1.add_subplot(211)
-    ax2 = fig1.add_subplot(212, sharex=ax1)
-
-    s = json.load(open(os.path.join("calib", "primary", "20140525", "ORDERFLAT_SDC%s_20140525_0074.json" % (band,))))
-
-    specs = s["mean_order_specs"]
-
-
-
-
-
-    #for s1 in specs:
-    #    plot(s1)
-
-    import astropy.io.fits as pyfits
-    dd = pyfits.open(os.path.join("outdata", "20140525", "SDC%s_20140525_0016.spec.fits" % band))[0].data
-
-    #ii = 0
-
-    fig2 = figure(2)
-    fig2.clf()
-    ax3 = fig2.add_subplot(111)
-
-    s1, a0v1, wvl1 = zip(specs, dd, wvl_sol)[5]
-    if 1:
-
-        f12 = get_smooth_continuum(s1, wvl1)
-        ax3.plot(wvl1, s1 / f12)
-
-
-        f12[f12 < np.nanmax(f12) * 0.05] = np.nan
-        ax2.plot(wvl1, s1 / f12, zorder=0.2, color="0.5")
-        ax1.plot(wvl1, s1, color="0.8")
-        ax1.plot(wvl1, f12)
-
-        #ax4 = fig2.add_subplot(212, sharex=ax3)
-        a0v_ss = a0v1/f12
-        a0v_ss[f12<np.nanmax(f12)*0.1] = np.nan
-        ax3.plot(wvl1, a0v_ss/np.nanmax(a0v_ss[100:-100]))
-        #ax3.set_ylim(0.7, 1.1)
-        #ax3.plot(wvl1[sl], a0v_ss/np.median(a0v_ss)*0.02)
-        #ax3.set_ylim(-0.02, 0.05)
-
 
