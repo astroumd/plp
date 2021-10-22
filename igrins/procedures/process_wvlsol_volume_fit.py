@@ -128,33 +128,6 @@ def volume_fit(obsset):
     zzz
     '''
 
-    if 0:
-        #values = dict(zip(names, [pixels, orders, slit_pos]))
-        offsets_fitted = poly.multiply(points0, params[0])
-        doffsets = scalar0 - offsets_fitted * cc0
-
-        clf()
-        scatter(dd["pixels0"], doffsets, c=cc0.values, cmap="gist_heat")
-
-        # clf()
-        # scatter(dd["pixels0"] + doffsets, dd["order"] + dd["slit_center"], color="g")
-        # scatter(dd["pixels0"], dd["order"] + dd["slit_center"], color="r")
-
-
-        # # test with fitted data
-        # #input_points = np.zeros_like(offsets_fitted)
-        # input_points = offsets_fitted
-        # poly, params = volume_poly_fit(points,
-        #                                input_points,
-        #                                orders, names)
-
-        # offsets_fitted = poly.multiply(points, params[0])
-        # doffsets = input_points - offsets_fitted
-
-        # clf()
-        # scatter(dd["pixels0"], dd["order"] + dd["slit_center"] + doffsets, color="g")
-        # scatter(dd["pixels0"], dd["order"] + dd["slit_center"], color="r")
-
     # save
     out_df = poly.to_pandas(coeffs=params[0])
     out_df = out_df.reset_index()
@@ -162,11 +135,3 @@ def volume_fit(obsset):
     d = out_df.to_dict(orient="split")
     obsset.store("VOLUMEFIT_COEFFS_JSON", d)
 
-
-# from ..libs.recipe_helper import RecipeHelper
-
-# def process_band_make_offset_map(utdate, recipe_name, band,
-#                                  obsids, config_name):
-
-#     from igrins.libs.recipe_helper import RecipeHelper
-#     helper = RecipeHelper(config_name, utdate, recipe_name)

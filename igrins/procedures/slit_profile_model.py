@@ -38,7 +38,6 @@ def get_multi_gaussian_model(mode, n=None, stddev_list=None):
                                **kw)
         m.append(g_)
 
-    # print m
     return np.sum(m)
 
 
@@ -69,14 +68,11 @@ def get_debug_func(axes=None):
         for n in m1.submodel_names:
             ax1.plot(yi, m1[n](yi), label=n)
 
-        # ax1.legend(loc=4)
-
         sp2d = np.histogram2d(s - m1(y), y,
                               bins=[np.linspace(-0.04, 0.04, 1024),
                                     np.linspace(0, 1, 1024)])
 
 
-        # ax2.plot(y, s - m1(y), ".")
         import scipy.ndimage as ni
         _d = ni.gaussian_filter(sp2d[0], sigma=2)
         ax2.imshow(_d, extent=[0, 1, -0.04, 0.04],
@@ -209,22 +205,13 @@ def test_plot():
 
     # select only the central part
 
-    # o1 = np.percentile(ap.orders, ap.orders[i1])
-    # o2 = np.percentile(ap.orders, ap.orders[i2])
-
     xx = np.array([ap(o, 1024, .5) for o in ap.orders])
     i1, i2 = np.searchsorted(xx, [128, nx-128])
     o1, o2 = ap.orders[i1], ap.orders[i2]
-    #o1, o2 = 0, 999
-    #o1, o2 = 79, 81
-    #o1, o2 = 111, 113
     msk2 = (o1 < omap) & (omap < o2)
 
     msk2[:, :800] = False
     msk2[:, -800:] = False
-
-    #msk2[:, :512] = False
-    #msk2[:, -512:] = False
 
     msk = msk1 & msk2 # & (slitpos < 0.5)
 
@@ -236,16 +223,3 @@ def test_plot():
     debug_func = get_debug_func()
     debug_func(g, g, s_mskd, ods_mskd)
 
-
-if 0:
-    g_plus = multi_gaussian_fit_by_mode("plus", s_mskd, ods_mskd, 
-                                        debug_func=debug_func)
-
-    g_minus = multi_gaussian_fit_by_mode("minus", s_mskd, ods_mskd, 
-                                         debug_func=debug_func)
-
-    g = g_plus+g_minus
-    g.parameters = np.concatenate([g_plus.parameters, g_minus.parameters])
-
-    debug_func(g, g, s_mskd, ods_mskd)
-    # g = multi_gaussian_fit

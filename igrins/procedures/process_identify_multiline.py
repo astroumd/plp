@@ -48,11 +48,6 @@ def identify_multiline(obsset):
     orders = wvlsol_v0["orders"]
     wvlsol = wvlsol_v0["wvl_sol"]
 
-    #
-    # from collections import namedtuple
-    # Spec = namedtuple("Spec", ["s_map", "wvl_map"])
-
-    # ref_lines_db = SkyLinesDB(config=obsset.get_config())
     ref_lines_db = SkyLinesDB(obsset.rs.master_ref_loader)
 
     if obsset.rs.get_resource_spec()[1] == "K":
@@ -99,47 +94,3 @@ def process_band(utdate, recipe_name, band, obsids, config_name):
 
     identify_multiline(helper, band, obsids)
 
-
-if 0:
-    filename = "test.json"
-    fitted_pixels_master0 = pd.read_json(filename, orient="split")
-    filename = "test.csv"
-    fitted_pixels_master0 = pd.read_csv(filename)
-    index = ["slit_center", "kind", "order", "wavelength"]
-    fitted_pixels_master = fitted_pixels_master0.set_index(index)
-
-    for do, group in fitted_pixels_master.groupby(level=0):
-        o = group.index.get_level_values("order")
-        #do = group.index.get_level_values("order")
-        x = group["pixels"]
-        #print len(group)
-
-        plot(x, o+do, ".")
-
-
-if __name__ == "__main__":
-
-    from pathlib import Path
-    # utdate = "20140709"
-    # obsids = [62, 63]
-
-    # utdate = "20140525"
-    # obsids = [29]
-
-    utdate = "20150525"
-    obsids = [52]
-
-
-    recipe_name = "SKY"
-
-
-    # utdate = "20150525"
-    # obsids = [32]
-
-    # recipe_name = "THAR"
-
-    band = "K"
-
-    #helper = RecipeHelper("../recipe.config", utdate)
-    config_name = Path("../recipe.config")
-    process_band(utdate, recipe_name, band, obsids, config_name)

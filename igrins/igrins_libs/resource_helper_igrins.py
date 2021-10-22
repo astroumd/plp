@@ -2,14 +2,6 @@ from __future__ import print_function
 
 import numpy as np
 
-# class _ResourceManagerInterface:
-#     def __init__(self, rmi):
-#         self.rmi = rmi
-
-#     def load_resource_for(self, basename, itemname):
-#         return self.rmi.load_resource_for(basename, itemname)
-
-
 class ResourceHelper(object):
 
     _RESOURCE_MAP = {}
@@ -148,7 +140,3 @@ class ResourceHelper(object):
 
         return domain_list
 
-
-# if 0:
-#     rm = ResourceManager()
-#     print(rm._RESOURCE_MAP)
