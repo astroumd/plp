@@ -43,21 +43,28 @@ def gen_arc_line_alignment_image(wave_map_file, arc_line_file, output_filename, 
     ArrayImage(output_array, 0).save(output_filename, 0)
 
 
+def gen_lazy_bad_pix_map(shape, output_filename):
+    array = np.zeros(shape)
+    ArrayImage(array).save(output_filename, 0)
+
+
 if __name__ == '__main__':
-    arc_spectrum = 'deveny/20210506.0014.fits'
-    arc_spectrum_oned = 'deveny/CdArNeHg_onedspec.json'
-    order_map_file = 'deveny/deveny_order_map.fits'
-    wavemap_file = 'deveny/deveny_wavemap.fits'
-    wavemap_oned = 'deveny/deveny_wavemap_oned.json'
-    lines_dat = 'deveny/CdArNeHg_lines.dat'
-    identified_lines = 'deveny/CdArNeHg_identified_lines.json'
-    alignment_arc_file = 'deveny/CdArNeHg_alignment.fits'
+    arc_spectrum = '../master_calib/deveny/20210506.0014.fits'
+    arc_spectrum_oned = '../master_calib/deveny/CdArNeHg_onedspec.json'
+    order_map_file = '../master_calib/deveny/deveny_order_map.fits'
+    wavemap_file = '../master_calib/deveny/deveny_wavemap.fits'
+    wavemap_oned = '../master_calib/deveny/deveny_wavemap_oned.json'
+    lines_dat = '../master_calib/deveny/CdArNeHg_lines.dat'
+    identified_lines = '../master_calib/deveny/CdArNeHg_identified_lines.json'
+    alignment_arc_file = '../master_calib/deveny/CdArNeHg_alignment.fits'
+    bad_pix_map = '../master_calib/deveny/deveny_bad_pix_map.fits'
     deveny_start_wvl = 3580
     deveny_end_wvl = 8020
 
     arc_spectrum_image = ExistingImage(arc_spectrum, fits_image_hdu=0).image
     gen_order_map(arc_spectrum_image.shape, 40, order_map_file)
     gen_rough_wavemap(arc_spectrum_image.shape, deveny_start_wvl, deveny_end_wvl, wavemap_file)
+    gen_lazy_bad_pix_map(arc_spectrum_image.shape, bad_pix_map)
     gen_arc_lines(output_filename=lines_dat)
     gen_arc_line_alignment_image(wavemap_file, lines_dat, alignment_arc_file, deveny_start_wvl, deveny_end_wvl)
     file_overlay(alignment_arc_file, arc_spectrum)
