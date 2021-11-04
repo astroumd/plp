@@ -116,6 +116,31 @@ class RimasBasenameHelper():
     def parse_basename(self, basename):
         return self.from_basename(basename)
 
+class DevenyBasenameHelper():
+    #p = re.compile(r"rimas.(\d+).(HK|YJ).(C0|C1)")
+    p = re.compile(r"(\d+).(\d+)")
+    p_obsid = re.compile(r"(\d+)(.*)")
+
+    def __init__(self, obsdate):
+        self.obsdate = obsdate
+
+    def to_basename(self, obsid):
+        if isinstance(obsid, int):
+            group_postfix = ""
+        else:
+            obsid_, group_postfix = self.p_obsid.match(obsid).groups()
+            obsid = int(obsid_)
+
+        return "{obsdate}.{obsid:04d}".format(obsdate=self.obsdate, obsid=obsid)
+
+    def from_basename(self, basename):
+        m = self.p.match(basename).groups()
+
+        return m[1]
+
+    def parse_basename(self, basename):
+        return self.from_basename(basename)
+
 def get_file_storage(config, resource_spec, check_candidate=False):
     return get_storage(config, resource_spec, check_candidate=check_candidate)
 
@@ -170,6 +195,8 @@ def get_igrins_resource_manager(config, resource_spec, expt="igrins"):
         basename_helper = IgrinsBasenameHelper(obsdate, band)
     elif expt.lower() == "rimas":
         basename_helper = RimasBasenameHelper(obsdate, band)
+    elif expt.lower() == "deveny":
+        basename_helper = DevenyBasenameHelper(obsdate)
 
     rs = get_resource_manager(config, resource_spec,
                               basename_helper=basename_helper,

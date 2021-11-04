@@ -226,6 +226,7 @@ class ObsSet(object):
             hdul = self.rs.load(obsid, DESCS["RAWIMAGE"], item_type="fits")
             hdu = get_first_science_hdu(hdul)
 
+            #The RIMAS images are transposed from orders are analyzed in the code
             if self.expt.lower() == 'rimas':
                 hdu.data = hdu.data.T
 

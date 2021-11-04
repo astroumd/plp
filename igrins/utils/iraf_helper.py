@@ -130,7 +130,7 @@ def invert_order(header):
 if __name__ == "__main__":
 
     import numpy as np
-    xxx = np.linspace(1, 2048, 100)
+    xxx = np.linspace(1, 4096, 100)
     yyy = xxx**4
 
     from astropy.modeling import models, fitting

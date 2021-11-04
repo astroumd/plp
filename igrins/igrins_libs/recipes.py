@@ -296,6 +296,8 @@ def load_recipe_as_dict(fn):
         line = f.readline()
         if line.strip() == '#RIMAS':
             expt = 'RIMAS'
+        elif line.strip() == '#DEVENY':
+            expt = 'DEVENY'
         else:
             expt = 'IGRINS'
 
