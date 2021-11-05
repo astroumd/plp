@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 
 from master_calib_creation.image import ExistingImage, ArrayImage
 from master_calib_creation.creation import gen_oned_spec, gen_echellogram, gen_echellogram_fit_wvlsol,\
-    gen_identified_lines, gen_oned_wavemap, json_dict_from_file, find_nearest
+    gen_identified_lines, gen_oned_wavemap, json_dict_from_file, find_nearest, gen_ref_indices
 from master_calib_creation.image import file_overlay
 
 
@@ -112,10 +112,15 @@ if __name__ == '__main__':
     # lines_dat = '../master_calib/deveny/{}_lines.dat'.format(arc_elements_fname)
     lines_dat = '../master_calib/deveny/{}_lines.dat'.format('deveny')
     identified_lines = '../master_calib/deveny/{}_identified_lines.json'.format(arc_elements_fname)
+    identified_lines_update = identified_lines.replace('.json', '_update.json')
     alignment_arc_file = '../master_calib/deveny/{}_alignment.fits'.format(arc_elements_fname)
     alignment_arc_file_reshaped = alignment_arc_file.replace('.fits', '_reshaped.fits')
     alignment_arc_reshaped_oned = alignment_arc_file.replace('.fits', '_oned.json')
     bad_pix_map = '../master_calib/deveny/deveny_bad_pix_map.fits'
+    echellogram_file = '../master_calib/deveny/deveny_echellogram.json'
+    echellogram_file_wvl_sol = '../master_calib/deveny/deveny_echellogram_wvl_sol.json'
+    ref_indices_file = '../master_calib/deveny/deveny_ref_indices.json'
+    fit_pickle_file = '../master_calib/deveny/deveny_fit.p'
     deveny_start_wvl = 3424.5864
     deveny_end_wvl = 8098.6615
 
@@ -134,4 +139,10 @@ if __name__ == '__main__':
     gen_oned_spec(order_map_file, alignment_arc_file_reshaped, alignment_arc_reshaped_oned, 0)
     gen_oned_wavemap(order_map_file, wavemap_microns, wavemap_oned, 0)
     gen_identified_lines(arc_spectrum_oned, wavemap_oned, lines_dat, identified_lines)
+    gen_ref_indices(identified_lines, lines_dat, 'deveny', identified_lines_update, ref_indices_file)
+    gen_echellogram(order_map_file, wavemap_oned, echellogram_file)
+    gen_echellogram_fit_wvlsol(
+        echellogram_file, identified_lines_update, ref_indices_file, echellogram_file_wvl_sol,
+        arc_spectrum_image.shape[1], pixel_degree=4, order_degree=0, pickle_output_file=fit_pickle_file, band='deveny'
+    )
     # plot_oned_spec((arc_spectrum_oned, alignment_arc_reshaped_oned))
