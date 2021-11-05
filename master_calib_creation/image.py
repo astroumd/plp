@@ -295,7 +295,7 @@ class BaseImage:
 
     def scale_and_translate(self, x_translation=0, y_translation=0, x_scale=1, y_scale=1, border_value=0):
         # , resample=0):
-        x_size_initial, y_size_initial = self.image.shape
+        y_size_initial, x_size_initial = self.image.shape
         self.resize(x_scale, y_scale)  # , resample=resample)
         self.crop_and_border(x_size_initial, y_size_initial, border_value=border_value)
         self.translate(x_translation, y_translation)

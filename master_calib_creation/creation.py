@@ -195,9 +195,9 @@ def gen_echellogram(order_map_file, oned_wavemap_file, output_file, aggregation_
         'wvl_list': wavelengths, 'x_list': [np.arange(len(wave)).tolist() for wave in wavelengths], 'y_list': [],
         'orders': orders
     }
-    y_index_image = np.asarray([np.arange(order_map_image.shape[0]) for i in range(order_map_image.shape[0])])
-    if aggregation_axis == 0:
-        y_index_image = y_index_image.transpose()
+    y_index_image = np.asarray([np.arange(order_map_image.shape[1]) for i in range(order_map_image.shape[0])])
+    # if aggregation_axis == 0:
+    #     y_index_image = y_index_image.transpose()
     for order in orders:
         single_order = single_order_image_from_map(y_index_image, order, order_map_image)
         oned_spec = aggregation(single_order, axis=aggregation_axis)

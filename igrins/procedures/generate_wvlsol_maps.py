@@ -69,6 +69,8 @@ def make_slitoffsetmap(obsset):
     import matplotlib.pyplot as plt
     plt.figure("Offset Slice")
     plt.plot(offset_map[:, 2000])
+    plt.xlabel('Position along middle slice (pixels)')
+    plt.ylabel('Slit Offset (pixels)')
     plt.show()
 
 
