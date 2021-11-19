@@ -38,15 +38,17 @@ def make_combined_image_thar(obsset, bg_subtraction_mode="flat"):
 
 def _make_combined_image_thar(obsset, bg_subtraction_mode="flat"):
     thar_data, cards = get_combined_image(obsset)
-    thar_data /= len(obsset.get_obsids())
+
+    thar_data = thar_data / len(obsset.get_obsids())
+    #thar_data /= len(obsset.get_obsids())
 
     print("NOTE: GO OVER WHAT WE NEED TO DO WHEN READING IN THAR DATA")
     print("CURRENT IS COPIED FROM MASTER BRANCH")
-    print("recipe_register_arc._make_combined_image_thar")
+    print("recipe_register_thar._make_combined_image_thar")
     return thar_data, cards
     '''
     if bg_subtraction_mode is None:
-        return sky_image, cards
+        return thar_data, cards
 
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')

@@ -33,7 +33,7 @@ class Apertures(object):
 
     def __init__(self, orders, bottomup_solutions,
                  basename="", order_minmax_to_extract=(-1, -1),
-                 nx=2048, ny=None, domain_list=None):
+                 nx=4096, ny=None, domain_list=None):
         self.orders = orders
         self.set_order_minmax_to_extract(order_minmax_to_extract[0],
                                          order_minmax_to_extract[1])
@@ -97,7 +97,7 @@ class Apertures(object):
 
         if mask_top_bottom is False:
             def _g(i1):
-                order_map1 = np.zeros(len(xx), dtype="i")
+                order_map1 = np.zeros(len(yy), dtype="i")
                 for order, bottom, top in zip(self.orders,
                                               bottom_list, top_list):
                     domain = self.domain_dict[order]
@@ -109,7 +109,7 @@ class Apertures(object):
                 return order_map1
         else:
             def _g(i1):
-                order_map1 = np.zeros(len(xx), dtype="i")
+                order_map1 = np.zeros(len(yy), dtype="i")
                 for order, bottom, top in zip(self.orders,
                                               bottom_list, top_list):
                     m_up = yy > bottom[i1]
@@ -342,7 +342,6 @@ class Apertures(object):
 
         for o in self.orders_to_extract:
             domain = self.domain_dict[o]
-            #sl = slices[o-1][0], slice(0, 2048)
             sl = slices[o-1][0], slice(domain[0], domain[1]+1)
             msk = (ordermap_bpixed[sl] == o) & msk1[sl]
 
@@ -350,10 +349,8 @@ class Apertures(object):
 
             profile_map1[~msk] = 0.
 
-            # profile_map1[np.abs(profile_map1) < 0.02] = np.nan
-
             profile_map1[~np.isfinite(profile_map1)] = 0.
-
+            
             # normalize profile
             # profile_map1 /= np.abs(profile_map1).sum(axis=0)
 
@@ -401,7 +398,7 @@ class Apertures(object):
 
             s_list.append(s)
             v_list.append(v)
-            
+           
             if o == 43:
                 import matplotlib.pyplot as plt
                 plt.figure("Order 43")
@@ -413,6 +410,9 @@ class Apertures(object):
                 plt.figure("Sum_Weights1")
                 plt.plot(sum_weights1)
                 plt.title('Profile**2 / Variance')
+
+                plt.figure("Profile**2")
+                plt.plot((profile_map1**2).sum(axis=0))
                 plt.show()
 
             #import matpl

@@ -54,6 +54,7 @@ ORDER_FLAT_JSON_DESC = ("PRIMARY_CALIB_PATH", "ORDERFLAT_{basename}{postfix}.jso
 STACKED_DESC = ("OUTDATA_PATH", "{basename}{postfix}.stacked.fits")
 COMBINED_SKY_DESC = ("OUTDATA_PATH", "{basename}{postfix}.combined_sky.fits")
 COMBINED_IMAGE_DESC = ("OUTDATA_PATH", "{basename}{postfix}.combined_image.fits")
+COMBINED_THAR_DESC = ("OUTDATA_PATH", "{basename}{postfix}.combined_thar.fits")
 
 # below 4 are cache only
 COMBINED_IMAGE1_DESC = ("OUTDATA_PATH", "{basename}{postfix}.combined_image1.fits")

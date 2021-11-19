@@ -121,7 +121,7 @@ def get_y_derivativemap(flat, flat_bpix, bg_std_norm,
 
     flat_max = ni.maximum_filter1d(flat_deriv, size=max_sep_order, axis=0)
     flat_min = ni.minimum_filter1d(flat_deriv, size=max_sep_order, axis=0)
-
+     
     # mask for aperture boundray
     if pad is None:
         sl = slice()
@@ -137,7 +137,7 @@ def get_y_derivativemap(flat, flat_bpix, bg_std_norm,
     else:
         flat_deriv_pos_msk = (flat_deriv_masked > flat_max * 0.5)
         flat_deriv_neg_msk = (flat_deriv_masked < flat_min * 0.5)
-
+    
     return dict(data=flat_deriv,  # _bpix,
                 pos_mask=flat_deriv_pos_msk,
                 neg_mask=flat_deriv_neg_msk,
@@ -383,9 +383,16 @@ def trace_aperture_chebyshev(xy_list, domain):
         domain_order[o] = [np.min(x1), np.max(x1)]
     n_o = len(xy_list)
 
+    if n_o == 1:
+        n_o += 1
+
     from astropy.modeling import fitting  # models, fitting
     from astropy.modeling.polynomial import Chebyshev2D
     x_degree, y_degree = 4, 5
+    #NJM: Added because Deveny only has a single order so
+    #we can't fit with y_degree=5
+    if len(np.unique(o_list)) < y_degree:
+        y_degree = len(np.unique(o_list)) - 1
     p_init = Chebyshev2D(x_degree, y_degree,
                          x_domain=domain, y_domain=[0, n_o-1])
     fit_p = fitting.LinearLSQFitter()
@@ -402,7 +409,7 @@ def trace_aperture_chebyshev(xy_list, domain):
         p = fit_p(p_init, xxx[mmm], ooo[mmm], yyy[mmm])
 
     # Now we need to derive a 1d chebyshev for each order.  While
-    # there should be an analitical way, here we refit the trace for
+    # there should be an analytical way, here we refit the trace for
     # each order using the result of 2d fit.
 
     xx = np.arange(domain[0], domain[1])
@@ -449,7 +456,16 @@ def trace_aperture_chebyshev(xy_list, domain):
     f_list_down = []
     o_list_down = []
     domain_list_down = []
-    go_down_orders = [ooo[0] - _oi for _oi in range(1, 5)]
+
+    #If we only have one order (Deveny), we cannot extrapolate to orders above/below the fit as
+    #we have no info on how the order value affects the y position
+    if len(f_list) == 1:
+        go_down_orders = False
+        go_up_orders = False
+    else:
+        go_down_orders = [ooo[0] - _oi for _oi in range(1, 5)]
+        go_up_orders = [ooo[-1]+_oi for _oi in range(1, 5)]
+    
     while go_down_orders:
         xx = np.arange(domain_order[ooo[0]][0], domain_order[ooo[0]][1])
         oi, f, go_down_orders = _get_f(go_down_orders,
@@ -461,7 +477,7 @@ def trace_aperture_chebyshev(xy_list, domain):
     f_list_up = []
     o_list_up = []
     domain_list_up = []
-    go_up_orders = [ooo[-1]+_oi for _oi in range(1, 5)]
+
     while go_up_orders:
         xx = np.arange(domain_order[ooo[-1]][0], domain_order[ooo[-1]][1])
         oi, f, go_up_orders = _get_f(go_up_orders,
@@ -505,7 +521,7 @@ def trace_centroids_chebyshev(centroid_bottom_list,
     _ = trace_aperture_chebyshev(centroid_up_list,
                                  domain)
     sol_up_list, sol_up_list_full, domain_up_list = _
-
+    
     yc_down_list = [s(ref_x) for s in sol_bottom_list_full]
     # lower-boundary list
     yc_up_list = [s(ref_x) for s in sol_up_list_full]
@@ -514,20 +530,22 @@ def trace_centroids_chebyshev(centroid_bottom_list,
     # yc_down_list[1] should be the 1st down-boundary that is not
     # outside the detector
 
+    #If we only have a single order (Deveny), we skip all this filtering stuff
+    if len(yc_down_list) == 1:
+        sol_bottom_up_list_full_filtered = [(sol_bottom_list[0], sol_up_list[0])]
+        #domain_bottom_up_list_filtered = [(domain_bottom_list[0], domain_up_list[0])]
+        d0 = max(domain_bottom_list[0][0], domain_up_list[0][0])
+        d1 = min(domain_bottom_list[0][1], domain_up_list[0][1])
+        domain_bottom_up_list_filtered = [(d0, d1)]
+        centroid_bottom_up_list = centroid_bottom_list, centroid_up_list
+        sol_bottom_up_list = sol_bottom_list, sol_up_list
+        return (sol_bottom_up_list_full_filtered,
+                sol_bottom_up_list, centroid_bottom_up_list,
+                domain_bottom_up_list_filtered)
+
     indx_down_bottom = np.searchsorted(yc_down_list, yc_up_list[1])
     indx_up_top = np.searchsorted(yc_up_list, yc_down_list[-2],
                                   side="right")
-
-    # indx_up_bottom = np.searchsorted(yc_up_list, yc_down_list[1])
-    # indx_down_top = np.searchsorted(yc_down_list, yc_up_list[-2],
-    #                                 side="right")
-
-    # print zip(yc_down_list[1:-1], yc_up_list[indx:])
-    # print "index", indx_down_bottom, indx_up_top
-    # print "down", yc_down_list
-    # print "up", yc_up_list
-    # print zip(yc_down_list[indx_down_bottom-1:-1],
-    #           yc_up_list[1:indx_up_top+1])
 
     sol_bottom_up_list_full = zip(sol_bottom_list_full[indx_down_bottom-1:-1],
                                   sol_up_list_full[1:indx_up_top+1])

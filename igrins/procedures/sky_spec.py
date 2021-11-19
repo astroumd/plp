@@ -240,7 +240,10 @@ def extract_spectra(obsset, comb_type='combined_sky'):
 
     aperture = get_simple_aperture_from_obsset(obsset)
 
+    order_map = aperture.make_order_map()
+
     specs = aperture.extract_spectra_simple(data)
+
     obsset.store(DESCS["oned_spec_json"],
                  data=dict(orders=aperture.orders,
                            specs=specs,
@@ -267,12 +270,12 @@ def _get_slices(n_slice_one_direction):
     return slice_center, slice_up, slice_down
 
 
-def extract_spectra_multi(obsset):
+def extract_spectra_multi(obsset, comb_type='combined_sky'):
 
     n_slice_one_direction = 2
     slice_center, slice_up, slice_down = _get_slices(n_slice_one_direction)
 
-    data = obsset.load_fits_sci_hdu(DESCS["combined_sky"]).data
+    data = obsset.load_fits_sci_hdu(DESCS[comb_type]).data
 
     print("COMMENTING OUT PLOTS OF MULTISPECTRA")
     #import matplotlib.pyplot as plt
@@ -287,7 +290,9 @@ def extract_spectra_multi(obsset):
 
     def make_hdu(s_up, s_down, data):
         len_data = [len(tmp) for tmp in data]
-        save_domain = len(np.unique(len_data)) != 1
+        #save_domain = len(np.unique(len_data)) != 1
+        print("SETTING SAVE_DOMAIN TO TRUE")
+        save_domain = True
 
         h = [("NSLIT", n_slice_one_direction*2 + 1),
              ("FSLIT_DN", s_down),

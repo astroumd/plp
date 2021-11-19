@@ -73,6 +73,10 @@ def match_specs(s_list_src, s_list_dst, frac_thresh=0.3):
     frac_thresh: raise error if the fraction of the convered d_order is less than this value.
     """
 
+    if (len(s_list_src) == 1) and (len(s_list_dst) == 1):
+        #If there is only one spectra (order), then they must match
+        return 0
+
     center_indx0 = int(len(s_list_src)/2)
 
     delta_indx_list = []
@@ -106,6 +110,7 @@ def match_specs(s_list_src, s_list_dst, frac_thresh=0.3):
     return delta_indx
 
 def match_orders(orders, s_list_src, s_list_dst, frac_thresh=0.3):
+
     do = match_specs(s_list_src, s_list_dst, frac_thresh=frac_thresh)
 
     center_indx0 = 0

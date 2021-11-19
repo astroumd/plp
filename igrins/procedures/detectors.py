@@ -17,5 +17,12 @@ class RIMASH2RGDetector(Detector):
     ny = 2048
 
 class DEVENYDetector(Detector):
+    print("ADD INFO ABOUT PADDING TO DETECTORS.PY")
+    print("DO I NEED TO MODIFY THE FILL OF PADDING")
+    ny0 = 516
+    npad = 14
+    ny = ny0 + npad
     nx = 2148
-    ny = 516
+    #ny = 516
+    #npad = 14
+    #ny = 530 #padded by 4

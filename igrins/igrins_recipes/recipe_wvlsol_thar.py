@@ -44,7 +44,7 @@ def update_wvlsol_db(obsset):
 
 
 steps = [Step("Make Combined ThAr", make_combined_image_thar),
-         Step("Extract spectra-multi", extract_spectra_multi),
+         Step("Extract spectra-multi", extract_spectra_multi, comb_type='combined_thar'),
          Step("Identify lines in multi-slit", identify_multiline),
          Step("Derive Distortion Solution", volume_fit),
          Step("Make Ordermap/Slitposmap", make_ordermap_slitposmap),

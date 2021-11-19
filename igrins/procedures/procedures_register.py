@@ -19,8 +19,8 @@ def _get_ref_spec_name(recipe_name):
         ref_identified_lines_key = "SKY_IDENTIFIED_LINES_V0_JSON"
 
     elif recipe_name in ["THAR"]:
-        ref_spec_key = "THAR_REFSPEC_JSON"
-        ref_identified_lines_key = "THAR_IDENTIFIED_LINES_V0_JSON"
+        ref_spec_key = "ARCS_REFSPEC_JSON"
+        ref_identified_lines_key = "ARCS_IDENTIFIED_LINES_V0_JSON"
 
     else:
         raise ValueError("Recipe name of '%s' is unsupported."
@@ -71,6 +71,11 @@ def identify_orders(obsset):
 
 
 def _get_offset_transform(thar_spec_src, thar_spec_dst):
+    
+    def get_offsetter(o):
+        def _f(x, o=o):
+            return x+o
+        return _f
 
     from scipy.signal import correlate
     offsets = []
@@ -92,6 +97,14 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst):
         cor_list.append(cor)
         offset = center - np.argmax(cor)
         offsets.append(offset)
+
+    if len(offsets) == 1:
+        offsets2 = [offsets[0]]
+        sol_list = [get_offsetter(offset_) for offset_ in offsets2]
+        return dict(sol_type="offset",
+                    sol_list=sol_list,
+                    offsets_orig=offsets,
+                    offsets_revised=offsets2)
 
     from .skimage_measure_fit import ransac, LineModel
 
@@ -116,10 +129,6 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst):
         # print ym2
         offsets2[i] = ym2
 
-    def get_offsetter(o):
-        def _f(x, o=o):
-            return x+o
-        return _f
     sol_list = [get_offsetter(offset_) for offset_ in offsets2]
 
     return dict(sol_type="offset",
@@ -137,7 +146,7 @@ def _get_offset_transform_between_2spec(ref_spec, tgt_spec):
     s_list_tgt = tgt_spec["specs"]
 
     s_list_tgt = [np.array(s) for s in s_list_tgt]
-
+    
     orders_intersection = set(orders_ref).intersection(orders_tgt)
     orders_intersection = sorted(orders_intersection)
 

@@ -101,10 +101,18 @@ def fit_2dspec(xl, yl, zl, x_degree=4, y_degree=3,
     if y_domain is None:
         #y_domain = [orders[0]-2, orders[-1]+2]
         y_domain = [min(yl), max(yl)]
+
+    if y_domain[0] == y_domain[1]:
+        y_domain[1] += 1
+
+    if len(np.unique(yl)) <= y_degree:
+        y_degree = len(np.unique(yl)) - 1
+
     from astropy.modeling.polynomial import Chebyshev2D
     if p_init is None:
         p_init = Chebyshev2D(x_degree=x_degree, y_degree=y_degree,
                              x_domain=x_domain, y_domain=y_domain)
+    
     f = fitting.LinearLSQFitter()
 
     p = f(p_init, xl, yl, zl)

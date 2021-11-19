@@ -74,6 +74,10 @@ def _sub_with_bg_rimas(d, bg, destripe_mask=None):
 
     return r
 
+def _sub_with_bg_deveny(d, bg, destripe_mask=None):
+    
+    return _sub_with_bg_rimas(d, bg, destripe_mask=destripe_mask)
+
 def make_dark_with_bg(data_list, bg_model,
                       destripe_mask=None,
                       expt='igrins'):
@@ -85,6 +89,11 @@ def make_dark_with_bg(data_list, bg_model,
         print("NOT APPLYING SOME PATTERN REMOVAL DURING FLAT OFF 2nd PHASE. THIS NEEDS TO")
         print("BE ADDED AFTER REAL DATA HAS BEEN TAKEN")
         data_list5 = [_sub_with_bg_rimas(d, bg_model, destripe_mask)
+                      for d in data_list]
+    elif expt == 'deveny':
+        print("NOT APPLYING SOME PATTERN REMOVAL DURING FLAT OFF 2nd PHASE.")
+        print("THIS NEEDS TO BE FIGURED OUT FOR DEVENY")
+        data_list5 = [_sub_with_bg_deveny(d, bg_model, destripe_mask)
                       for d in data_list]
 
     flat5 = image_median(data_list5)

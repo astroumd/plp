@@ -29,7 +29,6 @@ def make_ordermap_slitposmap(obsset):
     obsset.store("ordermap_masked_fits", hdul)
 
 
-
 def make_slitoffsetmap(obsset):
 
     ordermap_hdu = obsset.load_fits_sci_hdu("ordermap_fits")
@@ -66,12 +65,21 @@ def make_slitoffsetmap(obsset):
     obsset.store("slitoffset_fits", hdul)
 
     #NJM REMOVE
-    import matplotlib.pyplot as plt
-    plt.figure("Offset Slice")
-    plt.plot(offset_map[:, 2000])
-    plt.xlabel('Position along middle slice (pixels)')
-    plt.ylabel('Slit Offset (pixels)')
-    plt.show()
+    print("NJM REMOVE PLOTS")
+    #import matplotlib.pyplot as plt
+    #plt.figure("Offset Slice")
+    #plt.plot(offset_map[:, 2000])
+    #plt.xlabel('Position along middle slice (pixels)')
+    #plt.ylabel('Slit Offset (pixels)')
+    #plt.show()
+
+    #plt.figure("OFFSET MAP")
+    #plt.imshow(offset_map)
+
+    #plt.figure("ORDER MAP")
+    #plt.imshow(ordermap_hdu.data)
+
+    #plt.show()
 
 
 def make_wavelength_map(obsset):
@@ -82,7 +90,6 @@ def make_wavelength_map(obsset):
     poly_2d = deserialize_poly_model(module_name, klass_name, serialized)
 
     order_map = obsset.load_fits_sci_hdu("ordermap_fits").data
-    # slitpos_map = caldb.load_item_from(basename, "slitposmap_fits")
 
     offset_map = obsset.load_fits_sci_hdu("slitoffset_fits").data
 

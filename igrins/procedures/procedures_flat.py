@@ -92,11 +92,6 @@ def obsset_combine_flat_off(obsset, destripe=True):
         cards, flat_off = combine_flat_off_cube_201909(hdul,
                                                        rp_remove_mod, bg_y_slice)
 
-    print("TSFF:", np.shape(flat_off))
-    import matplotlib.pyplot as plt
-    plt.figure("FLAT OFF")
-    plt.imshow(flat_off)
-
     hdu_cards = [Card(k, json_dumps(v)) for (k, v) in cards]
 
     hdul = obsset_off.get_hdul_to_write((hdu_cards, flat_off))
@@ -116,8 +111,7 @@ def obsset_combine_flat_off_step2(obsset):
     Then subtract the bg from individual flat-off frames, and
     apply 2nd phase ro-pattern removal using the destripe mask.
     """
-    # destripe=True):
-
+    
     print("NJM CHECK FLAT OFF STEP2 BG MODEL FOR 4096")
 
     obsset_off = obsset.get_subset("OFF")
@@ -126,7 +120,7 @@ def obsset_combine_flat_off_step2(obsset):
     helper = get_obsset_helper(obsset)
     destripe_mask = helper.get("destripe_mask")
 
-    bg_model = dh.model_bg(flat_off, destripe_mask, nx=obsset.detector.nx)
+    bg_model = dh.model_bg(flat_off, destripe_mask, nx=obsset.detector.nx, ny=obsset.detector.ny)
     header = flat_off_hdu.header.copy()
     header["NCOMBINE"] = len(obsset.obsids)
     flat_off_bg_hdul = HDUList([PrimaryHDU(data=bg_model,
@@ -211,10 +205,6 @@ def combine_flat_on(obsset):
 
     data_list = [hdu.data[:].astype(np.float) for hdu in obsset_on.get_hdus()]
     
-    import matplotlib.pyplot as plt
-    plt.figure('TEST')
-    plt.imshow(data_list[0])
-
     # data_list1 = [dh.sub_p64_from_guard(d) for d in data_list]
 
     # flat_on = image_median(data_list1)
@@ -222,10 +212,6 @@ def combine_flat_on(obsset):
     cube = make_initial_flat_on(data_list, expt=obsset.expt)
     flat_on = image_median(cube)
     
-    plt.figure("FLAT ON")
-    plt.imshow(flat_on)
-    plt.show()
-
     flat_std = np.std(data_list, axis=0)
 
     hdu_list = [([], flat_on),
@@ -360,7 +346,11 @@ def identify_order_boundaries(obsset):
     if obsset.expt.lower() == 'igrins':
         max_sep_order = 150
     elif obsset.expt.lower() == 'rimas':
+        print("EXPERIMENT WITH LARGER MAX_SEP_ORDER FOR RIMAS")
         max_sep_order = 50
+    elif obsset.expt.lower() == 'deveny':
+        max_sep_order = 1000
+        #flat_normed[-10:, :] = 0
 
     flat_deriv_ = get_y_derivativemap(flat_normed, flat_bpixed,
                                       bg_fwhm_normed,
@@ -370,6 +360,12 @@ def identify_order_boundaries(obsset):
     flat_deriv = flat_deriv_["data"]
     flat_deriv_pos_msk = flat_deriv_["pos_mask"]
     flat_deriv_neg_msk = flat_deriv_["neg_mask"]
+
+    #if obsset.expt.lower() == 'deveny':
+        #print("Manually changing neg_msk for Deveny")
+        #flat_deriv_neg_msk[:] = False
+        #flat_deriv_neg_msk[-20:, :] = True
+        #flat_deriv[-20:, :]= -10
 
     hdu_list = [([], flat_deriv),
                 ([], flat_deriv_pos_msk),
@@ -402,7 +398,7 @@ def trace_order_boundaries(obsset):
     flat_deriv = hdu_list[0].data
     flat_deriv_pos_msk = hdu_list[1].data > 0
     flat_deriv_neg_msk = hdu_list[2].data > 0
-
+ 
     flaton_info = obsset_on.load(DESCS["flaton_json"])
     bg_fwhm_normed = flaton_info["bg_fwhm_norm"]
 
@@ -414,6 +410,8 @@ def trace_order_boundaries(obsset):
         stitch_objects = False
     elif obsset.expt.lower() == 'igrins':
         stitch_objects = True
+    elif obsset.expt.lower() == 'deveny':
+        stitch_objects = False
 
     cent_bottom_list = identify_horizontal_line(flat_deriv,
                                                 flat_deriv_pos_msk,
@@ -432,7 +430,7 @@ def trace_order_boundaries(obsset):
                                             stitch_objects=stitch_objects)
 
     cent_up_list = _check_boundary_orders(cent_up_list, nx=nx)
-
+    
     obsset_on.store(DESCS["FLATCENTROIDS_JSON"],
                     dict(bottom_centroids=cent_bottom_list,
                          up_centroids=cent_up_list))

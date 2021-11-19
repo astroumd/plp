@@ -230,6 +230,14 @@ class ObsSet(object):
             if self.expt.lower() == 'rimas':
                 hdu.data = hdu.data.T
 
+            #TESTING padding the Deveny image since there is no actual boundary in the
+            #image for the order
+            if self.expt.lower() == 'deveny':
+                import numpy as np
+                if len(hdu.data[:]) == self.detector.ny0:
+                    hdu.data = np.pad(hdu.data[:], [(0, self.detector.npad), (0, 0)])
+                    hdu.data[-self.detector.npad:, :] = hdu.data[-self.detector.npad-1, 0]
+
             hdus.append(hdu)
 
         return hdus
