@@ -159,10 +159,11 @@ def gen_identified_lines(oned_spec_json_file, oned_wavemap_file, lines_dat_file,
         pixpos_array = peaks[:, 0]
         detected_wvl_array = np.interp(pixpos_array, np.arange(wavelengths.shape[0]), wavelengths)
         wvl_array, ref_indices_array = line_lookup(detected_wvl_array)
+        mask = np.logical_and(ref_indices_array != 0, ref_indices_array != lines.shape[0])
         json_dict['orders'].append(order)
-        json_dict['wvl_list'].append(wvl_array.astype(float).tolist())
-        json_dict['ref_indices_list'].append(ref_indices_array.astype(int).tolist())
-        json_dict['pixpos_list'].append(pixpos_array.astype(float).tolist())
+        json_dict['wvl_list'].append(wvl_array[mask].astype(float).tolist())
+        json_dict['ref_indices_list'].append(ref_indices_array[mask].astype(int).tolist())
+        json_dict['pixpos_list'].append(pixpos_array[mask].astype(float).tolist())
 
     save_dict_to_json(json_dict, output_file)
 
@@ -195,9 +196,12 @@ def gen_echellogram(order_map_file, oned_wavemap_file, output_file, aggregation_
         'wvl_list': wavelengths, 'x_list': [np.arange(len(wave)).tolist() for wave in wavelengths], 'y_list': [],
         'orders': orders
     }
-    y_index_image = np.asarray([np.arange(order_map_image.shape[1]) for i in range(order_map_image.shape[0])])
-    # if aggregation_axis == 0:
-    #     y_index_image = y_index_image.transpose()
+    if aggregation_axis == 0:
+        y_index_image = np.asarray([np.arange(order_map_image.shape[0]) for i in range(order_map_image.shape[1])])
+    else:
+        y_index_image = np.asarray([np.arange(order_map_image.shape[1]) for i in range(order_map_image.shape[0])])
+    if aggregation_axis == 0:
+        y_index_image = y_index_image.transpose()
     for order in orders:
         single_order = single_order_image_from_map(y_index_image, order, order_map_image)
         oned_spec = aggregation(single_order, axis=aggregation_axis)
