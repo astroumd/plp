@@ -136,7 +136,7 @@ if __name__ == '__main__':
     deveny_end_wvl = 8098.6615
 
     arc_spectrum_image = ExistingImage(arc_spectrum, fits_image_hdu=0).image
-    gen_order_map(arc_spectrum_image.shape, 25, order_map_file)
+    # gen_order_map(arc_spectrum_image.shape, 25, order_map_file)
     # gen_rough_wavemap(arc_spectrum_image.shape, deveny_start_wvl, deveny_end_wvl, wavemap_file)
     # ArrayImage(ExistingImage(wavemap_file).image/10000).save(wavemap_microns, hdu=0)
     # gen_lazy_bad_pix_map(arc_spectrum_image.shape, bad_pix_map)
@@ -151,8 +151,8 @@ if __name__ == '__main__':
     # gen_oned_spec(order_map_file, alignment_arc_file_reshaped, alignment_arc_reshaped_oned, 0)
     # gen_oned_wavemap(order_map_file, wavemap_microns, wavemap_oned, 0)
     # gen_identified_lines(arc_spectrum_oned, wavemap_oned, lines_dat, identified_lines)
-    gen_identified_lines(sky_spectrum_oned, wavemap_oned, ohlines_dat, oh_identified_lines)
-    # gen_ref_indices(identified_lines, lines_dat, 'deveny', identified_lines_update, ref_indices_file)
+    # gen_identified_lines(sky_spectrum_oned, wavemap_oned, ohlines_dat, oh_identified_lines)
+    gen_ref_indices(identified_lines, lines_dat, 'deveny', identified_lines_update, ref_indices_file)
     gen_ref_indices(oh_identified_lines, ohlines_dat, 'deveny', oh_identified_lines_update, oh_ref_indices_file)
     # gen_echellogram(order_map_file, wavemap_oned, echellogram_file)
     # gen_echellogram_fit_wvlsol(
