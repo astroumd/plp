@@ -380,18 +380,22 @@ def gen_ref_indices(
         repeat_index = unq[count>1]
         repeat_index_count = count[count>1]
         ref_indices = []
-        for index, index_count in zip(repeat_index, repeat_index_count):
-            wavelength = wavelengths[index]
-            max_index = index + index_count
-            min_index = index - index_count
-            initial_matches = lines[min_index:max_index].copy()
-            initial_matches['wavelength'] = abs(initial_matches['wavelength'] - wavelength)
-            sorted_matches = np.sort(initial_matches, order='wavelength')
-            sorted_matches_cutoff = sorted_matches[0:index_count]
-            resorted_matches = np.sort(sorted_matches_cutoff, order='index')
-            new_indices = resorted_matches['index']
-            ref_index_array_new[ref_index_array==index] = new_indices
-            ref_indices.append(new_indices.tolist())
+        for index, index_count in zip(unq, count):
+            if index_count == 1:
+                ref_indices.append([int(index)])
+            else:
+                # for index, index_count in zip(repeat_index, repeat_index_count):
+                wavelength = wavelengths[index]
+                max_index = index + index_count
+                min_index = index - index_count
+                initial_matches = lines[min_index:max_index].copy()
+                initial_matches['wavelength'] = abs(initial_matches['wavelength'] - wavelength)
+                sorted_matches = np.sort(initial_matches, order='wavelength')
+                sorted_matches_cutoff = sorted_matches[0:index_count]
+                resorted_matches = np.sort(sorted_matches_cutoff, order='index')
+                new_indices = resorted_matches['index']
+                ref_index_array_new[ref_index_array==index] = new_indices
+                ref_indices.append(new_indices.tolist())
 
         band_dict[str(order)] = ref_indices
         new_id_lines_dict['orders'].append(order)
