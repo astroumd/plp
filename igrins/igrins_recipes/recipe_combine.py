@@ -99,7 +99,16 @@ def get_combined_images(obsset,
     na, nb = len(obsset_a.obsids), len(obsset_b.obsids)
 
     if ab_mode and (na != nb):
-        raise RuntimeError("For AB nodding, number of A and B should match!")
+        if na > nb:
+            obsids = obsset_a.obsids[:nb]
+            obsset_a = obsset_a.get_subset_obsid(obsids)
+        else:
+            obsids = obsset_b.obsids[:na]
+            obsset_b = obsset_b.get_subset_obsid(obsids)
+        print("For AB nodding, number of A and B should match!")
+        print("However we are removing A or B obsids until na == nb")
+
+        #raise RuntimeError("For AB nodding, number of A and B should match!")
 
     if na == 0:
         raise RuntimeError("No A Frame images are found")
@@ -128,7 +137,7 @@ def get_combined_images(obsset,
     return data_minus, data_plus
 
 
-def get_variances(data_minus, data_plus, gain, nx=4096):
+def get_variances(data_minus, data_plus, gain, nx=4096, ny=4096):
 
     """
     Return two variances.
@@ -142,12 +151,14 @@ def get_variances(data_minus, data_plus, gain, nx=4096):
     print("UPDATE GUARDS FOR NX=4096???")
     guards = data_minus[:, [0, 1, 2, 3, -4, -3, -2, -1]]
 
-    namp = nx // 64
+    namp = ny // 64
+
     qq = get_per_amp_stat(guards, namp=namp)
  
     s = np.array(qq["stddev_lt_threshold"]) ** 2
-    variance_per_amp = np.repeat(s, 64*nx).reshape((-1, nx))
 
+    variance_per_amp = np.repeat(s, 64*nx).reshape((-1, nx))
+    
     variance = variance_per_amp + np.abs(data_plus)/gain
 
     return variance_per_amp, variance
@@ -228,6 +239,7 @@ def make_combined_images(obsset, allow_no_b_frame=False,
         remove_amp_wise_var = params["amp_wise"]
     
     nx = obsset.detector.nx
+    ny = obsset.detector.ny
 
     d2 = remove_pattern(data_minus_raw, mask=bias_mask,
                         remove_level=remove_level,
@@ -237,9 +249,35 @@ def make_combined_images(obsset, allow_no_b_frame=False,
     dp = remove_pattern(data_plus, remove_level=1,
                         remove_amp_wise_var=False,
                         nx=nx)
-
+    
     gain = float(obsset.rs.query_ref_value("GAIN"))
-    variance_map0, variance_map = get_variances(d2, dp, gain, nx=nx)
+    
+    if obsset.detector.name == 'deveny':
+        print("FIX DEVENY VARIANCE CALCULATION")
+        y0 = 4
+        y1 = 516
+        d2_tmp = d2[y0:y1, :]
+        dp_tmp = dp[y0:y1, :]
+
+        variance_map0, variance_map = get_variances(d2_tmp, dp_tmp, gain, nx=nx, ny=512)
+    else:
+        variance_map0, variance_map = get_variances(d2, dp, gain, nx=nx, ny=ny)
+    
+    if obsset.detector.name == 'deveny':
+        variance_map0b = np.zeros_like(data_minus_raw)
+        variance_mapb = np.zeros_like(data_minus_raw)
+        
+        variance_map0b[y0:y1, :] = variance_map0
+        variance_mapb[y0:y1, :] = variance_map
+        
+        variance_map0b[:y0, :] = variance_map0[0, :][None, :]
+        variance_map0b[y1:, :] = variance_map0[-1, :][None, :]
+        
+        variance_mapb[:y0, :] = variance_map[0, :][None, :]
+        variance_mapb[y1:, :] = variance_map[-1, :][None, :]
+
+        variance_map0 = variance_map0b
+        variance_map = variance_mapb
 
     hdul = obsset.get_hdul_to_write(([], d2))
 
