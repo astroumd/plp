@@ -127,13 +127,12 @@ class Apertures(object):
     def make_slitpos_map(self, fact=None):
 
         xx, yy = self.xi, self.yi
-        print("XX:", xx)
 
         bottom_list = [self.apcoeffs[o](xx, 0.) for o in self.orders]
         top_list = [self.apcoeffs[o](xx, 1.) for o in self.orders]
 
         def _g(i1):
-            slitpos_map1 = np.empty(len(xx), dtype="d")
+            slitpos_map1 = np.empty(len(yy), dtype="d")
             slitpos_map1.fill(np.nan)
             for order, bottom, top in zip(self.orders,
                                           bottom_list, top_list):

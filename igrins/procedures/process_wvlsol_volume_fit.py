@@ -50,8 +50,12 @@ def _volume_poly_fit(points, scalar, orders, names):
     return p, s
 
 
-def _get_df(obsset):
-    d = obsset.load("SKY_FITTED_PIXELS_JSON")
+def _get_df(obsset, fit_type='sky'):
+    if fit_type == 'sky':
+        d = obsset.load("SKY_FITTED_PIXELS_JSON")
+    elif fit_type == 'thar':
+        d = obsset.load("THAR_FITTED_PIXELS_JSON")
+
     df = pd.DataFrame(**d)
 
     index_names = ["kind", "order", "wavelength"]
@@ -74,9 +78,9 @@ def _filter_points(df, drop=0.10):
     return df[msk]
 
 
-def volume_fit(obsset):
+def volume_fit(obsset, fit_type='sky'):
 
-    dd = _get_df(obsset)
+    dd = _get_df(obsset, fit_type=fit_type)
     dd = _filter_points(dd)
 
     names = ["pixel", "order", "slit"]

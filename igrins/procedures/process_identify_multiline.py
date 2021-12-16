@@ -5,7 +5,7 @@ from collections import namedtuple
 # from igrins.libs.recipe_helper import RecipeHelper
 
 
-from ..procedures.ref_lines_db import SkyLinesDB, HitranSkyLinesDB
+from ..procedures.ref_lines_db import SkyLinesDB, HitranSkyLinesDB, ThArLinesDB
 
 Spec = namedtuple("Spec", ["s_map", "wvl_map", "domain"])
 
@@ -37,6 +37,51 @@ def identify_lines_from_spec(orders, spec_data, wvlsol,
                               axis=0)
 
     return fitted_pixels
+
+def identify_multiline_thar(obsset):
+
+    multi_spec = obsset.load("multi_spec_fits")
+
+    # just to retrieve order information
+    wvlsol_v0 = obsset.load_resource_for("wvlsol_v0")
+    orders = wvlsol_v0["orders"]
+    wvlsol = wvlsol_v0["wvl_sol"]
+
+    ref_lines_db = ThArLinesDB(obsset.rs.master_ref_loader)
+    ref_lines_db_hitrans = None
+    
+    keys = []
+    fitted_pixels_list = []
+
+    for hdu in multi_spec:
+        slit_center = hdu.header["FSLIT_CN"]
+        keys.append(slit_center)
+
+        str_test = str(orders[0]) + '_LO'
+        if str_test in hdu.header:
+            domains = []
+            for order in orders:
+                str_lo = str(order) + '_LO'
+                str_hi = str(order) + '_HI'
+                domains.append([int(hdu.header[str_lo]), int(hdu.header[str_hi])])
+
+        fitted_pixels_ = identify_lines_from_spec(orders, hdu.data, wvlsol,
+                                                  ref_lines_db,
+                                                  ref_lines_db_hitrans,
+                                                  domains=domains)
+
+        fitted_pixels_list.append(fitted_pixels_)
+
+    # concatenate collected list of fitted pixels.
+    fitted_pixels_master = pd.concat(fitted_pixels_list,
+                                     keys=keys,
+                                     names=["slit_center"],
+                                     axis=0)
+
+    # storing multi-index seems broken. Enforce reindexing.
+    _d = fitted_pixels_master.reset_index().to_dict(orient="split")
+
+    obsset.store("THAR_FITTED_PIXELS_JSON", _d)
 
 
 def identify_multiline(obsset):

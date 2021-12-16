@@ -19,8 +19,10 @@ def _get_ref_spec_name(recipe_name):
         ref_identified_lines_key = "SKY_IDENTIFIED_LINES_V0_JSON"
 
     elif recipe_name in ["THAR"]:
-        ref_spec_key = "ARCS_REFSPEC_JSON"
-        ref_identified_lines_key = "ARCS_IDENTIFIED_LINES_V0_JSON"
+        #ref_spec_key = "ARCS_REFSPEC_JSON"
+        #ref_identified_lines_key = "ARCS_IDENTIFIED_LINES_V0_JSON"
+        ref_spec_key = "THAR_REFSPEC_JSON"
+        ref_identified_lines_key = "THAR_IDENTIFIED_LINES_V0_JSON"
 
     else:
         raise ValueError("Recipe name of '%s' is unsupported."

@@ -59,9 +59,12 @@ def fit_wvlsol(df, nx, xdeg=4, ydeg=3, p_init=None):
     return p, fit_results
 
 
-def derive_wvlsol(obsset):
+def derive_wvlsol(obsset, fit_type='sky'):
 
-    d = obsset.load("SKY_FITTED_PIXELS_JSON")
+    if fit_type == 'sky':
+        d = obsset.load("SKY_FITTED_PIXELS_JSON")
+    else:
+        d = obsset.load("THAR_FITTED_PIXELS_JSON")
     df = pd.DataFrame(**d)
 
     nx = obsset.detector.nx

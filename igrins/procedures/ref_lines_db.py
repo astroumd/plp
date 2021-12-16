@@ -273,7 +273,6 @@ class RefLinesDBBase:
 
         ref_lines_col = ref_lines_db.get_ref_lines_collection(order_list,
                                                               wvl_list, x)
-
         fitted_pixels_col = ref_lines_col.fit(s_list, x, update_self=True,
                                               ref_sigma=ref_sigma)
 
@@ -318,6 +317,32 @@ class SkyLinesDB(RefLinesDBBase):
 
         return ref_lines
 
+class ThArLinesDB(RefLinesDBBase):
+    def _load_refdata(self):
+        from .ref_data_thar import load_thar_ref_data
+        thar_refdata = load_thar_ref_data(self.ref_loader)
+        return thar_refdata
+
+    def get_ref_lines(self, o, wvl, x):
+        """
+        return RefLines instance
+        """
+        thar_ref_data = self._get_refdata()
+
+        tharlines_db = thar_ref_data["tharlines_db"]
+        try:
+            line_indices = thar_ref_data["tharline_indices"][o]
+        except KeyError:
+            line_indices = []
+
+        _ref_lines = get_ref_list1(tharlines_db, line_indices,
+                                   wvl, x=x, domain=self.domain[o])
+       
+        _ref_lines["order"] = o
+
+        ref_lines = RefLines(_ref_lines)
+
+        return ref_lines
 
 class HitranSkyLinesDB(RefLinesDBBase):
     def _load_refdata(self):
