@@ -104,6 +104,8 @@ WAVELENGTHMAP_FITS_DESC = ("PRIMARY_CALIB_PATH", "SKY_{basename}{postfix}.wavele
 
 SKY_IDENTIFIED_JSON_DESC = ("OUTDATA_PATH", "{basename}{postfix}.sky_identified.json")
 SKY_FITTED_PIXELS_JSON_DESC = ("PRIMARY_CALIB_PATH", "SKY_{basename}{postfix}.fitted_pixels.json")
+#THAR_IDENTIFIED_JSON_DESC = ("OUTDATA_PATH", "{basename}{postfix}.thar_identified.json")
+THAR_FITTED_PIXELS_JSON_DESC = ("PRIMARY_CALIB_PATH", "THAR_{basename}{postfix}.fitted_pixels.json")
 
 VOLUMEFIT_COEFFS_JSON_DESC = ("PRIMARY_CALIB_PATH", "SKY_{basename}{postfix}.volumefit_coeffs.json")
 

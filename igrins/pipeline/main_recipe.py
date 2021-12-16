@@ -77,7 +77,7 @@ def iter_obsset(recipe_name_fnmatch,
         else:
             bands = [bands]
     elif expt.lower() == "deveny":
-        bands = '1'
+        bands = ["deveny"]
 
     config = IGRINSConfig(config_file, expt=expt)
 

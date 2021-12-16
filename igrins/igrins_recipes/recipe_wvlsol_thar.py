@@ -2,7 +2,7 @@ from __future__ import print_function
 
 from ..procedures.sky_spec import extract_spectra_multi
 
-from ..procedures.process_identify_multiline import identify_multiline
+from ..procedures.process_identify_multiline import identify_multiline_thar
 from ..procedures.process_wvlsol_volume_fit import volume_fit
 
 
@@ -45,12 +45,12 @@ def update_wvlsol_db(obsset):
 
 steps = [Step("Make Combined ThAr", make_combined_image_thar),
          Step("Extract spectra-multi", extract_spectra_multi, comb_type='combined_thar'),
-         Step("Identify lines in multi-slit", identify_multiline),
-         Step("Derive Distortion Solution", volume_fit),
+         Step("Identify lines in multi-slit (ThAr)", identify_multiline_thar),
+         Step("Derive Distortion Solution", volume_fit, fit_type='thar'),
          Step("Make Ordermap/Slitposmap", make_ordermap_slitposmap),
          Step("Make Slitoffset map", make_slitoffsetmap),
          Step("Update distortion db", update_distortion_db),
-         Step("Derive wvlsol", derive_wvlsol),
+         Step("Derive wvlsol", derive_wvlsol, fit_type='thar'),
          Step("Update wvlsol db", update_wvlsol_db),
          Step("Make wvlmap", make_wavelength_map),
          Step("Save WAT header", save_wat_header),
