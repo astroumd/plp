@@ -119,6 +119,14 @@ class ObsSet(object):
 
         return ObsSet(self.rs, self.recipe_name, obsids, frametypes, expt=self.expt)
 
+    def get_subset_obsid(self, obsids):
+        ofs = [(o, f) for o, f in zip(self.obsids, self.frametypes)
+                if o in obsids]
+        obsids = [o for o, f in ofs]
+        frametypes = [f for o, f in ofs]
+        
+        return ObsSet(self.rs, self.recipe_name, obsids, frametypes, expt=self.expt)
+
     # ref_data related
     def load_ref_data(self, kind, get_path=False):
         return self.rs.load_ref_data(kind, get_path=get_path)
