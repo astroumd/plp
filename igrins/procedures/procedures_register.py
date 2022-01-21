@@ -413,13 +413,10 @@ def _make_order_flat(flat_normed, flat_mask, orders, order_map):
     # flat_normed  = flaton_products[FLAT_NORMED_DESC][0].data
     # flat_mask = flaton_products[FLAT_MASK_DESC].data
 
-    nx = len(flat_normed)
-    
     import scipy.ndimage as ni
     slices = ni.find_objects(order_map)
 
-    #TODO: Check whether nx is correct value to use
-    nx = len(flat_normed)
+    ny, nx = flat_normed.shape
 
     mean_order_specs = []
     mask_list = []

@@ -252,16 +252,22 @@ def make_combined_images(obsset, allow_no_b_frame=False,
     
     gain = float(obsset.rs.query_ref_value("GAIN"))
     
-    if obsset.detector.name == 'deveny':
+    #if obsset.detector.name == 'deveny':
+    if hasattr(obsset.detector, 'npad_p'):
         print("FIX DEVENY VARIANCE CALCULATION")
-        y0 = 4
-        y1 = 516
+        #print("Variance only works with padding in positive y direction")
+        y1 = obsset.detector.ny0 + obsset.detector.npad_m
+        #ny_var = 2**(int(np.log2(y1)))
+        ny_var = y1 // 64 * 64
+        y0 = y1 - ny_var
         d2_tmp = d2[y0:y1, :]
         dp_tmp = dp[y0:y1, :]
 
-        variance_map0, variance_map = get_variances(d2_tmp, dp_tmp, gain, nx=nx, ny=512)
+        variance_map0, variance_map = get_variances(d2_tmp, dp_tmp, gain, nx=nx, ny=ny_var)
     else:
         variance_map0, variance_map = get_variances(d2, dp, gain, nx=nx, ny=ny)
+    print("SSS:", np.std(variance_map0), y1, ny_var)
+    zzz
     
     if obsset.detector.name == 'deveny':
         variance_map0b = np.zeros_like(data_minus_raw)

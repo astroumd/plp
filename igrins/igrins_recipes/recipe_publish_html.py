@@ -22,6 +22,8 @@ def publish_html(obsset):
     env = Environment(loader=FileSystemLoader('jinja_templates'))
     if obsset.expt.lower() == 'rimas':
         template = env.get_template('index_rimas.html')
+    elif obsset.expt.lower() == 'deveny':
+        template = env.get_template('index_deveny.html')
     else:
         template = env.get_template('index.html')
 

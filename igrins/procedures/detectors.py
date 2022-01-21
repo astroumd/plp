@@ -23,10 +23,9 @@ class DEVENYDetector(Detector):
     print("ADD INFO ABOUT PADDING TO DETECTORS.PY")
     print("DO I NEED TO MODIFY THE FILL OF PADDING")
     ny0 = 516
-    npad = 14
-    ny = ny0 + npad
+    npad_m = 0
+    npad_p = 14
+    #npad = npad_p
+    ny = ny0 + npad_m + npad_p
     nx = 2148
     name = 'deveny'
-    #ny = 516
-    #npad = 14
-    #ny = 530 #padded by 4

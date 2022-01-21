@@ -243,9 +243,11 @@ class ObsSet(object):
             if self.expt.lower() == 'deveny':
                 import numpy as np
                 if len(hdu.data[:]) == self.detector.ny0:
-                    hdu.data = np.pad(hdu.data[:], [(0, self.detector.npad), (0, 0)])
-                    hdu.data[-self.detector.npad:, :] = hdu.data[-self.detector.npad-1, 0]
-
+                    #hdu.data = np.pad(hdu.data[:], [(0, self.detector.npad), (0, 0)])
+                    #hdu.data[-self.detector.npad:, :] = hdu.data[-self.detector.npad-1, 0]
+                    hdu.data = np.pad(hdu.data[:], [(self.detector.npad_m, self.detector.npad_p), (0, 0)])
+                    hdu.data[-self.detector.npad_p:, :] = hdu.data[-self.detector.npad_p-1, 0]
+                    hdu.data[:self.detector.npad_m, :] = hdu.data[self.detector.npad_m, 0]
             hdus.append(hdu)
 
         return hdus

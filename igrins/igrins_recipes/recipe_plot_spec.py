@@ -150,6 +150,10 @@ def _plot_div_a0v_spec(fig, tgt, obsset, a0v="GROUP2", a0v_obsid=None,
 
     s_max_list = []
     s_min_list = []
+    if len(tgt_spec_cor) == 1:
+        #DEVENY
+        tgt_spec_cor = [None, None, None, tgt_spec_cor[0], None, None, None]
+
     for s in tgt_spec_cor[3:-3]:
         s_max_list.append(np.nanmax(s))
         s_min_list.append(np.nanmin(s))

@@ -123,6 +123,7 @@ class DevenyBasenameHelper():
 
     def __init__(self, obsdate):
         self.obsdate = obsdate
+        self.band = "deveny" #only one band
 
     def to_basename(self, obsid):
         if isinstance(obsid, int):
