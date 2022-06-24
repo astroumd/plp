@@ -66,17 +66,17 @@ def combine_lines_dat(dat_iterable, output_dat_filename):
 
 
 if __name__ == '__main__':
-    # bands = ['HK', 'YJ']
-    # csv_dir = r'C:\Users\durba\Downloads'
+    bands = ['HK', 'YJ']
+    csv_dir = r'C:\Users\durba\Downloads'
     dat_dir = "..\\..\\master_calib\\rimas"
-    # for element, wavelengths in get_lines().items():
-    #     for band in bands:
-    #         csv_file = '{band}_{element}_spectrum.csv'.format(band=band, element=element)
-    #         csv_file = os.path.join(csv_dir, csv_file)
-    #         intensities = get_intensities(csv_file, wavelengths)
-    #         dat_file = "{band}_{element}_lines.dat".format(band=band, element=element)
-    #         dat_file = os.path.join(dat_dir, dat_file)
-    #         save_lines(dat_file, wavelengths, intensities)
+    for element, wavelengths in get_lines().items():
+        for band in bands:
+            csv_file = '{band}_{element}_spectrum.csv'.format(band=band, element=element)
+            csv_file = os.path.join(csv_dir, csv_file)
+            intensities = get_intensities(csv_file, wavelengths)
+            dat_file = "{band}_{element}_lines.dat".format(band=band, element=element)
+            dat_file = os.path.join(dat_dir, dat_file)
+            save_lines(dat_file, wavelengths, intensities)
     input_dat_template = os.path.join(dat_dir, "{band}_{element}_lines.dat")
     element_dat_template = os.path.join(dat_dir, "{element}_lines.dat")
     final_dat = element_dat_template.format(element='arc')

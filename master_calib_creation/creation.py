@@ -14,6 +14,7 @@ from master_calib_creation.image import ExistingImage, file_overlay
 
 from igrins.procedures.find_peak import find_peaks
 from igrins.procedures.process_derive_wvlsol import fit_wvlsol
+from igrins.instrument.arc import combine_lines_dat
 
 
 def gen_oned_spec(
@@ -123,7 +124,10 @@ def gen_identified_lines(oned_spec_json_file, oned_wavemap_file, lines_dat_file,
 
         """
         filtered_peaks_array = peaks_array.copy()
+        # try:
         widths = peaks_array[:, 1]
+        # except IndexError:
+        #     return peaks_array
         width_median = np.median(widths)
         width_dev = np.std(widths)
         width_max = width_median + width_dev * sigma
@@ -155,15 +159,23 @@ def gen_identified_lines(oned_spec_json_file, oned_wavemap_file, lines_dat_file,
         return np.asarray(line_waves), np.asarray(line_index)
 
     for order, spec, wavelengths in zip(orders, specs, map_wavelengths_array):
-        peaks = filtered_peaks(np.asarray(find_peaks(np.asarray(spec))))
-        pixpos_array = peaks[:, 0]
-        detected_wvl_array = np.interp(pixpos_array, np.arange(wavelengths.shape[0]), wavelengths)
-        wvl_array, ref_indices_array = line_lookup(detected_wvl_array)
-        mask = np.logical_and(ref_indices_array != 0, ref_indices_array != lines.shape[0])
-        json_dict['orders'].append(order)
-        json_dict['wvl_list'].append(wvl_array[mask].astype(float).tolist())
-        json_dict['ref_indices_list'].append(ref_indices_array[mask].astype(int).tolist())
-        json_dict['pixpos_list'].append(pixpos_array[mask].astype(float).tolist())
+        # plt.plot(spec)
+        # plt.show()
+        try:
+            peaks = filtered_peaks(np.asarray(find_peaks(np.asarray(spec))))
+            pixpos_array = peaks[:, 0]
+            detected_wvl_array = np.interp(pixpos_array, np.arange(wavelengths.shape[0]), wavelengths)
+            wvl_array, ref_indices_array = line_lookup(detected_wvl_array)
+            mask = np.logical_and(ref_indices_array != 0, ref_indices_array != lines.shape[0])
+            json_dict['orders'].append(order)
+            json_dict['wvl_list'].append(wvl_array[mask].astype(float).tolist())
+            json_dict['ref_indices_list'].append(ref_indices_array[mask].astype(int).tolist())
+            json_dict['pixpos_list'].append(pixpos_array[mask].astype(float).tolist())
+        except IndexError:
+            json_dict['orders'].append(order)
+            json_dict['wvl_list'].append([])
+            json_dict['ref_indices_list'].append([])
+            json_dict['pixpos_list'].append([])
 
     save_dict_to_json(json_dict, output_file)
 
@@ -211,10 +223,27 @@ def gen_echellogram(order_map_file, oned_wavemap_file, output_file, aggregation_
     save_dict_to_json(json_dict, output_file)
 
 
+def gen_error_dict(fit_polynomial, fitdata_df, pickle_output_file):
+    fit_wvl = fit_polynomial(fitdata_df['pixels'], fitdata_df['order'])
+    fit_wvl = fit_wvl / fitdata_df['order']
+    error = fitdata_df['wavelength'] - fit_wvl
+    standard_error = np.sqrt(np.sum(error ** 2) / (error.shape[0] - 1))
+    fit_dict = {
+        'pixpos': fitdata_df['pixels'].tolist(),
+        'order': fitdata_df['order'].tolist(),
+        'fit_wvl': fit_wvl.tolist(),
+        'identified_lines_wvl': fitdata_df['wavelength'].tolist(),
+        'error': error.tolist(),
+        'standard_error': standard_error,
+        'pickle_filename': pickle_output_file,
+    }
+    return fit_dict
+
+
 def gen_echellogram_fit_wvlsol(
     echellogram_json_file, identified_lines_json_file, ref_indices_json_file, output_file, pixels_in_order,
     centroid_solutions_json_file=None, domain_starting_index=0, fit_output_file='fit.json',
-    pixel_degree=4, order_degree=3, p_init_pickle=None, pickle_output_file=None, band='YJ'
+    pixel_degree=4, order_degree=3, p_init_pickle=None, pickle_output_file=None, band='YJ', sigma=2
 ):
     """
     Creates echellogram calibration json file using wavelength solution
@@ -248,6 +277,8 @@ def gen_echellogram_fit_wvlsol(
         output file for wavelength solution polynomial
     band : str, optional
         band from ref_indices json file
+    sigma : int, float, optional
+        error cutoff before refitting
 
     Returns
     -------
@@ -302,14 +333,23 @@ def gen_echellogram_fit_wvlsol(
     assert isinstance(p, PolynomialBase)
     if pickle_output_file is None:
         pickle_output_file = output_file.replace('.json', '.p')
+
+    fit_dict = gen_error_dict(p, fitdata_df, pickle_output_file)
+    error_array = np.asarray(fit_dict['error'])
+    std_error = fit_dict['standard_error']
+    large_error = np.where(np.abs(error_array)>sigma*std_error)
+    fitdata_df = fitdata_df.drop(fitdata_df.index[large_error])
+    p, fit_results = fit_wvlsol(fitdata_df, pixel_degree, order_degree, p_init=p_init)
+
+    fit_dict = gen_error_dict(p, fitdata_df, pickle_output_file)
+    save_dict_to_json(fit_dict, fit_output_file)
+
     with open(pickle_output_file, 'wb') as f:
         pickle.dump(p, f)
-
-    pixels = np.arange(0, pixels_in_order)
-
     json_dict = {
         'wvl_list': [], 'x_list': [], 'y_list': [], 'orders': [],
     }
+    pixels = np.arange(0, pixels_in_order)
     for order in identified_lines['orders']:
         p_out = p(pixels, np.asarray([order for i in range(pixels_in_order)]))
         wvl = p_out / order
@@ -318,21 +358,6 @@ def gen_echellogram_fit_wvlsol(
         json_dict['wvl_list'].append(wvl.tolist())
     json_dict['y_list'] = json_dict_from_file(echellogram_json_file)['y_list']
     save_dict_to_json(json_dict, output_file)
-
-    fit_wvl = p(fitdata_df['pixels'], fitdata_df['order'])
-    fit_wvl = fit_wvl / fitdata_df['order']
-    error = fitdata_df['wavelength'] - fit_wvl
-    standard_error = np.sqrt(np.sum(error**2) / (error.shape[0]-1))
-    fit_dict = {
-        'pixpos': fitdata_df['pixels'].tolist(),
-        'order': fitdata_df['order'].tolist(),
-        'fit_wvl': fit_wvl.tolist(),
-        'identified_lines_wvl': fitdata_df['wavelength'].tolist(),
-        'error': error.tolist(),
-        'standard_error': standard_error,
-        'pickle_filename': pickle_output_file,
-    }
-    save_dict_to_json(fit_dict, fit_output_file)
 
 
 def gen_ref_indices(
@@ -376,9 +401,13 @@ def gen_ref_indices(
     for order, pix_pos, ref_index in zip(id_lines['orders'], id_lines['pixpos_list'], id_lines['ref_indices_list']):
         ref_index_array = np.asarray(ref_index)
         ref_index_array_new = ref_index_array.copy()
-        unq, count = np.unique(ref_index_array, axis=0, return_counts=True)
-        repeat_index = unq[count>1]
-        repeat_index_count = count[count>1]
+        try:
+            unq, count = np.unique(ref_index_array, axis=0, return_counts=True)
+            # repeat_index = unq[count>1]
+            # repeat_index_count = count[count>1]
+        except ValueError:
+            unq = np.asarray([])
+            count = np.asarray([])
         ref_indices = []
         for index, index_count in zip(unq, count):
             if index_count == 1:
@@ -601,15 +630,29 @@ def gen_even_spaced_lines_csv_file(
 if __name__ == '__main__':
 
     # RIMAS files
-    # order_map = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\echelle_h4rg\YJ_order_map_extended.fits'
-    # wavemap   = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\echelle_h4rg\YJ_wavmap_extended.fits'
+    spectral_band = 'YJ'
+    order_map = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\rimas_h4rg\rollover-removed\{}_order_map_extended.fits'.format(spectral_band)
+    wavemap   = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\rimas_h4rg\rollover-removed\{}_wavmap_extended.fits'.format(spectral_band)
+    spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\20220622\on-off-subtracted\xenon-mercury-argon.{}.fits'.format(
+        spectral_band)
+    spectrum_type = 'arc'
+    # order_map = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\rimas_h4rg\rollover-removed\HK_order_map_extended.fits'
+    # wavemap = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\rimas_h4rg\rollover-removed\HK_wavmap_extended.fits'
     # # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\echelle simulator\simulations\20210304\ohlines\ohlines.fits'
     # # spectrum = r'C:\Users\durba\Documents\echelle\simulations\20210316\even_spaced_25-stuermer-1000s.fits'
     # # spectrum = r'C:\Users\durba\Documents\echelle\simulations\20210316\even_spaced_10.fits'
     # # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\echelle simulator\simulations\20201008\ohlines\ohlines.fits'
     # # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\echelle simulator\simulations\20201008\rimas.0026.YJ.C0.fits'
     # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\echelle simulator\simulations\20210513\rimas.0026.YJ.C0.fits'
+    # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\20220622\on-off-subtracted\xenon-mercury-argon.HK.fits'
     # ohline_dat = r'C:\Users\durba\PycharmProjects\plp\master_calib\igrins\ohlines.dat'
+    ohline_dat = r'C:\Users\durba\PycharmProjects\plp\master_calib\rimas\XeHgAr_lines.dat'
+    element_dats = [
+        r'C:\Users\durba\PycharmProjects\plp\master_calib\rimas\Xe_lines.dat',
+        r'C:\Users\durba\PycharmProjects\plp\master_calib\rimas\Hg_lines.dat',
+        r'C:\Users\durba\PycharmProjects\plp\master_calib\rimas\Ar_lines.dat'
+    ]
+    # combine_lines_dat(element_dats, ohline_dat)
     # # ohline_dat = 'even_spaced_25.dat'
     # # ohline_dat = 'even_spaced_10.dat'
     # centroid_solutions_file = r'..\calib\primary\20201008\FLAT_rimas.0000.YJ.C0.centroid_solutions.json'
@@ -617,51 +660,56 @@ if __name__ == '__main__':
     # # output_dir = 'pickle_fit_test_med_oh'
     # # output_dir = 'even_spaced_25-stuermer'
     # # output_dir = 'even_spaced_10-stuermer'
-    # output_dir = 'h4rg'
+    output_dir = 'rimas_h4rg'
 
     # DeVeny files
 
-    output_dir = 'deveny'
-    order_map = 'deveny_order_map.fits'  # TODO
-    wavemap = 'deveny_wavemap.fits'  # TODO
-    spectrum = '20210506.0014.fits'
-    ohline_dat = 'CdArNeHg_lines.dat'  # TODO
+    # output_dir = 'deveny'
+    # order_map = 'deveny_order_map.fits'  # TODO
+    # wavemap = 'deveny_wavemap.fits'  # TODO
+    # spectrum = '20210506.0014.fits'
+    # ohline_dat = 'CdArNeHg_lines.dat'  # TODO
 
 
     # output_dir = os.path.join(output_dir, 'pickle_fit__no_repeats')
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
-    skyline_output_filename = os.path.join(output_dir, 'YJ_oned.json')
+    # skyline_output_filename = os.path.join(output_dir, 'YJ_oned.json')
+    skyline_output_filename = os.path.join(output_dir, '{}.{}_oned.json'.format(spectrum_type, spectral_band))
     # wavemap_output_filename = 'YJ_oned_wavemap.json'
-    wavemap_output_filename = os.path.join(output_dir, 'YJ_oned_wavemap_linear_fit.json')
-    identified_lines_output_filename = os.path.join(output_dir, 'YJ_identified_lines.json')
-    echellogram_output_file = os.path.join(output_dir, 'YJ_echellogram.json')
-    ref_indices_output_file = os.path.join(output_dir, 'ref_ohlines_indices.json')
-    fit_output_filename = os.path.join(output_dir, 'fit_p{}m{}-domain.json')
+    # wavemap_output_filename = os.path.join(output_dir, 'YJ_oned_wavemap_linear_fit.json')
+    # identified_lines_output_filename = os.path.join(output_dir, 'YJ_identified_lines.json')
+    # echellogram_output_file = os.path.join(output_dir, 'YJ_echellogram.json')
+    wavemap_output_filename = os.path.join(output_dir, '{}_oned_wavemap_linear_fit.json'.format(spectral_band))
+    identified_lines_output_filename = os.path.join(output_dir, '{}.{}_identified_lines.json'.format(
+        spectrum_type, spectral_band))
+    echellogram_output_file = os.path.join(output_dir, '{}_echellogram.json'.format(spectral_band))
+    ref_indices_output_file = os.path.join(output_dir, 'ref_{}lines_indices.json'.format(spectrum_type))
+    fit_output_filename = os.path.join(output_dir, 'fit_p{}m{}-domain.'+spectral_band+'.json')
     updated_identified_lines_output_filename = identified_lines_output_filename.replace('.json', 'update.json')
     curve_fit_echellogram_output_filename = echellogram_output_file.replace('.json', '_curvefit.json')
     fit_wvlsol_echellogram_output_filename = echellogram_output_file.replace('.json', '_fit_wvlsol__p{}_o{}.json')
     # p_init_pickle_filename = 'even_spaced_25-stuermer\\YJ_echellogram.json.p'
-    even_spaced_dat = 'even_spaced_10.dat'
-    even_spaced_csv = even_spaced_dat.replace('dat', 'csv')
+    # even_spaced_dat = 'even_spaced_10.dat'
+    # even_spaced_csv = even_spaced_dat.replace('dat', 'csv')
     pix_deg = 3
-    order_deg = 5
+    order_deg = 4
     fit_output_filename = fit_output_filename.format(pix_deg, order_deg)
     fit_wvlsol_echellogram_output_filename = fit_wvlsol_echellogram_output_filename.format(pix_deg, order_deg)
     fit_wvlsol_pickle_output_filename = fit_wvlsol_echellogram_output_filename.replace('.json', '.p')
-    p_init_pickle_filename = 'even_spaced_25-stuermer\\YJ_echellogram_fit_wvlsol__p{}_o{}.p'.format(pix_deg, order_deg)
+    # p_init_pickle_filename = 'even_spaced_25-stuermer\\YJ_echellogram_fit_wvlsol__p{}_o{}.p'.format(pix_deg, order_deg)
     # file_overlay(order_map, spectrum)
     # file_overlay(wavemap, spectrum)
     # file_overlay(order_map, wavemap)
 
     # gen_even_spaced_lines_dat_file(even_spaced_dat, spacing=10)
     # gen_even_spaced_lines_csv_file(even_spaced_csv, spacing=0.0010)
-    gen_oned_spec(order_map, spectrum, skyline_output_filename, 1)
-    gen_oned_spec(order_map, wavemap, wavemap_output_filename, 1, np.nanmax)
+    gen_oned_spec(order_map, spectrum, skyline_output_filename, 0)
+    gen_oned_spec(order_map, wavemap, wavemap_output_filename, 0, np.nanmax)
     gen_identified_lines(skyline_output_filename, wavemap_output_filename, ohline_dat, identified_lines_output_filename)
-    gen_echellogram(order_map, wavemap_output_filename, echellogram_output_file, 1, np.nanmean)
+    gen_echellogram(order_map, wavemap_output_filename, echellogram_output_file, 0, np.nanmean)
     gen_ref_indices(
-        identified_lines_output_filename, ohline_dat, 'YJ',
+        identified_lines_output_filename, ohline_dat, spectral_band,
         updated_identified_lines_output_filename, ref_indices_output_file
     )
     # gen_echellogram_curve_fit(
@@ -676,7 +724,8 @@ if __name__ == '__main__':
         # centroid_solutions_file, 3,
         fit_output_file=fit_output_filename,
         pixel_degree=pix_deg, order_degree=order_deg, pickle_output_file=fit_wvlsol_pickle_output_filename,
+        band=spectral_band, sigma=1
         # p_init_pickle=p_init_pickle_filename
     )
 
-    plot_echellogram_error(fit_output_filename)
+    # plot_echellogram_error(fit_output_filename)
