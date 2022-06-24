@@ -84,42 +84,48 @@ def gen_lazy_bad_pix_map(shape, output_filename):
 
 
 def plot_oned_spec(list_oned_spec_files):
-    specs = np.asarray([json_dict_from_file(f)['specs'][0] for f in list_oned_spec_files])
+    specs = np.asarray([np.asarray(json_dict_from_file(f)['specs'][0]) for f in list_oned_spec_files])
     fnames = [os.path.basename(f) for f in list_oned_spec_files]
     max_spec = np.asarray([np.max(spec) for spec in specs])
     norm_spec = np.min(max_spec) / max_spec
     normed_specs = [spec*n for spec,n in zip(specs, norm_spec)]
     for spec, f in zip(normed_specs, fnames):
         plt.plot(spec, label=f)
+        print(spec.shape)
     plt.show()
 
 
 if __name__ == '__main__':
-    arc_spectrum = '../master_calib/deveny/20210506.0014.fits'
+    # arc_spectrum = '../master_calib/deveny/20210506.0014.fits'
+    arc_spectrum_20210418 = '../master_calib/deveny/20210112.0014.fits'
     # arc_spectrum = '../master_calib/deveny/20190108.0043.fits'
+    arc_spectrum = '../master_calib/deveny/20210112.0014.fits'
     bias = '../master_calib/deveny/bias.fits'
     arc_elements = 'Cd Ar Ne Hg'
     # arc_elements = 'Hg'
     unbiased_arc_spectrum = ExistingImage(arc_spectrum).image - ExistingImage(bias).image
-    arc_spectrum = '../master_calib/deveny/{}.fits'.format(arc_elements)
+    unbiased_arc_spectrum_20210418 = ExistingImage(arc_spectrum_20210418).image - ExistingImage(bias).image
+    arc_spectrum = '../master_calib/deveny/20210112/{}.fits'.format(arc_elements)
+    arc_spectrum_20210418 = '../master_calib/deveny/20210112/{}_20210112.fits'.format(arc_elements)
     ArrayImage(unbiased_arc_spectrum).save(arc_spectrum, hdu=0)
+    ArrayImage(unbiased_arc_spectrum_20210418).save(arc_spectrum_20210418, hdu=0)
     arc_elements_fname = ''.join(arc_elements.split(' '))
     arc_spectrum_oned = '../master_calib/deveny/{}_onedspec.json'.format(arc_elements_fname)
-
+    arc_spectrum_oned_20210418 = '../master_calib/deveny/{}_20210418_onedspec.json'.format(arc_elements_fname)
     sky_plus = '../master_calib/deveny/20210506.0037.fits'
     unbiased_sky_spectrum = ExistingImage(sky_plus).image - ExistingImage(bias).image
     sky_spectrum = '../master_calib/deveny/sky.fits'
     ArrayImage(unbiased_sky_spectrum).save(sky_spectrum, hdu=0)
     sky_spectrum_oned = '../master_calib/deveny/sky_onedspec.json'
 
-    order_map_file = '../master_calib/deveny/deveny_order_map.fits'
-    wavemap_file = '../master_calib/deveny/deveny_wavemap.fits'
+    order_map_file = '../master_calib/deveny/20210112/deveny_order_map.fits'
+    wavemap_file = '../master_calib/deveny/20210112/deveny_wavemap.fits'
     wavemap_microns = wavemap_file.replace('.fits', '_microns.fits')
-    wavemap_oned = '../master_calib/deveny/deveny_wavemap_oned.json'
+    wavemap_oned = '../master_calib/deveny/20210112/deveny_wavemap_oned.json'
     # lines_dat = '../master_calib/deveny/{}_lines.dat'.format(arc_elements_fname)
-    lines_dat = '../master_calib/deveny/{}_lines.dat'.format('deveny')
-    ohlines_dat = '../master_calib/deveny/ohlines.dat'
-    oh_identified_lines = '../master_calib/deveny/{}_identified_lines.json'.format('OH')
+    lines_dat = '../master_calib/deveny/20210112/{}_lines.dat'.format('deveny')
+    ohlines_dat = '../master_calib/deveny/20210112/ohlines.dat'
+    oh_identified_lines = '../master_calib/deveny/20210112/{}_identified_lines.json'.format('OH')
     identified_lines = '../master_calib/deveny/{}_identified_lines.json'.format(arc_elements_fname)
     identified_lines_update = identified_lines.replace('.json', '_update.json')
     oh_identified_lines_update = oh_identified_lines.replace('.json', '_update.json')
@@ -132,12 +138,13 @@ if __name__ == '__main__':
     ref_indices_file = '../master_calib/deveny/deveny_ref_indices.json'
     oh_ref_indices_file = '../master_calib/deveny/oh_ref_indices.json'
     fit_pickle_file = '../master_calib/deveny/deveny_fit.p'
-    deveny_start_wvl = 3424.5864
-    deveny_end_wvl = 8098.6615
+    pixel_wvl_shift = 20.5404
+    deveny_start_wvl = 3424.5864 + pixel_wvl_shift
+    deveny_end_wvl = 8098.6615 + pixel_wvl_shift
 
     arc_spectrum_image = ExistingImage(arc_spectrum, fits_image_hdu=0).image
-    # gen_order_map(arc_spectrum_image.shape, 25, order_map_file)
-    # gen_rough_wavemap(arc_spectrum_image.shape, deveny_start_wvl, deveny_end_wvl, wavemap_file)
+    gen_order_map(arc_spectrum_image.shape, 25, order_map_file)
+    gen_rough_wavemap(arc_spectrum_image.shape, deveny_start_wvl, deveny_end_wvl, wavemap_file)
     # ArrayImage(ExistingImage(wavemap_file).image/10000).save(wavemap_microns, hdu=0)
     # gen_lazy_bad_pix_map(arc_spectrum_image.shape, bad_pix_map)
     # gen_arc_lines(output_filename=lines_dat, elements=arc_elements)
@@ -147,16 +154,19 @@ if __name__ == '__main__':
     # alignment_arc.save(alignment_arc_file_reshaped, 0)
     # file_overlay(alignment_arc_file_reshaped, arc_spectrum)
     # gen_oned_spec(order_map_file, arc_spectrum, arc_spectrum_oned, 0)
+    gen_oned_spec(order_map_file, arc_spectrum_20210418, arc_spectrum_oned_20210418, 0)
     ##gen_oned_spec(order_map_file, sky_spectrum, sky_spectrum_oned, 0)
     # gen_oned_spec(order_map_file, alignment_arc_file_reshaped, alignment_arc_reshaped_oned, 0)
     # gen_oned_wavemap(order_map_file, wavemap_microns, wavemap_oned, 0)
     # gen_identified_lines(arc_spectrum_oned, wavemap_oned, lines_dat, identified_lines)
     # gen_identified_lines(sky_spectrum_oned, wavemap_oned, ohlines_dat, oh_identified_lines)
-    gen_ref_indices(identified_lines, lines_dat, 'deveny', identified_lines_update, ref_indices_file)
-    gen_ref_indices(oh_identified_lines, ohlines_dat, 'deveny', oh_identified_lines_update, oh_ref_indices_file)
+    # gen_ref_indices(identified_lines, lines_dat, 'deveny', identified_lines_update, ref_indices_file)
+    # gen_ref_indices(oh_identified_lines, ohlines_dat, 'deveny', oh_identified_lines_update, oh_ref_indices_file)
     # gen_echellogram(order_map_file, wavemap_oned, echellogram_file)
     # gen_echellogram_fit_wvlsol(
     #     echellogram_file, identified_lines_update, ref_indices_file, echellogram_file_wvl_sol,
     #     arc_spectrum_image.shape[1], pixel_degree=4, order_degree=0, pickle_output_file=fit_pickle_file, band='deveny'
     # )
     # plot_oned_spec((sky_spectrum_oned, alignment_arc_reshaped_oned))
+    # plot_oned_spec(('20210418.0040.oned_spec.json', arc_spectrum_oned))
+    plot_oned_spec((arc_spectrum_oned_20210418, arc_spectrum_oned))
