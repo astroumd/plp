@@ -57,11 +57,21 @@ def _get_df(obsset, fit_type='sky'):
         d = obsset.load("THAR_FITTED_PIXELS_JSON")
 
     df = pd.DataFrame(**d)
+    print("DF:", df)
 
     index_names = ["kind", "order", "wavelength"]
     df = df.set_index(index_names)[["slit_center", "pixels"]]
 
     dd = _append_offset(df)
+
+    print("DD:", dd)
+    print("SSS:", dd['pixels0'])
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.scatter(dd['pixels0'], dd['offsets'])
+    plt.show()
+    zzz
+
     return dd
 
 
@@ -105,6 +115,13 @@ def volume_fit(obsset, fit_type='sky'):
                               cc0[msk]]))
 
     scalar = dd["offsets"][msk] / cc0[msk]
+
+    print("SSS:", len(scalar), len(points['pixel']))
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.scatter(points['pixel'], dd["offsets"][msk])
+    plt.show()
+    zzz
 
     poly, params = _volume_poly_fit(points, scalar, orders, names)
 

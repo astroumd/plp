@@ -397,19 +397,20 @@ def extract_stellar_spec(obsset, extraction_mode="optimal",
     s_list, v_list, cr_mask, aux_images = _
 
     #NJM REMOVE EVENTUALLY
-    #print("NJM COMMENTED OUT AFGGS PLOT")
-    print("SSS:", len(s_list), len(s_list[0]))
-    import matplotlib.pyplot as plt
-    plt.figure("S_LIST")
-    i = 0
-    for s in s_list[4:-4]:
-        plt.plot(s, label=str(i+30))
-        i += 1
-    plt.legend(loc=0, prop={'size': 12})
+    print("NJM COMMENTED OUT PROFILE_MAP PLOT")
+    #print("SSS:", len(s_list), len(s_list[0]))
+    #import matplotlib.pyplot as plt
+    #plt.figure("S_LIST")
+    #i = 0
+    #for s in s_list[4:-4]:
+    #    plt.plot(s, label=str(i+30))
+    #    i += 1
+    #plt.plot(s_list[0], label='1')
+    #plt.legend(loc=0, prop={'size': 12})
 
-    plt.figure("AFGGS")
-    plt.imshow(profile_map)
-    plt.show()
+    #plt.figure("PROFILE_MAP")
+    #plt.imshow(profile_map)
+    #plt.show()
 
     if calculate_sn:
         # calculate S/N per resolution

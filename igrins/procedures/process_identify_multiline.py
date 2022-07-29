@@ -56,6 +56,7 @@ def identify_multiline_thar(obsset):
     for hdu in multi_spec:
         slit_center = hdu.header["FSLIT_CN"]
         keys.append(slit_center)
+        print("SLIT CENTER:", slit_center)
 
         str_test = str(orders[0]) + '_LO'
         if str_test in hdu.header:
@@ -65,12 +66,22 @@ def identify_multiline_thar(obsset):
                 str_hi = str(order) + '_HI'
                 domains.append([int(hdu.header[str_lo]), int(hdu.header[str_hi])])
 
+        import matplotlib.pyplot as plt
+        dom = domains[15]
+        xvals = np.arange(dom[0],dom[1]+1)
+        npts = dom[1] - dom[0] + 1
+        plt.figure('FULL SPEC')
+        plt.plot(xvals, hdu.data[15, :npts])
+
         fitted_pixels_ = identify_lines_from_spec(orders, hdu.data, wvlsol,
                                                   ref_lines_db,
                                                   ref_lines_db_hitrans,
                                                   domains=domains)
-
+        
         fitted_pixels_list.append(fitted_pixels_)
+
+    import matplotlib.pyplot as plt
+    plt.show()
 
     # concatenate collected list of fitted pixels.
     fitted_pixels_master = pd.concat(fitted_pixels_list,

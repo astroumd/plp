@@ -18,28 +18,45 @@ def get_flat_normalization(flat_on_off, bg_std, bpix_mask):
 
     return flat_norm
 
+def estimate_bg_mean_std_deveny(flat, pad=4):
+    '''Code to calculate background mean and stddev for Deveny'''
+
+    #flat = flat[pad:-pad, pad:-pad]
+
+    data = flat[5:44, 80:2000]
+
+    flat_bg = np.mean(data)
+    fwhm = np.std(data)*2*np.sqrt(2*np.log(2))
+
+    return flat_bg, fwhm
 
 def estimate_bg_mean_std(flat, pad=4, smoothing_length=150):
 
     flat = flat[pad:-pad, pad:-pad]
 
     flat_flat = flat[np.isfinite(flat)].flat
+    flat_flat = flat_flat[flat_flat != 0] #added to remove stuff set to 0
     flat_sorted = np.sort(flat_flat)
 
     flat_gradient = ni.gaussian_filter1d(flat_sorted,
                                          smoothing_length, order=1)
-
+    
+    #import matplotlib.pyplot as plt
+    #plt.figure('FLAT SORTED')
+    #plt.plot(flat_sorted)
     corr = False
     if np.min(flat_gradient) == 0:
+        print("CORR")
+        fact = 0.1
         tmp = np.unique(flat_sorted)
         diff = tmp[1] - tmp[0]
         npts = len(flat_sorted)
-        flat_sorted += np.random.randn(npts)*diff
+        flat_sorted += np.random.randn(npts)*diff*fact
         flat_sorted = np.sort(flat_sorted)
         flat_gradient = ni.gaussian_filter1d(flat_sorted,
                                              smoothing_length, order=1)
         mean_tmp = 0
-        std_tmp = diff
+        std_tmp = diff*fact
         corr = True
 
     flat_sorted = flat_sorted[smoothing_length:]
@@ -60,24 +77,32 @@ def estimate_bg_mean_std(flat, pad=4, smoothing_length=150):
 
     fwhm = flat_selected[-1] - flat_selected[0]
 
+    #plt.figure('FLAT SORTED RANDOM')
+    #plt.plot(flat_sorted)
+    #plt.figure('FLAT DIST')
+    #plt.plot(flat_dist)
     #Correction for the noise added in
     if corr:
         fact = 2 * np.sqrt(2* np.log(2))
         std = fwhm / fact
         std_corr = np.sqrt(std**2 - std_tmp**2)
-        fwhm = std_corr * fact
+        fwhm_tmp = std_corr * fact
         flat_bg -= mean_tmp
         if np.isnan(fwhm):
             print("NAN FWHM")
             fwhm = 0.0001
-
-
+    
+    #print("SSS:", flat_bg, fwhm, flat_selected[0], flat_selected[-1])
+    #plt.show()
+    
     return flat_bg, fwhm
 
 
 def get_flat_mask_auto(flat_bpix):
     # now we try to build a reasonable mask
     # start with a simple thresholded mask
+
+    print("IN FLAT MASK AUTO")
 
     bg_mean, bg_fwhm = estimate_bg_mean_std(flat_bpix, pad=4,
                                             smoothing_length=150)
@@ -88,14 +113,14 @@ def get_flat_mask_auto(flat_bpix):
     m_opening = ni.binary_opening(flat_mask, iterations=2)
     # try to extend the mask with dilation
     m_dilation = ni.binary_dilation(m_opening, iterations=5)
-
+        
     return m_dilation
 
 
 def get_y_derivativemap(flat, flat_bpix, bg_std_norm,
                         max_sep_order=150, pad=50,
                         med_filter_size=(7, 7),
-                        flat_mask=None):
+                        flat_mask=None, bound=None):
 
     """
     flat
@@ -116,11 +141,26 @@ def get_y_derivativemap(flat, flat_bpix, bg_std_norm,
 
     flat_deriv = ni.gaussian_filter1d(flat_medianed, 1,
                                       order=1, axis=0)
+    if bound is not None:
+        flat_deriv[:bound[0], :] = 0
+        flat_deriv[bound[1]:, :] = 0
 
     # min/max filter
 
+    print("MAX_SEP_ORDER:", max_sep_order)
+    #max_sep_order = 60
     flat_max = ni.maximum_filter1d(flat_deriv, size=max_sep_order, axis=0)
     flat_min = ni.minimum_filter1d(flat_deriv, size=max_sep_order, axis=0)
+
+    import matplotlib.pyplot as plt
+    plt.figure("FLAT")
+    plt.imshow(flat)
+    plt.figure("FLAT DERIV")
+    plt.imshow(flat_deriv)
+    plt.figure("FLAT MAX")
+    plt.imshow(flat_max)
+    plt.figure("FLAT MASK")
+    plt.imshow(flat_mask)
      
     # mask for aperture boundray
     if pad is None:
@@ -130,10 +170,46 @@ def get_y_derivativemap(flat, flat_bpix, bg_std_norm,
 
     flat_deriv_masked = np.zeros_like(flat_deriv)
     flat_deriv_masked[sl, sl] = flat_deriv[sl, sl]
+   
+    print("SSS:", np.shape(flat_deriv_masked), np.shape(flat_deriv), np.shape(flat_max))
+
+    #x_idx = 2450
+    x_idx = 2340
+    plt.figure('MASK TEST')
+    #plt.plot(flat_deriv_masked[:, x_idx], 'b')
+    plt.plot(flat_deriv[:, x_idx], 'b')
+    plt.plot(flat_max[:, x_idx], 'r')
+    plt.plot(flat_max[:, x_idx]*0.1, 'r--')
+    plt.plot(flat_max[:, x_idx]*0.5, 'r:')
+    plt.plot(flat_min[:, x_idx], 'g')
+    plt.plot(flat_min[:, x_idx]*0.1, 'g--')
+    plt.plot(flat_min[:, x_idx]*0.5, 'g:')
+    #plt.figure('MASK TEST2')
+    #plt.plot(flat_deriv_masked[2450, :], 'b')
+    #plt.plot(flat_max[2450, :], 'r')
+    #plt.plot(flat_min[2450, :], 'g')
+
+    flat_mask[:] = 1
 
     if flat_mask is not None:
+        #flat_deriv_pos_msk = (flat_deriv_masked > flat_max * 0.5) & flat_mask
+        #flat_deriv_neg_msk = (flat_deriv_masked < flat_min * 0.5) & flat_mask
         flat_deriv_pos_msk = (flat_deriv_masked > flat_max * 0.5) & flat_mask
         flat_deriv_neg_msk = (flat_deriv_masked < flat_min * 0.5) & flat_mask
+        '''import matplotlib.pyplot as plt
+        plt.figure("POS_MSK")
+        plt.imshow(flat_deriv_pos_msk)
+        plt.figure("NEG_MSK")
+        plt.imshow(flat_deriv_neg_msk)
+        plt.figure("FLAT_MIN * 0.5")
+        plt.imshow(flat_min*0.5)
+        plt.figure("FLAT_DERIV_MASKED")
+        plt.imshow(flat_deriv_masked)
+        plt.figure("FLAT_MASK")
+        plt.imshow(flat_mask)
+        plt.figure("TEST2")
+        plt.imshow(flat_deriv_masked < flat_min * 0.5)
+        plt.show()'''
     else:
         flat_deriv_pos_msk = (flat_deriv_masked > flat_max * 0.5)
         flat_deriv_neg_msk = (flat_deriv_masked < flat_min * 0.5)
@@ -219,7 +295,7 @@ def find_nearest_object(mmp, im_labeled, slice_map, i, labels_center_column):
 
 
 def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
-                             thre_dx=30, stitch_objects=False):
+                             thre_dx=30, cent_x=None, stitch_objects=False):
     """
     d_deriv : derivative (along-y) image
     mmp : mask
@@ -246,7 +322,7 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
     im_labeled, label_max = ni.label(mmp)
     label_indx = np.arange(1, label_max+1, dtype="i")
     objects_found = ni.find_objects(im_labeled)
-
+    
     slice_map = dict(zip(label_indx, objects_found))
 
     # We only traces solutions that are detected in the centeral colmn
@@ -257,7 +333,11 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
     # labels_center_column = [i for i, _ in groupby(im_labeled[:,nx/2]) if i>0]
 
     # thre_dx = 30
-    center_cut = im_labeled[:, nx//2-thre_dx:nx//2+thre_dx]
+    if cent_x is None:
+        cent_x = nx//2
+    print("CENT_X:", cent_x)
+    #center_cut = im_labeled[:, nx//2-thre_dx:nx//2+thre_dx]
+    center_cut = im_labeled[:, cent_x-thre_dx:cent_x+thre_dx]
     labels_ = list(set(np.unique(center_cut)) - set([0]))
 
     if True:  # remove false detections
@@ -319,6 +399,12 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
     x_indices = np.arange(nx)
 
     centroid_list = []
+    print("SETTING BG_STD TO NONE:", bg_std)
+    bg_std = None
+    import matplotlib.pyplot as plt
+    plt.figure('MASKED DERIV MAP')
+    plt.imshow(mmp)
+    #plt.show()
     for indx in labels_center_column:
 
         sl = slice_map[indx]
@@ -342,16 +428,29 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
             yy = yc/ys
 
             msk = mask_median_clip(yy) | ~np.isfinite(yy)
-
-            # we also clip wose derivative is smaller than bg_std
+           
+            # we also clip whose derivative is smaller than bg_std
             # This suprress the lowest order of K band
             if bg_std is not None:
                 msk = msk | (ys/yn < bg_std)
+                '''
+                print("ys/yn:", (ys/yn)[:10])
+                import matplotlib.pyplot as plt
+                plt.figure()
+                plt.plot(ys/yn)
+                plt.plot(np.ones_like(ys)*bg_std)
+                plt.figure()
+                plt.imshow(d_deriv)
+                plt.figure()
+                plt.imshow(mmp)
+                plt.show()
+                '''
                 # msk = msk | (ys/yn < 0.0006 + 0.0003)
 
             # mask out columns with # of valid pixel is too many
             # number 10 need to be fixed - JJL
             msk = msk | (yn > 10)
+            #zzz
 
         centroid_list.append((x_indices1,
                               np.ma.array(yy, mask=msk)))
@@ -391,7 +490,8 @@ def trace_aperture_chebyshev(xy_list, domain):
     x_degree, y_degree = 4, 5
     #NJM: Added because Deveny only has a single order so
     #we can't fit with y_degree=5
-    if len(np.unique(o_list)) < y_degree:
+    #if len(np.unique(o_list)) < y_degree:
+    if len(o_list) < y_degree:
         y_degree = len(np.unique(o_list)) - 1
     p_init = Chebyshev2D(x_degree, y_degree,
                          x_domain=domain, y_domain=[0, n_o-1])

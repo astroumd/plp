@@ -55,13 +55,23 @@ def identify_orders(obsset):
                                                          get_path=True)
 
     src_spectra = obsset.load(DESCS["ONED_SPEC_JSON"])
-
+    
+    dom_src = src_spectra['domain_dict']
+    #dom_orders = dom_src.keys()
+    dom_values = dom_src.values()
+   
     new_orders = _match_order(src_spectra, ref_spectra)
+
+    dom_dict = {}
+    for order, dom_value in zip(new_orders, dom_values):
+        dom_dict[int(order)] = dom_value
 
     from ..igrins_libs.logger import info
     info("          orders: {}...{}".format(new_orders[0], new_orders[-1]))
 
     src_spectra["orders"] = new_orders
+    src_spectra["domain_dict"] = dom_dict
+
     obsset.store(DESCS["ONED_SPEC_JSON"],
                  data=src_spectra)
 
@@ -72,7 +82,7 @@ def identify_orders(obsset):
                            ref_spec_path=ref_spec_path))
 
 
-def _get_offset_transform(thar_spec_src, thar_spec_dst):
+def _get_offset_transform(thar_spec_src, thar_spec_dst, domains):
     
     def get_offsetter(o):
         def _f(x, o=o):
@@ -84,7 +94,9 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst):
     cor_list = []
     nxs = []
 
-    for s_src, s_dst in zip(thar_spec_src, thar_spec_dst):
+    offsets_corr = []
+
+    for s_src, s_dst, dom in zip(thar_spec_src, thar_spec_dst, domains):
         nx_src = len(s_src)
         nx_dst = len(s_dst)
         nx = nx_dst
@@ -96,9 +108,22 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst):
 
             cor = correlate(s_src, s_dst, mode="same")
 
+        #import matplotlib.pyplot as plt
+        #plt.figure()
+        #plt.plot(cor)
+        #plt.figure()
+        #plt.plot(s_src)
+        #plt.plot(s_dst)
+        #plt.show()
+
         cor_list.append(cor)
         offset = center - np.argmax(cor)
         offsets.append(offset)
+
+        offsets_corr.append(offset + dom[0])
+
+    print("OFFSETS:", offsets)
+    print("OFFSETS_CORR:", offsets_corr)
 
     if len(offsets) == 1:
         offsets2 = [offsets[0]]
@@ -110,14 +135,18 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst):
 
     from .skimage_measure_fit import ransac, LineModel
 
+
     xi = np.arange(len(offsets))
-    data = np.array([xi, offsets]).T
+    #data = np.array([xi, offsets]).T
+    print("USING OFFSETS AFTER ADDING IN DOMAIN CUTOFF FOR BETTER OUTLIER CALCULATION")
+    data = np.array([xi, offsets_corr]).T
     model_robust, inliers = ransac(data,
                                    LineModel, min_samples=3,
                                    residual_threshold=2, max_trials=100)
 
     outliers_indices = xi[inliers == False]
     offsets2 = [o for o in offsets]
+    
     for i in outliers_indices:
         # reduce the search range for correlation peak using the model
         # prediction.
@@ -126,7 +155,6 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst):
         ym = int(model_robust.predict_y(i))
         x1 = int(max(0, (center - ym) - 20))
         x2 = int(min((center - ym) + 20 + 1, nx))
-        # print i, x1, x2
         ym2 = center - (np.argmax(cor_list[i][x1:x2]) + x1)
         # print ym2
         offsets2[i] = ym2
@@ -146,24 +174,33 @@ def _get_offset_transform_between_2spec(ref_spec, tgt_spec):
 
     orders_tgt = tgt_spec["orders"]
     s_list_tgt = tgt_spec["specs"]
-
+    dom_tgt = tgt_spec["domain_dict"]
+    
     s_list_tgt = [np.array(s) for s in s_list_tgt]
     
     orders_intersection = set(orders_ref).intersection(orders_tgt)
     orders_intersection = sorted(orders_intersection)
+
+    print("INTERSECTION:", orders_intersection)
 
     def filter_order(orders, s_list, orders_intersection):
         s_dict = dict(zip(orders, s_list))
         s_list_filtered = [s_dict[o] for o in orders_intersection]
         return s_list_filtered
 
+    def filter_domain(orders, domain_dict):
+        domain_filtered = [domain_dict[o] for o in orders]
+        return domain_filtered
+
     s_list_ref_filtered = filter_order(orders_ref, s_list_ref,
                                        orders_intersection)
     s_list_tgt_filtered = filter_order(orders_tgt, s_list_tgt,
                                        orders_intersection)
+    domains_filt = filter_domain(orders_intersection, dom_tgt)
 
     offset_transform = _get_offset_transform(s_list_ref_filtered,
-                                             s_list_tgt_filtered)
+                                             s_list_tgt_filtered,
+                                             domains_filt)
 
     return orders_intersection, offset_transform
 
@@ -181,6 +218,15 @@ def identify_lines(obsset):
 
     intersected_orders, d = _get_offset_transform_between_2spec(ref_spec,
                                                                 tgt_spec)
+
+    #import matplotlib.pyplot as plt
+    #plt.figure()
+    #plt.plot(tgt_spec['specs'][0], 'b', label='TGT Spec')
+    #plt.plot(ref_spec['specs'][0][56:], 'r', label='Ref Spec 56')
+    #plt.plot(ref_spec['specs'][0][57:], 'm', label='Ref Spec 57')
+    #plt.legend(loc=0, prop={'size': 12})
+    #plt.show()
+    #zzz
 
     # REF_TYPE="OH"
     # fn = "../%s_IGRINS_identified_%s_%s.json" % (REF_TYPE, band,
@@ -453,6 +499,11 @@ def _make_order_flat(flat_normed, flat_mask, orders, order_map):
     from .smooth_continuum import get_smooth_continuum
     s2_list = [get_smooth_continuum(s) for s, (i1, i2)
                in zip(s_list, i1i2_list)]
+    #import matplotlib.pyplot as plt
+    #plt.plot(s_list[0], 'b')
+    #plt.plot(s2_list[0], 'r')
+    #plt.plot(mean_order_specs[0], 'g')
+    #plt.show()
 
     # make flat
     flat_im = np.ones(flat_normed.shape, "d")
