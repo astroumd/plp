@@ -266,8 +266,6 @@ def make_combined_images(obsset, allow_no_b_frame=False,
         variance_map0, variance_map = get_variances(d2_tmp, dp_tmp, gain, nx=nx, ny=ny_var)
     else:
         variance_map0, variance_map = get_variances(d2, dp, gain, nx=nx, ny=ny)
-    print("SSS:", np.std(variance_map0), y1, ny_var)
-    zzz
     
     if obsset.detector.name == 'deveny':
         variance_map0b = np.zeros_like(data_minus_raw)
