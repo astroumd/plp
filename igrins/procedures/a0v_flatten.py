@@ -13,7 +13,14 @@ def _get_a0v_interp1d(obsset):
     print("REPLACING MIN/MAX WVL IN _GET_A0V_INTERP1D")
     #Original code used 1.3, 2.5. We needed to increase the range
     #because of the larger frequency coverage in these detectors
-    a0v_interp1d = a0v_spec.get_flux_interp1d(0.3, 3.0,
+
+    wvl1 = 0.3
+    wvl2 = 3.0
+    if obsset.detector.name.lower() == 'deveny':
+        wvl1 = 0.32
+        wvl2 = 0.9
+
+    a0v_interp1d = a0v_spec.get_flux_interp1d(wvl1, wvl2,
                                               flatten=False,
                                               smooth_pixel=32)
     return a0v_interp1d
