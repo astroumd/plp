@@ -105,6 +105,7 @@ def _draw_modeled(ax, obsset_on):
 
     flatcentroid_sol_json = obsset_on.load("flatcentroid_sol_json")
     bottom_up_solutions_ = flatcentroid_sol_json["bottom_up_solutions"]
+    domains = flatcentroid_sol_json['domain']
     from .polynomials import nested_convert_to_poly
     bottom_up_solutions = nested_convert_to_poly(bottom_up_solutions_)
 
@@ -112,7 +113,11 @@ def _draw_modeled(ax, obsset_on):
 
     ll = []
     colors = itertools.cycle("rg")
-    for bottom_sol, up_sol in bottom_up_solutions:
+    #for bottom_sol, up_sol in bottom_up_solutions:
+    for bottomup_sol, domain in zip(bottom_up_solutions, domains):
+        bottom_sol = bottomup_sol[0]
+        up_sol = bottomup_sol[1]
+        x_indices = np.arange(domain[0],domain[1]+1)
         y_bottom = bottom_sol(x_indices)
         y_up = up_sol(x_indices)
 
