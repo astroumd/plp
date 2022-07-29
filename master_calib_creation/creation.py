@@ -435,7 +435,7 @@ def gen_identified_lines(
                 order=order,
                 plt_pix=plt_pix, plt_wvl=plt_wvl,
             )
-            ref_indices_dict[band][str(order)] = ref_indices_groups
+
             if sigma_filter:
                 peaks = filtered_peaks(peaks)
             # means, stddevs, amplitudes, y0s, waves, indices, wvl_widths, detected_wvls
@@ -467,6 +467,7 @@ def gen_identified_lines(
             json_dict['wvl_widths_list'].append(wvlwidths_array[mask].astype(float).tolist())
             json_dict['pix_amps_list'].append(pixamps_array[mask].astype(float).tolist())
             json_dict['detected_wvl_list'].append(detected_wvl_array[mask].astype(float).tolist())
+            ref_indices_dict[band][str(order)] = ref_indices_groups
 
         except IndexError:
             json_dict['orders'].append(order)
@@ -477,6 +478,7 @@ def gen_identified_lines(
             json_dict['wvl_widths_list'].append([])
             json_dict['pix_amps_list'].append([])
             json_dict['detected_wvl_list'].append([])
+            ref_indices_dict[band][str(order)] = []
 
     save_dict_to_json(json_dict, output_file)
     save_dict_to_json(ref_indices_dict, ref_indices_output)
@@ -547,6 +549,7 @@ def gen_error_dict(fit_polynomial, fitdata_df, pickle_output_file):
     fit_wvl = fit_wvl / fitdata_df['order']
     error = fitdata_df['wavelength'] - fit_wvl
     standard_error = np.sqrt(np.sum(error ** 2) / (error.shape[0] - 1))
+    print("{} error: {}".format(pickle_output_file, standard_error))
     fit_dict = {
         'pixpos': fitdata_df['pixels'].tolist(),
         'order': fitdata_df['order'].tolist(),
@@ -664,6 +667,7 @@ def gen_echellogram_fit_wvlsol(
     error_array = np.asarray(fit_dict['error'])
     std_error = fit_dict['standard_error']
     large_error = np.where(np.abs(error_array)>sigma*std_error)
+    print(fitdata_df.loc[large_error])
     fitdata_df = fitdata_df.drop(fitdata_df.index[large_error])
     p, fit_results = fit_wvlsol(fitdata_df, pixel_degree, order_degree, p_init=p_init)
 
@@ -1027,10 +1031,10 @@ if __name__ == '__main__':
     run_gen_echellogram_fit_wvlsol = False
     run_gen_ref_indices = False
     run_plot_error = True
-    run_plot_oned_spec = True
+    run_plot_oned_spec = False
     run_plot_residuals = False
     # RIMAS files
-    spectral_band = 'HK'
+    spectral_band = 'YJ'
     band_domain = {
         'YJ': (1300, 2000),
         'HK': (2000, 2800)
@@ -1112,7 +1116,7 @@ if __name__ == '__main__':
     # p_init_pickle_filename = r'C:\Users\durba\PycharmProjects\plp\master_calib_creation\rimas_h4rg_arc_comb\HK.XeHgArKr_echellogram_fit_wvlsol__p4_o3.p'
     # even_spaced_dat = 'even_spaced_10.dat'
     # even_spaced_csv = even_spaced_dat.replace('dat', 'csv')
-    pix_deg = 4
+    pix_deg = 3
     order_deg = 3
     fit_output_filename = fit_output_filename.format(pix_deg, order_deg)
     fit_wvlsol_echellogram_output_filename = fit_wvlsol_echellogram_output_filename.format(pix_deg, order_deg)
@@ -1168,6 +1172,7 @@ if __name__ == '__main__':
             # p_init_pickle=fit_wvlsol_pickle_init_filename
         )
     if run_plot_error:
+        print(fit_output_filename)
         plot_echellogram_error(fit_output_filename)
     if run_plot_oned_spec:
         for element in elements:
