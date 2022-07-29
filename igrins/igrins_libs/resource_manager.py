@@ -82,7 +82,8 @@ class IgrinsBasenameHelper():
         return self.from_basename(basename)
 
 class RimasBasenameHelper():
-    p = re.compile(r"rimas.(\d+).(HK|YJ).(C0|C1)")
+    #p = re.compile(r"rimas.(\d+).(HK|YJ).(C0|C1)")
+    p = re.compile(r"(\d+).rimas.(\d+).(HK|YJ)")
     p_obsid = re.compile(r"(\d+)(.*)")
 
     def __init__(self, obsdate, band):
@@ -101,9 +102,14 @@ class RimasBasenameHelper():
                      "C0": "YJ",
                      "C1": "HK"}
 
-        return "rimas.{obsid:04d}.{band}.{bandb}".format(obsid=obsid,
-                                                         band=self.band,
-                                                         bandb=band_dict[self.band])
+        #return "rimas.{obsid:04d}.{band}.{bandb}".format(obsid=obsid,
+        #                                                 band=self.band,
+        #                                                 bandb=band_dict[self.band])
+        
+        #Updated 6/23 for newer RIMAS data
+        return "{obsdate}.rimas.{obsid:04d}.{band}".format(obsdate=self.obsdate,
+                                                           obsid=obsid,
+                                                           band=self.band)
 
     def from_basename(self, basename):
         m = self.p.match(basename).groups()
@@ -111,7 +117,8 @@ class RimasBasenameHelper():
            (m[1] == "HK" and m[2] == "C0"):
             raise ValueError("basename has mismatched detector names:", m[1], m[2])
 
-        return m[0]
+        return m[1]
+        #return m[0]
     
     def parse_basename(self, basename):
         return self.from_basename(basename)
