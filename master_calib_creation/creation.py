@@ -139,6 +139,7 @@ def curve_fit_peaks(peak, expected_width, pixels, spec, n_gauss=1, plt_peak=Fals
             # figManager = plt.get_current_fig_manager()
             # figManager.window.showMaximized()
             plt.show()
+            input("Press Enter to continue...")
         if polyfit is not None and plt_wvl:
             print(order, popt[1])
             wvls = polyfit(pix, np.ones(pix.shape)*order)/order
@@ -152,6 +153,7 @@ def curve_fit_peaks(peak, expected_width, pixels, spec, n_gauss=1, plt_peak=Fals
             # figManager = plt.get_current_fig_manager()
             # figManager.window.showMaximized()
             plt.show()
+            input("Press Enter to continue...")
     return popt
 
 
@@ -195,7 +197,7 @@ def line_lookup(detected_peaks, line_wavelengths, line_wvl_widths, manual_filter
                 plt.plot([wave, wave], [0, 1], '--', label=str(index))
             plt.legend()
             plt.show()
-            change = input('New indices? (blank if keeping)')
+            change = input('Current indices {}. New indices? (blank if keeping)'.format(line_index))
             if change.strip():
                 split_change = change.split()
                 try:
@@ -229,6 +231,7 @@ def curve_fit_peak(
         mean_init = peak[0]
         stddev_init = peak[1]
         n_gauss=1
+        print(peak)
         custom = tuple()
         cont = True
         try:
@@ -328,7 +331,7 @@ def curve_fit_peak(
                                 for j in inputs:
                                     custom.append(float(j))
                             custom.append(float(custom_split[-1]))
-                        continue
+                        # continue
         except (RuntimeError, OptimizeWarning, RuntimeWarning) as e:
             continue
     warnings.filterwarnings("ignore")
@@ -1026,11 +1029,11 @@ def plt_resolving_power(identified_lines_json):
 if __name__ == '__main__':
     run_gen_oned_spec = False
     run_gen_oned_maps = False
-    run_gen_identified_lines = False
+    run_gen_identified_lines = True
     run_gen_echellogram = False
     run_gen_echellogram_fit_wvlsol = False
     run_gen_ref_indices = False
-    run_plot_error = True
+    run_plot_error = False
     run_plot_oned_spec = False
     run_plot_residuals = False
     # RIMAS files
@@ -1058,9 +1061,9 @@ if __name__ == '__main__':
     # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\20220622\on-off-subtracted\xenon-mercury-argon.HK.fits'
     # ohline_dat = r'C:\Users\durba\PycharmProjects\plp\master_calib\igrins\ohlines.dat'
     elements = [
-        'Xe',
+        # 'Xe',
         # 'Hg',
-        'Ar',
+        # 'Ar',
         'Kr'
     ]
     elements_str = ''.join(elements)
@@ -1123,7 +1126,7 @@ if __name__ == '__main__':
     fit_wvlsol_pickle_output_filename = fit_wvlsol_echellogram_output_filename.replace('.json', '.p')
     fit_wvlsol_pickle_init_dict = {
         'HK': r'C:\Users\durba\PycharmProjects\plp\master_calib_creation\rimas_h4rg_arc_comb\HK.XeHgArKr_echellogram_fit_wvlsol__p4_o3.p',
-        'YJ': r'C:\Users\durba\PycharmProjects\plp\master_calib_creation\rimas_h4rg_arc_comb\YJ_echellogram_fit_wvlsol__p4_o3.p'
+        'YJ': 'rimas_h4rg_arc_comb\\YJ.XeArKr_echellogram_multiple_id_lines_curvefit_peaks_fit_wvlsol__p3_o3.p'
     }
     fit_wvlsol_pickle_init_filename = fit_wvlsol_pickle_init_dict[spectral_band]
     # p_init_pickle_filename = p_init_pickle_filename.format(pix_deg, order_deg)
@@ -1140,10 +1143,11 @@ if __name__ == '__main__':
     if run_gen_oned_maps:
         gen_oned_spec(order_map, wavemap, wavemap_output_filename, 0, np.nanmax)
     if run_gen_identified_lines:
+        print(identified_lines_output_filename)
         gen_identified_lines(
             skyline_output_filename, wavemap_output_filename, ohline_dat, identified_lines_output_filename,
             ref_indices_output_file, spectral_band,
-            # p_init_pickle=fit_wvlsol_pickle_init_filename,
+            p_init_pickle=fit_wvlsol_pickle_init_filename,
             plt_peak=True,
             manual_filter_peak=True,
             domain_starting_pixel=pixel_start, domain_ending_pixel=pixel_end,
