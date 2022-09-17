@@ -51,18 +51,31 @@ def save_lines(dat_filename, wavelength_array, intensity_array):
 
 
 def combine_lines_dat(dat_iterable, output_dat_filename):
-    dat_array = [np.loadtxt(dat) for dat in dat_iterable]
-    data = np.concatenate(dat_array, axis=0).transpose()
+    dat_array = []
+    wav_array = []
+    for dat in dat_iterable:
+        _data = np.loadtxt(dat)
+        _indices = np.arange(_data.shape[0])
+        _name = os.path.basename(dat)
+        _names = np.asarray([_name for i in _indices])
+        wav_array.append(_data[:,0])
+        _data = np.rec.fromarrays((_data[:, 0], _data[:, 1], _indices, _names))
+        dat_array.append(_data)
+
+    data = np.concatenate(dat_array, axis=0)
+    waves = np.concatenate(wav_array, axis=0)
+    data = data[waves.argsort()]
+
     # print(data)
     # data_df = pd.DataFrame({'wavelength': data[0], 'intensity': data[1]})
     # data_df = data_df.groupby('wavelength').sum()
     # print(data_df)
     # dat_array = data_df.to_numpy().transpose()
     # print(dat_array)
-    error = config['wavelength_error']
-    wavelength_unique = np.unique(data[0])
-    intensities = np.asarray([np.sum(data[1][np.logical_and(data[0]<(wav+error), data[0]>(wav-error))]) for wav in wavelength_unique])
-    save_lines(output_dat_filename, wavelength_unique, intensities)
+    # error = config['wavelength_error']
+    # wavelength_unique = np.unique(data[0])
+    # intensities = np.asarray([np.sum(data[1][np.logical_and(data[0]<(wav+error), data[0]>(wav-error))]) for wav in wavelength_unique])
+    np.savetxt(output_dat_filename, data, fmt=('%.3f', '%.3e','%d', '%s'))
 
 
 if __name__ == '__main__':
