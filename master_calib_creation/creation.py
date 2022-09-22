@@ -79,6 +79,19 @@ def gen_oned_spec_image(order_map_image, spectrum_image, output_file, aggregatio
     save_dict_to_json(json_dict, output_file)
 
 
+def load_lines_dat(dat_filename):
+    try:
+        lines = np.loadtxt(dat_filename, dtype='float,float,int,U12', usecols=(0, 1, 2, 3))
+        line_wavelengths = [line[0] / 10000 for line in lines]
+        line_descriptions = ['{}: {}-{}'.format(i, line[3][0:2], line[2]) for i, line in enumerate(lines)]
+    except IndexError:
+        lines = np.loadtxt(dat_filename).transpose()
+        line_wavelengths = lines[0]/10000
+        line_descriptions = [str(i) for i in range(line_wavelengths.shape[0])]
+    return np.asarray(line_wavelengths), np.asarray(line_descriptions)
+
+
+
 def load_polyfit(pickle_file):
     with open(pickle_file, 'rb') as f:
         polyfit = pickle.load(f)
@@ -157,7 +170,7 @@ def curve_fit_peaks(peak, expected_width, pixels, spec, n_gauss=1, plt_peak=Fals
     return popt
 
 
-def line_lookup(detected_peaks, line_wavelengths, line_wvl_widths, manual_filter_peaks=False):
+def line_lookup(detected_peaks, line_wavelengths, line_wvl_widths, manual_filter_peaks=False, line_descriptions=None):
     """
     Finds the nearest line from the lines_dat_file for a detected peak
 
@@ -168,11 +181,14 @@ def line_lookup(detected_peaks, line_wavelengths, line_wvl_widths, manual_filter
     line_wavelengths : np.array
     line_wvl_widths: np.array
     manual_filter_peaks : bool
+    line_descriptions: list
 
     Returns
     -------
 
     """
+    if line_descriptions is None:
+        line_descriptions = ['{}'.format(i) for i in range(len(line_wavelengths))]
     line_waves = []
     line_index = []
     for peak in detected_peaks:
@@ -193,8 +209,9 @@ def line_lookup(detected_peaks, line_wavelengths, line_wvl_widths, manual_filter
                 )
             wave_indices = np.arange(line_index.min()-2, line_index.max()+3)
             waves = line_wavelengths[wave_indices]
-            for index, wave in zip(wave_indices, waves):
-                plt.plot([wave, wave], [0, 1], '--', label=str(index))
+            descriptions = np.asarray(line_descriptions)[wave_indices]
+            for index, wave, description in zip(wave_indices, waves, descriptions):
+                plt.plot([wave, wave], [0, 1], '--', label=description)
             plt.legend()
             plt.show()
             change = input('Current indices {}. New indices? (blank if keeping)'.format(line_index))
@@ -210,12 +227,37 @@ def line_lookup(detected_peaks, line_wavelengths, line_wvl_widths, manual_filter
     return np.asarray(line_waves), line_index
 
 
+def parse_popt(popt):
+    y0 = popt[-1]
+    _amps = np.asarray(popt[:-1:3])
+    _means = np.asarray(popt[1:-1:3])
+    _stddevs = np.asarray(popt[2:-1:3])
+    _y0s = np.asarray([y0 for i in _amps])
+    return _amps, _means, _stddevs, _y0s
+
+
+def calculate_wvls(pixel_positons, standard_devs, wavelengths, order, polyfit=None):
+    pixpeak_start_array = pixel_positons - standard_devs
+    pixpeak_end_array = pixel_positons + standard_devs
+    if polyfit is None:
+        detected_wvl_array = np.interp(pixel_positons, np.arange(wavelengths.shape[0]), wavelengths)
+        wvlpeak_start_array = np.interp(pixpeak_start_array, np.arange(wavelengths.shape[0]), wavelengths)
+        wvlpeak_end_array = np.interp(pixpeak_end_array, np.arange(wavelengths.shape[0]), wavelengths)
+    else:
+        detected_wvl_array = polyfit(pixel_positons, np.ones(pixel_positons.shape[0]) * order) / order
+        wvlpeak_start_array = polyfit(pixpeak_start_array, np.ones(pixel_positons.shape[0]) * order) / order
+        wvlpeak_end_array = polyfit(pixpeak_end_array, np.ones(pixel_positons.shape[0]) * order) / order
+    wvlwidths_array = np.abs(wvlpeak_end_array - wvlpeak_start_array)
+    return detected_wvl_array, wvlwidths_array
+
 def curve_fit_peak(
         spec, peaks,  wavelengths, line_wavelengths, expected_width=12, plt_peak=False, manual_filter_peak=False,
-        polyfit=None, order=1, plt_pix=False, plt_wvl=False
+        polyfit=None, order=1, plt_pix=False, plt_wvl=False, line_descriptions=None
 ):
     import warnings
     warnings.filterwarnings("error")
+    if line_descriptions is None:
+        line_descriptions = ['{}'.format(i) for i in range(len(line_wavelengths))]
     pixels = np.arange(len(spec))
     spec = np.asarray(spec)
     amplitudes = []
@@ -240,62 +282,32 @@ def curve_fit_peak(
                     peak, expected_width, pixels, spec, n_gauss=n_gauss, plt_peak=plt_peak, polyfit=polyfit,
                     order=order, plt_pix=plt_pix, plt_wvl=plt_wvl, custom=custom
                 )
-                if n_gauss == 1:
-                    amplitude, mean, stddev, y0 = popt
-                    _amps = [amplitude]
-                    _means = [mean]
-                    _stddevs = [stddev]
-                    _y0s = [y0]
-                elif n_gauss == 2:
-                    amplitude1, mean1, stddev1, amplitude2, mean2, stddev2, y0 = popt
-                    _amps = [amplitude1, amplitude2, ]
-                    _means = [mean1, mean2, ]
-                    _stddevs = [stddev1, stddev2, ]
-                    _y0s = [y0, y0, ]
-                elif n_gauss == 3:
-                    amplitude1, mean1, stddev1, amplitude2, mean2, stddev2, amplitude3, mean3, stddev3, y0 = popt
-                    _amps = [amplitude1, amplitude2, amplitude3]
-                    _means = [mean1, mean2, mean3]
-                    _stddevs = [stddev1, stddev2, stddev3]
-                    _y0s = [y0, y0, y0]
-                else:
-                    _amps = []
-                    _means = []
-                    _stddevs = []
-                    _y0s = []
-                _amps = np.asarray(_amps)
-                _means = np.asarray(_means)
-                _stddevs = np.asarray(_stddevs)
-                _y0s = np.asarray(_y0s)
-                pixpeak_start_array = _means - _stddevs
-                pixpeak_end_array = _means + _stddevs
-                if polyfit is None:
-                    detected_wvl_array = np.interp(_means, np.arange(wavelengths.shape[0]), wavelengths)
-                    wvlpeak_start_array = np.interp(pixpeak_start_array, np.arange(wavelengths.shape[0]), wavelengths)
-                    wvlpeak_end_array = np.interp(pixpeak_end_array, np.arange(wavelengths.shape[0]), wavelengths)
-                else:
-                    detected_wvl_array = polyfit(_means, np.ones(_means.shape[0]) * order) / order
-                    wvlpeak_start_array = polyfit(pixpeak_start_array, np.ones(_means.shape[0]) * order) / order
-                    wvlpeak_end_array = polyfit(pixpeak_end_array, np.ones(_means.shape[0]) * order) / order
-                wvlwidths_array = np.abs(wvlpeak_end_array - wvlpeak_start_array)
+                _amps, _means, _stddevs, _y0s = parse_popt(popt)
+                detected_wvl_array, wvlwidths_array = calculate_wvls(_means, _stddevs, wavelengths, order, polyfit)
+
                 wvl_array, ref_indices_array = line_lookup(
-                    detected_wvl_array, line_wavelengths, wvlwidths_array, manual_filter_peak)
+                    detected_wvl_array, line_wavelengths, wvlwidths_array, manual_filter_peak, line_descriptions)
 
                 if manual_filter_peak:
-                    keep_peak = input('keep peak (y,n,1,2,3,c,z)?')
-                    if keep_peak.upper().startswith('Y') or not keep_peak.strip():
+                    keep_peak = input('keep peak (y,n,1,2,3,c,zi,zo)?')
+                    keep_peak = keep_peak.upper().strip()
+                    if keep_peak.startswith('Y') or not keep_peak:
                         keep_ref_indices = input("keep ref indices {} y/n".format(ref_indices_array))
                         if keep_ref_indices.upper().startswith('Y') or not keep_peak.strip():
                             ref_indices_grouping.append(ref_indices_array.tolist())
+                        print(
+                            _amps.shape, _means.shape, _stddevs.shape, _y0s.shape, wvlwidths_array.shape,
+                            wvlwidths_array.shape, wvl_array.shape, ref_indices_array.shape, detected_wvl_array.shape
+                        )
+                        assert _amps.shape == _means.shape == _stddevs.shape == _y0s.shape == wvlwidths_array.shape\
+                               == wvlwidths_array.shape == wvl_array.shape == ref_indices_array.shape\
+                               == detected_wvl_array.shape
                         for _amp, _mean, _stddev, _y0, _wvl_width, _wvl, _ref_index, _detected_wvl in zip(
                                 _amps, _means, _stddevs, _y0s, wvlwidths_array, wvl_array, ref_indices_array,
                                 detected_wvl_array
                         ):
-                            if not manual_filter_peak:
-                                if np.abs(mean_init - _mean) > 4:
-                                    continue
-                                elif np.abs(_stddev - stddev_init) > 2.0:
-                                    continue
+                            if _ref_index in indices:
+                                raise Exception("Duplicate index")
                             amplitudes.append(_amp)
                             means.append(_mean)
                             stddevs.append(_stddev)
@@ -305,38 +317,55 @@ def curve_fit_peak(
                             indices.append(_ref_index)
                             detected_wvls.append(_detected_wvl)
                             cont = False
-                    if keep_peak.upper().startswith('N'):
+                    elif keep_peak.startswith('N'):
                         print('deleting peak')
                         cont = False
-                    elif keep_peak=='1' or keep_peak == '2' or keep_peak== '3' or keep_peak.upper().startswith('C') or keep_peak.upper().startswith('Z'):
-                        if keep_peak == '1':
-                            n_gauss = 1
-                        elif keep_peak == '2':
-                            n_gauss = 2
-                            expected_width *= 1.5
-                        elif keep_peak == '3':
-                            n_gauss = 3
-                            expected_width *= 1.5
-                        elif keep_peak.upper().startswith('Z'):
-                            expected_width *= 0.8
-                        else:
-                            custom_string = input(
-                                'enter p0 in format "amplitude1,mean1,stddev1 amplitude2,mean2,stddev2 y0"'
-                            )
-                            custom_split = custom_string.split()
-                            n_gauss = len(custom_split) - 1
-                            custom = []
-                            for i in range(n_gauss):
-                                inputs = custom_split[i].split(',')
-                                for j in inputs:
-                                    custom.append(float(j))
-                            custom.append(float(custom_split[-1]))
-                        # continue
+                    else:
+                        try:
+                            n_gauss = int(keep_peak.strip())
+                            print('n_gauss: {}'.format(n_gauss))
+                        except ValueError:
+                            if keep_peak.startswith('ZI'):
+                                expected_width *= 0.8
+                            elif keep_peak.startswith('ZO'):
+                                expected_width *= 1.5
+                            else:
+                                custom_string = input(
+                                    'enter p0 in format "amplitude1,mean1,stddev1 amplitude2,mean2,stddev2 y0"'
+                                )
+                                custom_split = custom_string.split()
+                                n_gauss = len(custom_split) - 1
+                                custom = []
+                                for i in range(n_gauss):
+                                    inputs = custom_split[i].split(',')
+                                    for j in inputs:
+                                        custom.append(float(j))
+                                custom.append(float(custom_split[-1]))
+                else:
+                    if np.abs(mean_init - _mean) > 4:  # TODO: fix the auto filter option
+                        continue
+                    elif np.abs(_stddev - stddev_init) > 2.0:
+                        continue
         except (RuntimeError, OptimizeWarning, RuntimeWarning) as e:
+            print(e)
             continue
     warnings.filterwarnings("ignore")
-    return np.asarray(
-        (means, stddevs, amplitudes, y0s, waves, indices, wvl_widths, detected_wvls)).transpose(), ref_indices_grouping
+    line_data_array = np.asarray(
+        (means, stddevs, amplitudes, y0s, waves, indices, wvl_widths, detected_wvls)).transpose()
+    # TODO: remove the following np.unique debugging statements
+    try:
+        line_data_array_unique = np.unique(line_data_array, axis=0)
+    except ValueError:
+        line_data_array_unique = line_data_array
+    if line_data_array.shape != line_data_array_unique.shape:
+        print("Duplicates erased!")
+        print(line_data_array.shape, line_data_array_unique.shape)
+        print("line data array")
+        for line in line_data_array:
+            print(line)
+        print("unique array")
+        print(line_data_array_unique)
+    return line_data_array_unique, ref_indices_grouping
 
 
 def gen_identified_lines(
@@ -386,8 +415,7 @@ def gen_identified_lines(
     map_wavelengths, wavemap_orders = parse_oned_spec(oned_wavemap_file)
     order_indices = index_matching(orders, wavemap_orders)
     map_wavelengths_array = np.asarray(map_wavelengths)[order_indices]
-    lines = np.loadtxt(lines_dat_file)
-    line_wavelengths = lines[:, 0] / 10000
+    line_wavelengths, line_descriptions = load_lines_dat(lines_dat_file)
     json_dict = {
         'wvl_list': [], 'ref_name': os.path.basename(lines_dat_file), 'ref_indices_list': [], 'pixpos_list': [],
         'orders': [], 'pix_widths_list': [], 'pix_amps_list': [], 'wvl_widths_list': [], 'detected_wvl_list': [],
@@ -423,7 +451,7 @@ def gen_identified_lines(
         width_min = width_median - width_dev * sigma
         sigma_indices = np.asarray(np.nonzero(
             np.logical_and(filtered_peaks_array <= width_max, filtered_peaks_array >= width_min)
-        ))[0]
+        ))[0]  # FIXME: get rid of line duplication
         return filtered_peaks_array[sigma_indices, :]
 
     for order, spec, wavelengths in zip(orders, specs, map_wavelengths_array):
@@ -436,12 +464,11 @@ def gen_identified_lines(
                 spec, peaks, wavelengths, line_wavelengths, plt_peak=plt_peak, manual_filter_peak=manual_filter_peak,
                 polyfit=polyfit,
                 order=order,
-                plt_pix=plt_pix, plt_wvl=plt_wvl,
+                plt_pix=plt_pix, plt_wvl=plt_wvl, line_descriptions=line_descriptions
             )
 
-            if sigma_filter:
+            if False:  # sigma_filter:  # FIXME: sigma_filter option creates duplicate lines for some reason
                 peaks = filtered_peaks(peaks)
-            # means, stddevs, amplitudes, y0s, waves, indices, wvl_widths, detected_wvls
             pixpos_array = peaks[:, 0]
             pixwidths_array = peaks[:, 1]
             pixamps_array = peaks[:, 2]
@@ -449,19 +476,8 @@ def gen_identified_lines(
             ref_indices_array = peaks[:, 5]
             wvlwidths_array = peaks[:, 6]
             detected_wvl_array = peaks[:, 7]
-            # pixpeak_start_array = pixpos_array - pixwidths_array
-            # pixpeak_end_array = pixpos_array + pixwidths_array
-            # if polyfit is None:
-            #     detected_wvl_array = np.interp(pixpos_array, np.arange(wavelengths.shape[0]), wavelengths)
-            #     wvlpeak_start_array = np.interp(pixpeak_start_array, np.arange(wavelengths.shape[0]), wavelengths)
-            #     wvlpeak_end_array = np.interp(pixpeak_end_array, np.arange(wavelengths.shape[0]), wavelengths)
-            # else:
-            #     detected_wvl_array = polyfit(pixpos_array, np.ones(pixpos_array.shape[0]) * order)/order
-            #     wvlpeak_start_array = polyfit(pixpeak_start_array, np.ones(pixpos_array.shape[0]) * order)/order
-            #     wvlpeak_end_array = polyfit(pixpeak_end_array, np.ones(pixpos_array.shape[0]) * order)/order
-            # wvlwidths_array = np.abs(wvlpeak_end_array - wvlpeak_start_array)
-            # wvl_array, ref_indices_array = line_lookup(detected_wvl_array, line_wavelengths)
-            mask = np.logical_and(ref_indices_array != 0, ref_indices_array != lines.shape[0])
+            mask = np.logical_and(ref_indices_array != 0, ref_indices_array != line_wavelengths.shape[0])
+            print(mask)
             json_dict['orders'].append(order)
             json_dict['wvl_list'].append(wvl_array[mask].astype(float).tolist())
             json_dict['ref_indices_list'].append(ref_indices_array[mask].astype(int).tolist())
@@ -488,8 +504,8 @@ def gen_identified_lines(
 
 
 def repair_identified_lines(identified_lines_file, lines_dat_file):
-    lines = np.loadtxt(lines_dat_file)
-    line_wavelengths = lines[:, 0] / 10000
+    line_wavelengths, line_descriptions = load_lines_dat(lines_dat_file)
+    # line_wavelengths = lines[:, 0] / 10000
     output_indices = []
     output_wvls = []
     identified_lines_dict = json_dict_from_file(identified_lines_file)
@@ -1033,9 +1049,9 @@ if __name__ == '__main__':
     run_gen_echellogram = False
     run_gen_echellogram_fit_wvlsol = False
     run_gen_ref_indices = False
-    run_plot_error = False
-    run_plot_oned_spec = False
-    run_plot_residuals = False
+    run_plot_error = True
+    run_plot_oned_spec = True
+    run_plot_residuals = True
     # RIMAS files
     spectral_band = 'YJ'
     band_domain = {
@@ -1045,7 +1061,7 @@ if __name__ == '__main__':
     pixel_start, pixel_end = band_domain[spectral_band]
     order_map = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\rimas_h4rg\rollover-removed\{}_order_map_extended.fits'.format(spectral_band)
     wavemap   = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\rimas_h4rg\rollover-removed\{}_wavmap_extended.fits'.format(spectral_band)
-    spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\20220622\on-off-subtracted\mercury.{}.fits'.format(
+    spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\20220622\on-off-subtracted\xenon-mercury-argon.{}.fits'.format(
         spectral_band)
     # spectrum = r''
     flat_spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\20220622\on-off-subtracted\cals.{}.fits'.format(
@@ -1061,9 +1077,9 @@ if __name__ == '__main__':
     # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\20220622\on-off-subtracted\xenon-mercury-argon.HK.fits'
     # ohline_dat = r'C:\Users\durba\PycharmProjects\plp\master_calib\igrins\ohlines.dat'
     elements = [
-        # 'Xe',
-        # 'Hg',
-        # 'Ar',
+        'Xe',
+        'Hg',
+        'Ar',
         'Kr'
     ]
     elements_str = ''.join(elements)
@@ -1151,7 +1167,7 @@ if __name__ == '__main__':
             plt_peak=True,
             manual_filter_peak=True,
             domain_starting_pixel=pixel_start, domain_ending_pixel=pixel_end,
-            sigma_filter=True,
+            sigma_filter=False,
             # plt_wvl=True,
             plt_pix=True
         )
