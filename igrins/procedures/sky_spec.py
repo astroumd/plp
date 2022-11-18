@@ -247,7 +247,8 @@ def extract_spectra(obsset, comb_type='combined_sky'):
     obsset.store(DESCS["oned_spec_json"],
                  data=dict(orders=aperture.orders,
                            specs=specs,
-                           aperture_basename=aperture.basename))
+                           aperture_basename=aperture.basename,
+                           domain_dict=aperture.domain_dict))
 
 
 def _get_slices(n_slice_one_direction):

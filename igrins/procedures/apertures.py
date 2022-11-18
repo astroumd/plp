@@ -189,6 +189,7 @@ class Apertures(object):
         nx = self.nx
         for o in self.orders_to_extract:
             domain = self.domain_dict[o]
+            #print("DOMAIN:", o, domain)
             xx = np.arange(domain[0], domain[1]+1)
             yy1 = self.apcoeffs[o](xx, frac=f1)
             yy2 = self.apcoeffs[o](xx, frac=f2)
@@ -294,6 +295,7 @@ class Apertures(object):
         slices = ni.find_objects(ordermap)
 
         for o in self.orders_to_extract:
+            print("ORDER:", o)
             domain = self.domain_dict[o]
             sl = slices[o-1][0], slice(domain[0], domain[1]+1)
             msk = (ordermap[sl] == o)
@@ -317,6 +319,23 @@ class Apertures(object):
 
             with np.errstate(invalid="ignore"):
                 v = sum_weighted_variance / sum_weights1
+
+            import matplotlib.pyplot as plt
+            if o == 23:
+                plt.figure()
+                plt.plot(s)
+
+                plt.figure()
+                plt.plot(sum_weighted_spectra1, 'b')
+                plt.plot(sum_weights1, 'r')
+
+                plt.figure('Data')
+                plt.imshow(data[sl])
+                
+                plt.figure('Profile Map')
+                plt.imshow(profile_map1)
+
+                plt.show()
 
             v_list.append(v)
 
@@ -398,7 +417,7 @@ class Apertures(object):
             s_list.append(s)
             v_list.append(v)
            
-            if o == 43:
+            if o == 20:
                 import matplotlib.pyplot as plt
                 plt.figure("Order 43")
                 plt.plot(s)
@@ -412,6 +431,9 @@ class Apertures(object):
 
                 plt.figure("Profile**2")
                 plt.plot((profile_map1**2).sum(axis=0))
+
+                plt.figure("PROFILE")
+                plt.imshow(profile_map)
                 plt.show()
 
             #import matpl
@@ -540,6 +562,12 @@ class Apertures(object):
         slit_profile_list = []
         if bins is None:
             bins = np.linspace(0., 1., 40)
+
+        #NJM REMOVED SLITPOS_MAP
+        #print("ORDERS:", self.orders)
+        #import matplotlib.pyplot as plt
+        #plt.figure("TTT")
+        #plt.imshow(slitpos_map)
 
         for o in self.orders:
             sl = slices[o-1][0], slice(x1, x2)

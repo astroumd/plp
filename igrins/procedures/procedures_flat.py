@@ -59,7 +59,7 @@ def combine_flat_off_rimas(hdul, rp_remove_mod, bg_y_slice):
     cards, cube = make_initial_flat_cube(data_list, rp_remove_mod, bg_y_slice)
 
     flat_off = image_median(cube)
-
+    
     return cards, flat_off
 
 def correct_bg_from_upper256(d):
@@ -157,10 +157,20 @@ def make_hotpix_mask(obsset,
     flat_off_hdu = obsset_off.load_fits_sci_hdu(DESCS["FLAT_OFF"])
     flat_off = flat_off_hdu.data
 
+    if obsset.expt.lower() == 'rimas':
+        print("MODIFYING SIGMA_CLIP2 TO 20 FOR RIMAS")
+        sigma_clip2 = 20
+
     bg_std, hotpix_mask = bp.badpixel_mask(flat_off,
                                            sigma_clip1=sigma_clip1,
                                            sigma_clip2=sigma_clip2,
                                            medfilter_size=medfilter_size)
+    #import matplotlib.pyplot as plt
+    #plt.figure("FLAT OFF")
+    #plt.imshow(flat_off)
+    #plt.figure("HOTPIX_MASK")
+    #plt.imshow(hotpix_mask)
+    #plt.show()
 
     flat_off_cards = [Card("BG_STD", bg_std, "IGR: stddev of combined flat")]
 
@@ -230,28 +240,47 @@ DeadpixMaskResult = namedtuple("DeadpixMaskResult", ["flat_normed",
 
 def _make_deadpix_mask(flat_on, flat_std, hotpix_mask,
                        deadpix_mask_old=None,
-                       deadpix_thresh=0.6, smooth_size=9):
+                       deadpix_thresh=0.6, smooth_size=9, npad=None):
 
     # normalize it
     from .trace_flat import (get_flat_normalization,
                              get_flat_mask_auto,
-                             estimate_bg_mean_std)
+                             estimate_bg_mean_std,
+                             estimate_bg_mean_std_deveny)
 
-    bg_mean, bg_fwhm = estimate_bg_mean_std(flat_on)
+    #print("_MAKE_DEADPIX_MASK: removed unpadding")
+    if npad is not None:
+        print("UNPADDING")
+        npad_m, npad_p = npad
+        flat_on_tmp = flat_on[npad_m:-npad_p, :]
+        #bg_mean, bg_fwhm = estimate_bg_mean_std_deveny(flat_on_tmp)
+    else:
+        flat_on_tmp = flat_on
+    bg_mean, bg_fwhm = estimate_bg_mean_std(flat_on_tmp)
     norm_factor = get_flat_normalization(flat_on,
                                          bg_fwhm, hotpix_mask)
 
     flat_normed = flat_on / norm_factor
+
     flat_std_normed = ni.median_filter(flat_std / norm_factor,
                                        size=(3, 3))
     bg_fwhm_norm = bg_fwhm/norm_factor
 
+    #print("BGGG:", bg_fwhm_norm, bg_fwhm, norm_factor)
+    #import matplotlib.pyplot as plt
+    #plt.figure('FLAT ON')
+    #plt.imshow(flat_on_tmp)
+    #import matplotlib.pyplot as plt
+    #plt.figure("HOTPIX")
+    #plt.imshow(hotpix_mask)
+    #plt.show()
+    
     # mask out bpix
     flat_bpixed = flat_normed.astype("d")
     # by default, astype returns new array.
-
+    
     flat_bpixed[hotpix_mask] = np.nan
-
+    
     flat_mask = get_flat_mask_auto(flat_bpixed)
     # flat_mask = get_flat_mask(flat_bpixed, bg_std_norm,
     #                           sigma=flat_mask_sigma)
@@ -272,6 +301,7 @@ def _make_deadpix_mask(flat_on, flat_std, hotpix_mask,
 
     if deadpix_mask_old is not None:
         deadpix_mask = deadpix_mask | deadpix_mask_old
+    
 
     flat_bpixed[deadpix_mask] = np.nan
 
@@ -280,6 +310,13 @@ def _make_deadpix_mask(flat_on, flat_std, hotpix_mask,
                           flat_mask=flat_mask,
                           deadpix_mask=deadpix_mask,
                           flat_info=dict(bg_fwhm_norm=bg_fwhm_norm))
+
+    #import matplotlib.pyplot as plt
+    #plt.figure("FLATMASK")
+    #plt.imshow(flat_mask)
+    #plt.figure("FLAT_BPIXED")
+    #plt.imshow(flat_bpixed)
+    #plt.show()
 
     return r
 
@@ -311,10 +348,14 @@ def make_deadpix_mask(obsset,  # helper, band, obsids,
     # main routine
     print("SETTING DEADPIX_MASK_OLD TO NONE")
     deadpix_mask_old = None
+
+    npad = None
+    if hasattr(obsset.detector, "npad_m"):
+        npad = [obsset.detector.npad_m, obsset.detector.npad_p]
     r = _make_deadpix_mask(flat_on, flat_std, hotpix_mask,
                            deadpix_mask_old,
                            deadpix_thresh=deadpix_thresh,
-                           smooth_size=smooth_size)
+                           smooth_size=smooth_size, npad=npad)
 
     obsset_on.store(DESCS["FLAT_NORMED"],
                     obsset_on.get_hdul_to_write(([], r.flat_normed)))
@@ -342,12 +383,16 @@ def identify_order_boundaries(obsset):
 
     flaton_info = obsset_on.load(DESCS["FLATON_JSON"])
     bg_fwhm_normed = flaton_info["bg_fwhm_norm"]
+    bound = None
 
     if obsset.expt.lower() == 'igrins':
         max_sep_order = 150
     elif obsset.expt.lower() == 'rimas':
         print("EXPERIMENT WITH LARGER MAX_SEP_ORDER FOR RIMAS")
-        max_sep_order = 50
+        #max_sep_order = 55
+        max_sep_order = 120
+        #bound = [900, -1]
+        bound = [900, 3000]
     elif obsset.expt.lower() == 'deveny':
         max_sep_order = 1000
         #flat_normed[-10:, :] = 0
@@ -355,7 +400,7 @@ def identify_order_boundaries(obsset):
     flat_deriv_ = get_y_derivativemap(flat_normed, flat_bpixed,
                                       bg_fwhm_normed,
                                       max_sep_order=max_sep_order, pad=10,
-                                      flat_mask=flat_mask)
+                                      flat_mask=flat_mask, bound=bound)
 
     flat_deriv = flat_deriv_["data"]
     flat_deriv_pos_msk = flat_deriv_["pos_mask"]
@@ -406,8 +451,10 @@ def trace_order_boundaries(obsset):
     if nx != obsset.detector.nx or ny != obsset.detector.ny:
         raise ValueError("Input images do not match detector size")
 
+    cent_x = None
     if obsset.expt.lower() == 'rimas':
-        stitch_objects = False
+        stitch_objects = True
+        cent_x = 1630
     elif obsset.expt.lower() == 'igrins':
         stitch_objects = True
     elif obsset.expt.lower() == 'deveny':
@@ -417,7 +464,8 @@ def trace_order_boundaries(obsset):
                                                 flat_deriv_pos_msk,
                                                 pad=10,
                                                 bg_std=bg_fwhm_normed,
-                                                stitch_objects=stitch_objects)
+                                                stitch_objects=stitch_objects,
+                                                cent_x=cent_x)
 
     # make sure that centroid lists are in order by checking its center
     # position.
@@ -427,10 +475,27 @@ def trace_order_boundaries(obsset):
                                             flat_deriv_neg_msk,
                                             pad=10,
                                             bg_std=bg_fwhm_normed,
-                                            stitch_objects=stitch_objects)
+                                            stitch_objects=stitch_objects,
+                                            cent_x=cent_x)
 
     cent_up_list = _check_boundary_orders(cent_up_list, nx=nx)
     
+    import matplotlib.pyplot as plt
+    plt.figure()
+    for c_tmp in cent_bottom_list:
+        plt.plot(c_tmp[0], c_tmp[1], 'b')
+    for c_tmp in cent_up_list:
+        plt.plot(c_tmp[0], c_tmp[1], 'r')
+    plt.show()
+
+    if obsset.expt.lower() == 'deveny':
+        print("Modifying Boundaries by 4 for DEVENY")
+        cent_bottom_list[0] = (cent_bottom_list[0][0], cent_bottom_list[0][1]+4)
+        cent_up_list[0] = (cent_up_list[0][0], cent_up_list[0][1]-4)
+
+        print("CENT_BOTTOM:", cent_bottom_list[0][1])
+        print("CENT_UP:", cent_up_list[0][1])
+
     obsset_on.store(DESCS["FLATCENTROIDS_JSON"],
                     dict(bottom_centroids=cent_bottom_list,
                          up_centroids=cent_up_list))

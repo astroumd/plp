@@ -59,7 +59,10 @@ def get_tgt_spec_cor(obsset, tgt, a0v, threshold_a0v, multiply_model_a0v):
         t = t[:npts]
         t2 = t2[:npts]
 
-        st = s/t
+        print("NJM FIXING DIVING BY FLATTENED INSTEAD OF RAW A0V")
+        print("TEST:", t[:5], t2[:5])
+        st = s/t2
+        #st = s/t
         msk = np.isfinite(t)
         if np.any(msk):
             #print np.percentile(t[np.isfinite(t)], 95), threshold_a0v

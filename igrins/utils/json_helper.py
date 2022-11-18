@@ -2,6 +2,7 @@ import numpy as np
 import numpy.polynomial as P
 
 import simplejson
+#import json as simplejson
 
 def encode_array(obj):
     if hasattr(obj, "to_json"):
@@ -9,7 +10,8 @@ def encode_array(obj):
     elif isinstance(obj, np.ndarray):
         return obj.tolist()
     elif hasattr(obj, "dtype"):
-        return np.asscalar(obj)
+        #return np.asscalar(obj)
+        return np.ndarray.item(np.array(obj))
     # # check if numpy polynomial. Need to be improved
     # elif hasattr(obj, "convert"):
     #     p = obj.convert(kind=P.Polynomial)
