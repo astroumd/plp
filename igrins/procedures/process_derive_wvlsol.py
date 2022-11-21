@@ -30,6 +30,14 @@ def _fit_2d(xl, yl, zlo, nx, xdeg=4, ydeg=3, p_init=None):
     fit_params = dict(x_degree=xdeg, y_degree=ydeg,
                       x_domain=x_domain, y_domain=y_domain)
 
+    import matplotlib.pyplot as plt
+    plt.figure( 'XL vs YL')
+    plt.scatter(xl[msk], yl[msk])
+    plt.xlabel('X Position')
+    plt.ylabel('Order')
+    plt.show()
+
+
     p, m = fit_2dspec(xl[msk], yl[msk], zlo[msk], p_init=p_init, **fit_params)
 
     from .astropy_poly_helper import serialize_poly_model
@@ -72,19 +80,38 @@ def derive_wvlsol(obsset, fit_type='sky'):
     msk = df["slit_center"] == 0.5
     dfm = df[msk]
 
+    print("REMOVING BAD GAUSSIAN FITS (-20) FROM WVL SOLUTION FIT")
+    msk = np.ones(len(dfm), dtype=bool)
+    print("BEFORE:", len(dfm))
+    params = dfm['params']
+    for i in range(len(dfm)):
+        if params[i][0] == -20:
+            print(i, params[i])
+            msk[i] = False
+    dfm = dfm[msk]
+
     p, fit_results = fit_wvlsol(dfm, nx)
 
     from ..igrins_libs.resource_helper_igrins import ResourceHelper
     helper = ResourceHelper(obsset)
     orders = helper.get("orders")
+    
+    #NJM Added xrange to constrain spectra ranges based on range of fits for wavelength
+    #Added to both outputs, but should remove from one that we don't want
+    xrange = [np.min(dfm['pixels']), np.max(dfm['pixels'])]
 
     wvl_sol = _convert2wvlsol(p, orders, nx)
     d = dict(orders=orders,
-             wvl_sol=wvl_sol)
-    
+             wvl_sol=wvl_sol,
+             xrange=xrange)
+   
     obsset.store("SKY_WVLSOL_JSON", d)
 
+
     fit_results["orders"] = orders
+
+    #fit_results["xrange"] = xrange
+    
     obsset.store("SKY_WVLSOL_FIT_RESULT_JSON",
                  fit_results)
 

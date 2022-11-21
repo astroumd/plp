@@ -101,7 +101,10 @@ def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
     #if np.abs(lines[0] - 1000000) < 0.01:
     #if np.abs(lines[0] - 1506.9) < 0.1:
     #if np.abs(lines[0] - 2173.56) < 0.01:
-    if np.abs(lines[0] - 1155.92) < 0.01:
+    #if np.abs(lines[0] - 1155.92) < 0.01:
+    #if np.abs(lines[0] - 1820.44) < 0.01:
+    #print("AAA:", lines[0])
+    if np.abs(lines[0]) > 0:
         global x00
         params_opt = sol_[0]
         model = _gauss0_w_dcenters(xx, params_opt, dcenters0)
@@ -111,17 +114,28 @@ def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
         plt.plot(xx, yy, 'b', label='Input')
         plt.plot(xx, model, 'r', label='Best Fit')
         plt.plot(xx, model0, 'g', label='Init Guess')
-        if x00 is None:
-            x00 = params_opt[0]
+        #if x00 is None:
+        x00 = lines[0]
         plt.plot([x00, x00], [0, params_opt[2]], 'k')
         plt.legend(loc=0, prop={'size':  12})
         plt.title(str(params_opt[0])+'  '+str(params_opt[0]-x00))
         #plt.plot(xx, model1, 'm')
-        print("LINES IN FIT_GAUSSIAN:", lines, params_opt[0], params_opt[0]-x00)
+        #print("LINES IN FIT_GAUSSIAN:", lines, params_opt[0], params_opt[0]-x00)
+        fn = '/Users/njmille2/RIMAS/Igrins/fit_gaussian/20220622/' + str(lines[0]) + '_' + str(i00) + '.png'
+        plt.savefig(fn)
+        plt.close()
 
         #plt.figure()
         #plt.plot(x, s)
         #plt.show()
+        if np.abs(params_opt[0] - lines[0]) > 1.5:
+            print("CHECK FIT:", fn)
+            params_opt[0] = -20
+        else:
+            #NJM REPLACING FIT VALUE WITH INPUT VALUE
+            #print("SSS:", params_opt[0], lines[0])
+            params_opt[0] = lines[0] + np.random.randn()*0.01
+            #pass
 
     #TODO: NJM REMOVE
     '''

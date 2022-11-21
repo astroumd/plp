@@ -106,7 +106,7 @@ steps_a0v = steps_stellar + [Step("Flatten A0V", flatten_a0v),
 _steps_extended = [
     Step("Make Combined Images", make_combined_images,
          allow_no_b_frame=False),
-    Step("Estimate slit profile (extended)", estimate_slit_profile,
+    Step("Estimate slit profile (extended)", estimate_slit_profile_extended,
          slit_profile_mode="uniform"),
     Step("Extract spectra (for extendeded)",
          extract_extended_spec_ver2,

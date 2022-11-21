@@ -108,6 +108,9 @@ def fit_2dspec(xl, yl, zl, x_degree=4, y_degree=3,
     if len(np.unique(yl)) <= y_degree:
         y_degree = len(np.unique(yl)) - 1
 
+    #print("CHANGING X_DEGREE")
+    #x_degree = 2
+
     from astropy.modeling.polynomial import Chebyshev2D
     if p_init is None:
         p_init = Chebyshev2D(x_degree=x_degree, y_degree=y_degree,

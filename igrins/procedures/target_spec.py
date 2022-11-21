@@ -206,7 +206,7 @@ def get_wvl_header_data(obsset, wavelength_increasing_order=False):
     return header.copy(), hdu.data, convert_data
 
 
-def store_1dspec(obsset, v_list, s_list, sn_list=None, domain_list=None):
+def store_1dspec(obsset, v_list, s_list, sn_list=None, domain_list=None, first_order=0):
 
     basename_postfix = obsset.basename_postfix
 
@@ -218,7 +218,7 @@ def store_1dspec(obsset, v_list, s_list, sn_list=None, domain_list=None):
             str_hi = str(i) + '_HI'
             hdul[0].header[str_lo] = domain[0]
             hdul[0].header[str_hi] = domain[1]
-
+        hdul[0].header['ORDER0'] = first_order
         return hdul
 
     if domain_list is not None:
@@ -445,7 +445,9 @@ def extract_stellar_spec(obsset, extraction_mode="optimal",
     else:
         sn_list = None
 
-    store_1dspec(obsset, v_list, s_list, sn_list=sn_list, domain_list=domain_list_sort)
+    first_order = key_list[0]
+    store_1dspec(obsset, v_list, s_list, sn_list=sn_list,
+                 domain_list=domain_list_sort, first_order=first_order)
 
     hdul = obsset.get_hdul_to_write(([], data_minus),
                                     ([], aux_images["synth_map"]))
@@ -655,7 +657,10 @@ def extract_extended_spec(obsset, lacosmic_thresh=0., calculate_sn=True):
 
             sn_list.append(sn)
 
-    store_1dspec(obsset, v_list, s_list, sn_list=sn_list, domain_list=domain_list_sort)
+    first_order = key_list[0]
+    print("SSS:", first_order)
+    store_1dspec(obsset, v_list, s_list, sn_list=sn_list,
+                 domain_list=domain_list_sort, first_order=first_order)
 
     shifted = aux_images["shifted"]
 
@@ -750,7 +755,10 @@ def extract_extended_spec_ver2(obsset, lacosmic_thresh=0., calculate_sn=True):
 
             sn_list.append(sn)
 
-    store_1dspec(obsset, v_list, s_list, sn_list=sn_list, domain_list=domain_list_sort)
+    first_order = key_list[0]
+
+    store_1dspec(obsset, v_list, s_list, sn_list=sn_list,
+                 domain_list=domain_list_sort, first_order=first_order)
 
     shifted = aux_images["shifted"]
 

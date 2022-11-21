@@ -25,7 +25,7 @@ def reidentify(s, x_list, x=None, sigma_init=1.5):
 
     fit_results = []
 
-    print("N_LINES:", len(x_list), x_list)
+    #print("N_LINES:", len(x_list), x_list)
 
     for lines_pixel, sigma in zip(x_list, sigma_iter):
 

@@ -415,6 +415,10 @@ def transform_wavelength_solutions(obsset):
     wvl_sol = _get_wavelength_solutions(affine_tr_matrix,
                                         echellogram.zdata,
                                         orders, nx=obsset.detector.nx)
+    #print("REPLACING V0 WITH ECHELLOGRAM DATA")
+    #for i in range(15):
+    #    i2 = i+7
+    #    wvl_sol[i2] = echellogram_data['wvl_list'][i]
 
     #TODO: REMOVE
     '''

@@ -66,12 +66,15 @@ def identify_multiline_thar(obsset):
                 str_hi = str(order) + '_HI'
                 domains.append([int(hdu.header[str_lo]), int(hdu.header[str_hi])])
 
+        idxs = [10, 11, 12] #15
         import matplotlib.pyplot as plt
-        dom = domains[15]
-        xvals = np.arange(dom[0],dom[1]+1)
-        npts = dom[1] - dom[0] + 1
-        plt.figure('FULL SPEC')
-        plt.plot(xvals, hdu.data[15, :npts])
+        for idx in idxs:
+            dom = domains[idx]
+            xvals = np.arange(dom[0],dom[1]+1)
+            npts = dom[1] - dom[0] + 1
+            plt.figure('FULL SPEC ' + str(orders[idx]))
+            plt.title(str(dom[0]) + ' ' + str(dom[1]))
+            plt.plot(xvals, hdu.data[idx, :npts])
 
         fitted_pixels_ = identify_lines_from_spec(orders, hdu.data, wvlsol,
                                                   ref_lines_db,
@@ -80,8 +83,8 @@ def identify_multiline_thar(obsset):
         
         fitted_pixels_list.append(fitted_pixels_)
 
-    import matplotlib.pyplot as plt
-    plt.show()
+    #import matplotlib.pyplot as plt
+    #plt.show()
 
     # concatenate collected list of fitted pixels.
     fitted_pixels_master = pd.concat(fitted_pixels_list,

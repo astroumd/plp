@@ -319,26 +319,35 @@ class Apertures(object):
 
             with np.errstate(invalid="ignore"):
                 v = sum_weighted_variance / sum_weights1
-
+            
+            '''
             import matplotlib.pyplot as plt
-            if o == 23:
-                plt.figure()
+            if o in [39, 40, 41]:
+                plt.figure(str(o) + 'SPECTRA')
                 plt.plot(s)
 
-                plt.figure()
-                plt.plot(sum_weighted_spectra1, 'b')
-                plt.plot(sum_weights1, 'r')
+                #plt.figure('SUM WEIGHTED')
+                #plt.plot(sum_weighted_spectra1, 'b', label='Sum Weighted Spectra')
+                #plt.plot(sum_weights1, 'r', label='Sum Weights')
+                #plt.legend(loc=0, prop={'size': 12})
 
-                plt.figure('Data')
+                plt.figure(str(o) + 'DATA')
                 plt.imshow(data[sl])
                 
-                plt.figure('Profile Map')
-                plt.imshow(profile_map1)
+                #plt.figure('PROFILE MAP')
+                #plt.imshow(profile_map1)
 
-                plt.show()
+                #plt.figure('MAP WEIGHTED SPECTRA')
+                #plt.imshow(map_weighted_spectra1)
+
+                #plt.figure('MAP WEIGHTS')
+                #plt.imshow(map_weights1)
+            '''
 
             v_list.append(v)
-
+        
+        #plt.show()
+        #zzz
         return s_list, v_list
 
     def extract_stellar_from_shifted(self, ordermap_bpixed,

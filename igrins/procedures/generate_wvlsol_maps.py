@@ -67,7 +67,12 @@ def make_slitoffsetmap(obsset):
     #NJM REMOVE
     #print("NJM REMOVE PLOTS")
     import matplotlib.pyplot as plt
-    plt.figure("Offset Slice")
+    plt.figure("OFFSET SLICE 1600")
+    plt.plot(offset_map[:, 1600])
+    plt.xlabel('Position along middle slice (pixels)')
+    plt.ylabel('Slit Offset (pixels)')
+    
+    plt.figure("OFFSET SLICE 2000")
     plt.plot(offset_map[:, 2000])
     plt.xlabel('Position along middle slice (pixels)')
     plt.ylabel('Slit Offset (pixels)')

@@ -64,13 +64,29 @@ def _get_df(obsset, fit_type='sky'):
 
     dd = _append_offset(df)
 
-    print("DD:", dd)
-    print("SSS:", dd['pixels0'])
+    pix_dist = 0.6
+    print("FILTERING ON A MAXIMUM PIXEL FIT VARIATION OF", pix_dist, "pixels")
+    #print("NOT FILTERING FITS")
+    data = np.unique(dd['pixels0'])
+    keep = np.ones(len(dd), dtype=np.bool)
+    for d0 in data:
+        idx = dd['pixels0'] == d0
+        if d0 == -20:
+            keep[idx] = False
+            continue
+
+        offs = dd[idx]['offsets']
+        if (np.max(offs) - np.min(offs)) > pix_dist:
+            keep[idx] = False
+    #print("TEST:", len(dd), np.sum(keep))
+    #zzz
+    dd = dd[keep]
+
     import matplotlib.pyplot as plt
-    plt.figure()
+    plt.figure('PIXELS V OFFSETS IN FILTER')
     plt.scatter(dd['pixels0'], dd['offsets'])
-    plt.show()
-    zzz
+    #plt.show()
+    #zzz
 
     return dd
 
@@ -114,16 +130,65 @@ def volume_fit(obsset, fit_type='sky'):
                               dd["order"][msk],
                               cc0[msk]]))
 
+    #print("DD KEYS:", dd.keys())
+    #tmp = dd["order"] == 35
+    #print("ORDER 35")
+    #print("PIXELS0:", dd["pixels0"][tmp])
+    #print("PIXELS:", dd["pixels"][tmp])
+    minx = np.min(dd["pixels0"][msk])
+    maxx = np.min(dd["pixels0"][msk])
+    
     scalar = dd["offsets"][msk] / cc0[msk]
 
-    print("SSS:", len(scalar), len(points['pixel']))
+    idx = points["order"] == 35
+    print("ORDER 35:", points['pixel'][idx]) 
+    idx = points["order"] == 34
+    print("ORDER 34:", points['pixel'][idx]) 
+    idx = points["order"] == 33
+    print("ORDER 33:", points['pixel'][idx]) 
+
+    print("NPTS:", len(scalar), len(points['pixel']))
     import matplotlib.pyplot as plt
-    plt.figure()
-    plt.scatter(points['pixel'], dd["offsets"][msk])
-    plt.show()
-    zzz
+    plt.figure("ORDER")
+    plt.scatter(points['pixel'], dd["order"][msk])
+
+    plt.figure("OFFSETS")
+    plt.scatter(points['pixel'], dd["offsets"][msk])# + dd["order"][msk])
+
+    plt.figure("PIX SCALAR")
+    plt.scatter(points['pixel'], scalar)
+    
+    plt.figure("ORDER SCALAR")
+    plt.scatter(points['order'], scalar)
+    
+    plt.figure("SLIT SCALAR")
+    plt.scatter(points['slit'], scalar)
+
+    #zzz
 
     poly, params = _volume_poly_fit(points, scalar, orders, names)
+
+    print("DOING COMPARISON OF FIT")
+    scalar_1 = poly.multiply(points, params[0])
+
+    plt.figure("PIX SCALAR")
+    plt.scatter(points['pixel'], scalar_1, color='r')
+    plt.figure("ORDER SCALAR")
+    plt.scatter(points['order'], scalar_1, color='r')
+    plt.figure("SLIT SCALAR")
+    plt.scatter(points['slit'], scalar_1, color='r')
+
+    plt.figure("PIX OFFSETS")
+    plt.scatter(points['pixel'], scalar * cc0[msk])
+    plt.scatter(points['pixel'], scalar_1 * cc0[msk], color='r')
+    plt.figure("ORDER OFFSETS")
+    plt.scatter(points['order'], scalar * cc0[msk])
+    plt.scatter(points['order'], scalar_1 * cc0[msk], color='r')
+    plt.figure("SLIT OFFSETS")
+    plt.scatter(points['slit'], scalar * cc0[msk])
+    plt.scatter(points['slit'], scalar_1 * cc0[msk], color='r')
+    
+    #plt.show()
 
     #NJM REMOVE
     '''
@@ -154,5 +219,11 @@ def volume_fit(obsset, fit_type='sky'):
     out_df = out_df.reset_index()
 
     d = out_df.to_dict(orient="split")
+    
+    #NJM: Adding min and max x values used in fit. Anything outside this range
+    #is bad
+    #xrange = [minx, maxx]
+    #d['fit_xrange'] = xrange
+    
     obsset.store("VOLUMEFIT_COEFFS_JSON", d)
 
