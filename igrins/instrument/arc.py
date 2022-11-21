@@ -6,12 +6,32 @@ import numpy as np
 import pandas as pd
 
 config = {
-    'elements': ['Xe', 'Hg', 'Ar', 'Kr'],
+    'elements': [
+        # 'Xe',
+        # 'Hg',
+        # 'Ar',
+        # 'Kr',
+        'Ne'
+    ],
     'wavelength_range': (0.800, 2.500),
     'wavelength_error': 0.0008,
     'units': u.micron,
     'bands': ['HK', 'YJ']
 }
+
+
+def load_lines_dat(dat_filename):
+    try:
+        lines = np.loadtxt(dat_filename, dtype='float,float,int,U12', usecols=(0, 1, 2, 3))
+        line_wavelengths = [line[0] / 10000 for line in lines]
+        line_intensities = [line[1] for line in lines]
+        line_descriptions = ['{}: {}-{}'.format(i, line[3][0:2], line[2]) for i, line in enumerate(lines)]
+    except IndexError:
+        lines = np.loadtxt(dat_filename).transpose()
+        line_wavelengths = lines[0]/10000
+        line_intensities = lines[1]
+        line_descriptions = [str(i) for i in range(line_wavelengths.shape[0])]
+    return np.asarray(line_wavelengths), np.asarray(line_descriptions), line_intensities
 
 
 def get_lines(config_dict=config):
@@ -54,12 +74,15 @@ def combine_lines_dat(dat_iterable, output_dat_filename):
     dat_array = []
     wav_array = []
     for dat in dat_iterable:
-        _data = np.loadtxt(dat)
-        _indices = np.arange(_data.shape[0])
+        print(dat)
+        line_wavelengths, line_descriptions, line_intensities = load_lines_dat(dat)
+        line_wavelengths = line_wavelengths * 10000
+        # _data = np.loadtxt(dat)
+        _indices = np.arange(line_wavelengths.shape[0])
         _name = os.path.basename(dat)
         _names = np.asarray([_name for i in _indices])
-        wav_array.append(_data[:,0])
-        _data = np.rec.fromarrays((_data[:, 0], _data[:, 1], _indices, _names))
+        wav_array.append(line_wavelengths)
+        _data = np.rec.fromarrays((line_wavelengths, line_intensities, _indices, _names))
         dat_array.append(_data)
 
     data = np.concatenate(dat_array, axis=0)

@@ -14,7 +14,7 @@ from master_calib_creation.image import ExistingImage, file_overlay
 
 from igrins.procedures.find_peak import find_peaks
 from igrins.procedures.process_derive_wvlsol import fit_wvlsol
-from igrins.instrument.arc import combine_lines_dat
+from igrins.instrument.arc import combine_lines_dat, load_lines_dat
 
 
 def gen_oned_spec(
@@ -79,19 +79,6 @@ def gen_oned_spec_image(order_map_image, spectrum_image, output_file, aggregatio
     save_dict_to_json(json_dict, output_file)
 
 
-def load_lines_dat(dat_filename):
-    try:
-        lines = np.loadtxt(dat_filename, dtype='float,float,int,U12', usecols=(0, 1, 2, 3))
-        line_wavelengths = [line[0] / 10000 for line in lines]
-        line_descriptions = ['{}: {}-{}'.format(i, line[3][0:2], line[2]) for i, line in enumerate(lines)]
-    except IndexError:
-        lines = np.loadtxt(dat_filename).transpose()
-        line_wavelengths = lines[0]/10000
-        line_descriptions = [str(i) for i in range(line_wavelengths.shape[0])]
-    return np.asarray(line_wavelengths), np.asarray(line_descriptions)
-
-
-
 def load_polyfit(pickle_file):
     with open(pickle_file, 'rb') as f:
         polyfit = pickle.load(f)
@@ -152,6 +139,7 @@ def curve_fit_peaks(peak, expected_width, pixels, spec, n_gauss=1, plt_peak=Fals
             # figManager = plt.get_current_fig_manager()
             # figManager.window.showMaximized()
             plt.show()
+            plt.clf()
             input("Press Enter to continue...")
         if polyfit is not None and plt_wvl:
             print(order, popt[1])
@@ -166,6 +154,7 @@ def curve_fit_peaks(peak, expected_width, pixels, spec, n_gauss=1, plt_peak=Fals
             # figManager = plt.get_current_fig_manager()
             # figManager.window.showMaximized()
             plt.show()
+            plt.clf()
             input("Press Enter to continue...")
     return popt
 
@@ -195,11 +184,13 @@ def line_lookup(detected_peaks, line_wavelengths, line_wvl_widths, manual_filter
         value, index = find_nearest(line_wavelengths, peak)
         line_waves.append(value)
         line_index.append(index)
+    print('peak', 'wave', 'index', 'peak-wave')
     for peak, wave, index in zip(detected_peaks, line_waves, line_index):
         print(peak, wave, index, peak-wave)
     line_index = np.asarray(line_index)
     if manual_filter_peaks:
         cont = True
+        plt.clf()
         while cont:
             for i, peak in enumerate(zip(detected_peaks, line_wvl_widths, line_index)):
                 plt.errorbar(
@@ -211,7 +202,12 @@ def line_lookup(detected_peaks, line_wavelengths, line_wvl_widths, manual_filter
             waves = line_wavelengths[wave_indices]
             descriptions = np.asarray(line_descriptions)[wave_indices]
             for index, wave, description in zip(wave_indices, waves, descriptions):
-                plt.plot([wave, wave], [0, 1], '--', label=description)
+                plt.plot([wave, wave], [0, 1.1], '--', label=description)
+            # for i, peak in enumerate(zip(detected_peaks, line_wvl_widths, line_index)):
+            #     _wvl = line_wavelengths[peak[-1]]
+            #     _desc = descriptions[peak[-1]]
+            #     plt.plot([_wvl, _wvl], [0, 1], ':', label=_desc)
+            plt.xlim((np.min(detected_peaks)-0.003), np.max(detected_peaks)+0.003)
             plt.legend()
             plt.show()
             change = input('Current indices {}. New indices? (blank if keeping)'.format(line_index))
@@ -339,7 +335,10 @@ def curve_fit_peak(
                                 for i in range(n_gauss):
                                     inputs = custom_split[i].split(',')
                                     for j in inputs:
-                                        custom.append(float(j))
+                                        try:
+                                            custom.append(float(j))
+                                        except ValueError:
+                                            continue
                                 custom.append(float(custom_split[-1]))
                 else:
                     if np.abs(mean_init - _mean) > 4:  # TODO: fix the auto filter option
@@ -415,7 +414,7 @@ def gen_identified_lines(
     map_wavelengths, wavemap_orders = parse_oned_spec(oned_wavemap_file)
     order_indices = index_matching(orders, wavemap_orders)
     map_wavelengths_array = np.asarray(map_wavelengths)[order_indices]
-    line_wavelengths, line_descriptions = load_lines_dat(lines_dat_file)
+    line_wavelengths, line_descriptions, line_intensities = load_lines_dat(lines_dat_file)
     json_dict = {
         'wvl_list': [], 'ref_name': os.path.basename(lines_dat_file), 'ref_indices_list': [], 'pixpos_list': [],
         'orders': [], 'pix_widths_list': [], 'pix_amps_list': [], 'wvl_widths_list': [], 'detected_wvl_list': [],
@@ -504,7 +503,7 @@ def gen_identified_lines(
 
 
 def repair_identified_lines(identified_lines_file, lines_dat_file):
-    line_wavelengths, line_descriptions = load_lines_dat(lines_dat_file)
+    line_wavelengths, line_descriptions, line_intensities = load_lines_dat(lines_dat_file)
     # line_wavelengths = lines[:, 0] / 10000
     output_indices = []
     output_wvls = []
@@ -581,6 +580,134 @@ def gen_error_dict(fit_polynomial, fitdata_df, pickle_output_file):
     return fit_dict
 
 
+def fitdata_df_to_identified_lines(fitdata_df, identified_lines_fname_prefix):
+    ref_names_unique = fitdata_df['ref_name'].unique()
+    save_names = []
+    for ref_name in ref_names_unique:
+        ref_name_df = fitdata_df[fitdata_df['ref_name'] == ref_name]
+        orders_unique = ref_name_df['order'].unique()
+        save_dict = {'orders': [], 'pixpos_list': [], 'wvl_list': [], 'ref_indices_list': [], 'ref_name': ref_name}
+        for order in orders_unique:
+            save_dict['orders'].append(int(order))
+            order_df = ref_name_df[ref_name_df['order'] == order]
+            save_dict['pixpos_list'].append(order_df['pixels'].tolist())
+            save_dict['wvl_list'].append(order_df['wavelength'].tolist())
+            save_dict['ref_indices_list'].append(order_df['ref_indices'].tolist())
+        save_name = identified_lines_fname_prefix + ref_name + '.json'
+        save_names.append(save_name)
+        save_dict_to_json(save_dict, save_name)
+    return save_names
+
+
+def load_fitdata_df(
+        identified_lines_json_files, ref_indices_json_files, band, centroid_solutions_json_file=None,
+        domain_starting_index=4, domain_starting_pixel=0, domain_ending_pixel=None, pixels_in_order=4096
+):
+    identified_lines_sets = [json_dict_from_file(identified_lines_json_file) for identified_lines_json_file in
+                             identified_lines_json_files]
+    ref_indices_dicts = [json_dict_from_file(ref_indices_json_file)[band] for ref_indices_json_file in
+                         ref_indices_json_files]
+    num_orders = len(identified_lines_sets[0]['orders'])
+    indices = range(num_orders)
+    if centroid_solutions_json_file is not None:
+        domains = json_dict_from_file(centroid_solutions_json_file)['domain']
+        domains = domains[domain_starting_index:domain_starting_index + num_orders]
+    else:
+        if domain_ending_pixel is None:
+            domain_ending_pixel = pixels_in_order
+        domains = [(domain_starting_pixel, domain_ending_pixel) for j in indices]
+
+    fitdata = {'pixels': [], 'order': [], 'wavelength': [], 'ref_indices': [], 'ref_name': []}
+    for identified_lines, ref_indices_dict in zip(identified_lines_sets, ref_indices_dicts):
+        for j in indices:
+            order = identified_lines['orders'][j]
+            domain = domains[j]
+            wvls = identified_lines['wvl_list'][j]
+            pixpos = identified_lines['pixpos_list'][j]
+            ref_indices = identified_lines['ref_indices_list'][j]
+            fit_ref_indices = ref_indices_dict.get(str(order), [])
+            fit_ref_indices = [item for sublist in fit_ref_indices for item in sublist]  # flattening lists
+            wvls_array = np.asarray(wvls)
+            pixpos_array = np.asarray(pixpos)
+            ref_indices_array = np.asarray(ref_indices)
+
+            if len(fit_ref_indices) == 0:
+                fit_indices_array = np.zeros(ref_indices_array.shape, dtype=np.bool)
+            else:
+                repeat_list = np.asarray([ref_indices_array == i for i in fit_ref_indices])
+                fit_indices_array = np.all(repeat_list, axis=0)
+
+            domain_indices = np.logical_and(pixpos_array > domain[0], pixpos_array < domain[1], fit_indices_array)
+            pixpos = pixpos_array[domain_indices].tolist()
+            wvls = wvls_array[domain_indices].tolist()
+            refs = ref_indices_array[domain_indices].tolist()
+            order_list = [order for i in range(len(wvls))]
+            fitdata['wavelength'] = fitdata['wavelength'] + wvls
+            fitdata['pixels'] = fitdata['pixels'] + pixpos
+            fitdata['order'] = fitdata['order'] + order_list
+            fitdata['ref_indices'] = fitdata['ref_indices'] + refs
+            fitdata['ref_name'] = fitdata['ref_name'] + [identified_lines['ref_name'] for i in pixpos]
+
+    fitdata_df = pd.DataFrame(fitdata)
+    return fitdata_df
+
+
+def reconcile_id_lines_and_ref_indices(identified_lines_json_files, ref_indices_json_files, band):
+    for ident_lines, ref_indices in zip(identified_lines_json_files, ref_indices_json_files):
+        id_lines_dict = json_dict_from_file(ident_lines)
+        ref_indices_dict = json_dict_from_file(ref_indices)
+        for order, lines in zip(id_lines_dict['orders'], id_lines_dict['ref_indices_list']):
+            ref_indices_new = []
+            ref_indices_old = ref_indices_dict[band][str(order)]
+            for ref_ind_list in ref_indices_old:
+                ref_ind_list_new = []
+                for ref_ind in ref_ind_list:
+                    if ref_ind in lines:
+                        ref_ind_list_new.append(ref_ind)
+                    if ref_ind_list_new:
+                        ref_indices_new.append(ref_ind_list_new)
+            ref_indices_dict[band][str(order)] = ref_indices_new
+        save_dict_to_json(ref_indices_dict, os.path.join(os.path.dirname(ident_lines), os.path.basename(ref_indices)))
+
+
+def remove_high_error_lines(
+        fit_pickle, fit_output_file, fit_error_dict, error_sigma, identified_lines_json_files, ref_indices_json_files,
+        band,
+        centroid_solutions_json_file=None, domain_starting_index=4, domain_starting_pixel=0, domain_ending_pixel=None,
+        pixels_in_order=4096
+):
+    with open(fit_pickle, 'rb') as f:
+        p = pickle.load(f)
+    fitdata_df = load_fitdata_df(
+        identified_lines_json_files, ref_indices_json_files, band, centroid_solutions_json_file,
+        domain_starting_index, domain_starting_pixel, domain_ending_pixel, pixels_in_order
+    )
+    print('load dataframe, shape', fitdata_df.shape)
+    err_dict = gen_error_dict(p, fitdata_df, fit_pickle)
+    print('gen err_dict')
+    save_dict_to_json(err_dict, fit_output_file)
+    print('save err_dict')
+    print('about to load', fit_error_dict)
+    fit_dict = json_dict_from_file(fit_error_dict)
+    print('load fit_dict')
+    error_array = np.asarray(err_dict['error'])
+    print('get error_array', error_array)
+    std_error = fit_dict['standard_error']
+    print('std_error', std_error)
+    large_error = np.where(np.abs(error_array) > error_sigma * std_error)
+    print('bool large_error')
+    fitdata_df = fitdata_df.drop(fitdata_df.index[large_error])
+    print('drop large_error, dataframe shape', fitdata_df.shape)
+    low_error_identified_lines_prefix = os.path.join(
+        os.path.dirname(fit_pickle), 'low_error', 'identified_lines.{}.low_error.'.format(band)
+    )
+    print('prefix', low_error_identified_lines_prefix)
+    low_error_identified_lines = fitdata_df_to_identified_lines(fitdata_df, low_error_identified_lines_prefix)
+    print(low_error_identified_lines)
+    reconcile_id_lines_and_ref_indices(low_error_identified_lines, ref_indices_json_files, band)
+    print('reconciled ref_indices')
+
+
 def gen_echellogram_fit_wvlsol(
     echellogram_json_file, identified_lines_json_files, ref_indices_json_files, output_file, pixels_in_order,
     centroid_solutions_json_file=None, domain_starting_index=0, fit_output_file='fit.json',
@@ -629,47 +756,54 @@ def gen_echellogram_fit_wvlsol(
 
     """
     # TODO: eliminate echellogram json file, and use centroid solutions values for y_list instead
-    identified_lines_sets = [json_dict_from_file(identified_lines_json_file) for identified_lines_json_file in identified_lines_json_files]
-    ref_indices_dicts = [json_dict_from_file(ref_indices_json_file)[band] for ref_indices_json_file in ref_indices_json_files]
-    num_orders = len(identified_lines_sets[0]['orders'])
-    indices = range(num_orders)
-    if centroid_solutions_json_file is not None:
-        domains = json_dict_from_file(centroid_solutions_json_file)['domain']
-        domains = domains[domain_starting_index:domain_starting_index+num_orders]
-    else:
-        if domain_ending_pixel is None:
-            domain_ending_pixel = pixels_in_order
-        domains = [(domain_starting_pixel, domain_ending_pixel) for j in indices]
-
-    fitdata = {'pixels':[], 'order':[], 'wavelength':[]}
-    for identified_lines, ref_indices_dict in zip(identified_lines_sets, ref_indices_dicts):
-        for j in indices:
-            order = identified_lines['orders'][j]
-            domain = domains[j]
-            wvls = identified_lines['wvl_list'][j]
-            pixpos = identified_lines['pixpos_list'][j]
-            ref_indices = identified_lines['ref_indices_list'][j]
-            fit_ref_indices = ref_indices_dict.get(str(order), [])
-            fit_ref_indices = [item for sublist in fit_ref_indices for item in sublist]  # flattening lists
-            wvls_array = np.asarray(wvls)
-            pixpos_array = np.asarray(pixpos)
-            ref_indices_array = np.asarray(ref_indices)
-
-            if len(fit_ref_indices) == 0:
-                fit_indices_array = np.zeros(ref_indices_array.shape, dtype=np.bool)
-            else:
-                repeat_list = np.asarray([ref_indices_array == i for i in fit_ref_indices])
-                fit_indices_array = np.all(repeat_list, axis=0)
-
-            domain_indices = np.logical_and(pixpos_array>domain[0], pixpos_array<domain[1], fit_indices_array)
-            pixpos = pixpos_array[domain_indices].tolist()
-            wvls = wvls_array[domain_indices].tolist()
-            order_list = [order for i in range(len(wvls))]
-            fitdata['wavelength'] = fitdata['wavelength'] + wvls
-            fitdata['pixels'] = fitdata['pixels'] + pixpos
-            fitdata['order'] = fitdata['order'] + order_list
-
-    fitdata_df = pd.DataFrame(fitdata)
+    # identified_lines_sets = [json_dict_from_file(identified_lines_json_file) for identified_lines_json_file in identified_lines_json_files]
+    # ref_indices_dicts = [json_dict_from_file(ref_indices_json_file)[band] for ref_indices_json_file in ref_indices_json_files]
+    # num_orders = len(identified_lines_sets[0]['orders'])
+    # indices = range(num_orders)
+    # if centroid_solutions_json_file is not None:
+    #     domains = json_dict_from_file(centroid_solutions_json_file)['domain']
+    #     domains = domains[domain_starting_index:domain_starting_index+num_orders]
+    # else:
+    #     if domain_ending_pixel is None:
+    #         domain_ending_pixel = pixels_in_order
+    #     domains = [(domain_starting_pixel, domain_ending_pixel) for j in indices]
+    #
+    # fitdata = {'pixels':[], 'order':[], 'wavelength':[], 'ref_indices': [], 'ref_name': []}
+    # for identified_lines, ref_indices_dict in zip(identified_lines_sets, ref_indices_dicts):
+    #     for j in indices:
+    #         order = identified_lines['orders'][j]
+    #         domain = domains[j]
+    #         wvls = identified_lines['wvl_list'][j]
+    #         pixpos = identified_lines['pixpos_list'][j]
+    #         ref_indices = identified_lines['ref_indices_list'][j]
+    #         fit_ref_indices = ref_indices_dict.get(str(order), [])
+    #         fit_ref_indices = [item for sublist in fit_ref_indices for item in sublist]  # flattening lists
+    #         wvls_array = np.asarray(wvls)
+    #         pixpos_array = np.asarray(pixpos)
+    #         ref_indices_array = np.asarray(ref_indices)
+    #
+    #         if len(fit_ref_indices) == 0:
+    #             fit_indices_array = np.zeros(ref_indices_array.shape, dtype=np.bool)
+    #         else:
+    #             repeat_list = np.asarray([ref_indices_array == i for i in fit_ref_indices])
+    #             fit_indices_array = np.all(repeat_list, axis=0)
+    #
+    #         domain_indices = np.logical_and(pixpos_array>domain[0], pixpos_array<domain[1], fit_indices_array)
+    #         pixpos = pixpos_array[domain_indices].tolist()
+    #         wvls = wvls_array[domain_indices].tolist()
+    #         refs = ref_indices_array[domain_indices].tolist()
+    #         order_list = [order for i in range(len(wvls))]
+    #         fitdata['wavelength'] = fitdata['wavelength'] + wvls
+    #         fitdata['pixels'] = fitdata['pixels'] + pixpos
+    #         fitdata['order'] = fitdata['order'] + order_list
+    #         fitdata['ref_indices'] = fitdata['ref_indices'] + refs
+    #         fitdata['ref_name'] = fitdata['ref_name'] + [identified_lines['ref_name'] for i in pixpos]
+    #
+    # fitdata_df = pd.DataFrame(fitdata)
+    fitdata_df = load_fitdata_df(
+        identified_lines_json_files, ref_indices_json_files, band, centroid_solutions_json_file, domain_starting_index,
+        domain_starting_pixel, domain_ending_pixel, pixels_in_order
+    )
     if p_init_pickle is not None:
         with open(p_init_pickle, 'rb') as f:
             p_init = pickle.load(f)
@@ -692,6 +826,10 @@ def gen_echellogram_fit_wvlsol(
 
     fit_dict = gen_error_dict(p, fitdata_df, pickle_output_file)
     save_dict_to_json(fit_dict, fit_output_file)
+    fitdata_df_to_identified_lines(
+        fitdata_df,
+        os.path.join(os.path.dirname(output_file), 'low_error', 'identified_lines.{}.low_error.'.format(band))
+    )
 
     with open(pickle_output_file, 'wb') as f:
         pickle.dump(p, f)
@@ -699,10 +837,11 @@ def gen_echellogram_fit_wvlsol(
         'wvl_list': [], 'x_list': [], 'y_list': [], 'orders': [],
     }
     pixels = np.arange(0, pixels_in_order)
-    for order in identified_lines_sets[0]['orders']:
-        p_out = p(pixels, np.asarray([order for i in range(pixels_in_order)]))
-        wvl = p_out / order
-        json_dict['orders'].append(order)
+    for order in fitdata_df['orders'].unique():
+        order_int = int(order)
+        p_out = p(pixels, np.asarray([order_int for i in range(pixels_in_order)]))
+        wvl = p_out / order_int
+        json_dict['orders'].append(order_int)
         json_dict['x_list'].append(pixels.tolist())
         json_dict['wvl_list'].append(wvl.tolist())
     json_dict['y_list'] = json_dict_from_file(echellogram_json_file)['y_list']
@@ -843,8 +982,13 @@ def json_dict_from_file(json_file):
 
 def save_dict_to_json(dictionary, filename):
     json_string = json.dumps(dictionary)
-    with open(filename, 'w') as f:
-        f.write(json_string)
+    try:
+        with open(filename, 'w') as f:
+            f.write(json_string)
+    except FileNotFoundError:
+        os.makedirs(os.path.dirname(filename))
+        with open(filename, 'w') as f:
+            f.write(json_string)
 
 
 def fill_in_nan(oned_array, maskzeros=True, return_linear_fit_array=False):
@@ -1045,13 +1189,16 @@ def plt_resolving_power(identified_lines_json):
 if __name__ == '__main__':
     run_gen_oned_spec = False
     run_gen_oned_maps = False
-    run_gen_identified_lines = True
+    run_gen_identified_lines = False
     run_gen_echellogram = False
     run_gen_echellogram_fit_wvlsol = False
     run_gen_ref_indices = False
-    run_plot_error = True
-    run_plot_oned_spec = True
-    run_plot_residuals = True
+    run_remove_high_error_lines = True
+    run_plot_error = False
+    run_plot_oned_spec = False
+    run_plot_residuals = False
+    pix_deg = 3
+    order_deg = 3
     # RIMAS files
     spectral_band = 'YJ'
     band_domain = {
@@ -1061,8 +1208,7 @@ if __name__ == '__main__':
     pixel_start, pixel_end = band_domain[spectral_band]
     order_map = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\rimas_h4rg\rollover-removed\{}_order_map_extended.fits'.format(spectral_band)
     wavemap   = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\rimas_h4rg\rollover-removed\{}_wavmap_extended.fits'.format(spectral_band)
-    spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\20220622\on-off-subtracted\xenon-mercury-argon.{}.fits'.format(
-        spectral_band)
+    # xenon - mercury - argon
     # spectrum = r''
     flat_spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\20220622\on-off-subtracted\cals.{}.fits'.format(
         spectral_band)
@@ -1077,16 +1223,33 @@ if __name__ == '__main__':
     # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\20220622\on-off-subtracted\xenon-mercury-argon.HK.fits'
     # ohline_dat = r'C:\Users\durba\PycharmProjects\plp\master_calib\igrins\ohlines.dat'
     elements = [
-        'Xe',
-        'Hg',
-        'Ar',
-        'Kr'
+        # 'Xe',
+        # 'Hg',
+        # 'Ne',
+        # 'Ar',
+        # 'Kr',
+        'XeHgAr'
     ]
+    elements_dict = {
+        'Xe': 'xenon',
+        'Hg': 'mercury',
+        'Ar': 'argon',
+        'Kr': 'krypton',
+        'XeHgAr': 'xenon-mercury-argon',
+        'XeHgArKr': 'xenon-argon-krypton-mercury',
+    }
     elements_str = ''.join(elements)
+    # elements_str = 'Kr'
+    try:
+        element = elements_dict[elements_str]
+    except KeyError:
+        element = ''
+    spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\20220622\on-off-subtracted\{}.{}.fits'.format(
+        element, spectral_band)
     spectrum_type = 'arc' + '.' + elements_str
     ohline_dat = r'C:\Users\durba\PycharmProjects\plp\master_calib\rimas\{}_lines.dat'.format(elements_str)
     element_dats = [r'C:\Users\durba\PycharmProjects\plp\master_calib\rimas\{}_lines.dat'.format(e) for e in elements]
-    # combine_lines_dat(element_dats, ohline_dat)
+    combine_lines_dat(element_dats, ohline_dat)
     # # ohline_dat = 'even_spaced_25.dat'
     # # ohline_dat = 'even_spaced_10.dat'
     # centroid_solutions_file = r'..\calib\primary\20201008\FLAT_rimas.0000.YJ.C0.centroid_solutions.json'
@@ -1094,7 +1257,7 @@ if __name__ == '__main__':
     # # output_dir = 'pickle_fit_test_med_oh'
     # # output_dir = 'even_spaced_25-stuermer'
     # # output_dir = 'even_spaced_10-stuermer'
-    output_dir = 'rimas_h4rg_arc_comb'
+    output_dir = 'rimas_h4rg_arc_comb_low_error'
 
     # DeVeny files
 
@@ -1127,7 +1290,6 @@ if __name__ == '__main__':
     echellogram_output_file = os.path.join(output_dir, '{}.{}_echellogram.json'.format(spectral_band, elements_str))
     ref_indices_output_format = os.path.join(output_dir, 'ref_{}lines_indices.json')
     ref_indices_output_file = ref_indices_output_format.format(spectrum_type)
-    fit_output_filename = os.path.join(output_dir, 'fit_p{}m{}-domain.'+spectral_band+'.json')
     updated_identified_lines_output_filename = identified_lines_output_filename.replace('.json', 'update.json')
     curve_fit_echellogram_output_filename = echellogram_output_file.replace('.json', '_curvefit.json')
     fit_wvlsol_echellogram_output_filename = echellogram_output_file.replace('.json', '_multiple_id_lines_curvefit_peaks_fit_wvlsol__p{}_o{}.json')
@@ -1135,14 +1297,15 @@ if __name__ == '__main__':
     # p_init_pickle_filename = r'C:\Users\durba\PycharmProjects\plp\master_calib_creation\rimas_h4rg_arc_comb\HK.XeHgArKr_echellogram_fit_wvlsol__p4_o3.p'
     # even_spaced_dat = 'even_spaced_10.dat'
     # even_spaced_csv = even_spaced_dat.replace('dat', 'csv')
-    pix_deg = 3
-    order_deg = 3
+    fit_output_filename = 'fit_p{}m{}-domain.json' + spectral_band
     fit_output_filename = fit_output_filename.format(pix_deg, order_deg)
+    fit_output_filename = fit_wvlsol_echellogram_output_filename.replace('.json', fit_output_filename)
     fit_wvlsol_echellogram_output_filename = fit_wvlsol_echellogram_output_filename.format(pix_deg, order_deg)
     fit_wvlsol_pickle_output_filename = fit_wvlsol_echellogram_output_filename.replace('.json', '.p')
     fit_wvlsol_pickle_init_dict = {
-        'HK': r'C:\Users\durba\PycharmProjects\plp\master_calib_creation\rimas_h4rg_arc_comb\HK.XeHgArKr_echellogram_fit_wvlsol__p4_o3.p',
-        'YJ': 'rimas_h4rg_arc_comb\\YJ.XeArKr_echellogram_multiple_id_lines_curvefit_peaks_fit_wvlsol__p3_o3.p'
+        # 'HK': r'C:\Users\durba\PycharmProjects\plp\master_calib_creation\rimas_h4rg_arc_comb\HK.XeHgArKr_echellogram_fit_wvlsol__p4_o3.p',
+        'HK': None,
+        'YJ': 'rimas_h4rg_arc_comb_low_error\\YJ.XeHgArKr_echellogram_multiple_id_lines_curvefit_peaks_fit_wvlsol__p3_o3.p'
     }
     fit_wvlsol_pickle_init_filename = fit_wvlsol_pickle_init_dict[spectral_band]
     # p_init_pickle_filename = p_init_pickle_filename.format(pix_deg, order_deg)
@@ -1190,6 +1353,19 @@ if __name__ == '__main__':
             pixel_degree=pix_deg, order_degree=order_deg, pickle_output_file=fit_wvlsol_pickle_output_filename,
             band=spectral_band, sigma=1, domain_starting_pixel=pixel_start, domain_ending_pixel=pixel_end
             # p_init_pickle=fit_wvlsol_pickle_init_filename
+        )
+    if run_remove_high_error_lines:
+        # fit_pickle, fit_output_file, fit_error_dict, error_sigma, identified_lines_json_files, ref_indices_json_files,
+        # band,
+        # centroid_solutions_json_file = None, domain_starting_index = 4, domain_starting_pixel = 0, domain_ending_pixel = None,
+        # pixels_in_order = 4096
+        remove_high_error_lines(
+            fit_wvlsol_pickle_init_filename,
+            identified_lines_output_format.format('fit.{}'.format(element), spectral_band),
+            r'rimas_h4rg_arc_comb_low_error\fit_p3m3-domain.YJ.json', 2,
+            [identified_lines_output_format.format('arc.{}'.format(element), spectral_band) for element in elements],
+            [ref_indices_output_format.format('arc.{}'.format(element)) for element in elements], spectral_band, None,
+            3, pixel_start, pixel_end, 4096
         )
     if run_plot_error:
         print(fit_output_filename)
