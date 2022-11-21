@@ -664,8 +664,8 @@ def reconcile_id_lines_and_ref_indices(identified_lines_json_files, ref_indices_
                 for ref_ind in ref_ind_list:
                     if ref_ind in lines:
                         ref_ind_list_new.append(ref_ind)
-                    if ref_ind_list_new:
-                        ref_indices_new.append(ref_ind_list_new)
+                if ref_ind_list_new:
+                    ref_indices_new.append(ref_ind_list_new)
             ref_indices_dict[band][str(order)] = ref_indices_new
         save_dict_to_json(ref_indices_dict, os.path.join(os.path.dirname(ident_lines), os.path.basename(ref_indices)))
 
@@ -1362,7 +1362,7 @@ if __name__ == '__main__':
         remove_high_error_lines(
             fit_wvlsol_pickle_init_filename,
             identified_lines_output_format.format('fit.{}'.format(element), spectral_band),
-            r'rimas_h4rg_arc_comb_low_error\fit_p3m3-domain.YJ.json', 2,
+            r'rimas_h4rg_arc_comb_low_error\fit_p3m3-domain.YJ.json', 5,
             [identified_lines_output_format.format('arc.{}'.format(element), spectral_band) for element in elements],
             [ref_indices_output_format.format('arc.{}'.format(element)) for element in elements], spectral_band, None,
             3, pixel_start, pixel_end, 4096
