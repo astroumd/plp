@@ -4,7 +4,7 @@ from random import randint
 
 from astropy.io import fits
 import cv2
-from lacosmic import lacosmic
+# from lacosmic import lacosmic
 from matplotlib import pyplot as plt
 import numpy as np
 from PIL import Image
@@ -171,36 +171,36 @@ class BaseImage:
         # TODO: figure out why this isn't working, consider using astropy.convolution instead
         self.image = filters.rank.mean(self.image, selem=disk(disk_radius))
 
-    def cosmic_filter(
-            self, contrast, cr_threshold, neighbor_threshold, error=None, mask=None, background=None,
-            effective_gain=None, readnoise=None, maxiter=4, border_mode=u'mirror'
-            ):
-        """
-        Cleans cosmic rays from image using lacosmic algorithm
-
-        Parameters
-        ----------
-        contrast :
-        cr_threshold :
-        neighbor_threshold :
-        error :
-        mask :
-        background :
-        effective_gain :
-        readnoise :
-        maxiter :
-        border_mode :
-
-        Returns
-        -------
-
-        """
-        # TODO: figure out which parameters work best for this. Ask JWST folks, Dale or Bernie, what they used for this
-        self.image = lacosmic(
-            self.image, contrast=contrast, cr_threshold=cr_threshold, neighbor_threshold=neighbor_threshold,
-            error=error, mask=mask, background=background, effective_gain=effective_gain, readnoise=readnoise,
-            maxiter=maxiter, border_mode=border_mode
-        )
+    # def cosmic_filter(
+    #         self, contrast, cr_threshold, neighbor_threshold, error=None, mask=None, background=None,
+    #         effective_gain=None, readnoise=None, maxiter=4, border_mode=u'mirror'
+    #         ):
+    #     """
+    #     Cleans cosmic rays from image using lacosmic algorithm
+    #
+    #     Parameters
+    #     ----------
+    #     contrast :
+    #     cr_threshold :
+    #     neighbor_threshold :
+    #     error :
+    #     mask :
+    #     background :
+    #     effective_gain :
+    #     readnoise :
+    #     maxiter :
+    #     border_mode :
+    #
+    #     Returns
+    #     -------
+    #
+    #     """
+    #     # TODO: figure out which parameters work best for this. Ask JWST folks, Dale or Bernie, what they used for this
+    #     self.image = lacosmic(
+    #         self.image, contrast=contrast, cr_threshold=cr_threshold, neighbor_threshold=neighbor_threshold,
+    #         error=error, mask=mask, background=background, effective_gain=effective_gain, readnoise=readnoise,
+    #         maxiter=maxiter, border_mode=border_mode
+    #     )
 
     def slice(self, x_range=(), y_range=()):
         """
