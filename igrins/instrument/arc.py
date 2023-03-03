@@ -2,6 +2,7 @@ import os
 
 import astropy.units as u
 from astroquery.nist import Nist
+from astroquery.atomic import AtomicLineList
 import numpy as np
 import pandas as pd
 from statistics import mode
@@ -48,6 +49,26 @@ def get_lines(config_dict=config):
         lines = q['Observed']
         _mask = lines.mask
         lines[_mask] = q['Ritz'][_mask]
+        print(lines.shape)
+        # lines = lines[~lines.mask]
+        lines_dict[element] = lines.data
+    return lines_dict
+
+
+def get_lines_atomic(config_dict=config):
+    lines_dict = {}
+    for element in config_dict['elements']:
+        q = AtomicLineList.query_object(
+            (config_dict['wavelength_range'][0] * config_dict['units'],
+            config_dict['wavelength_range'][1] * config_dict['units']),
+            element_spectrum=element,
+            # output_order='wavelength',
+            wavelength_type='Vacuum',
+            wavelength_accuracy=5
+        )
+        lines = q['LAMBDA']
+        # _mask = lines.mask
+        # lines[_mask] = q['Ritz'][_mask]
         print(lines.shape)
         # lines = lines[~lines.mask]
         lines_dict[element] = lines.data
@@ -144,7 +165,7 @@ if __name__ == '__main__':
     bands = ['HK', 'YJ']
     csv_dir = r'C:\Users\durba\Downloads'
     dat_dir = "..\\..\\master_calib\\rimas"
-    for element, wavelengths in get_lines().items():
+    for element, wavelengths in get_lines_atomic().items():
         element_str = element.split()[0]
         for band in bands:
             csv_file = '{band}_{element}_spectrum.csv'.format(band=band, element=element_str)
