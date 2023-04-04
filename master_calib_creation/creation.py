@@ -936,7 +936,7 @@ def gen_echellogram_fit_wvlsol(
         'wvl_list': [], 'x_list': [], 'y_list': [], 'orders': [],
     }
     pixels = np.arange(0, pixels_in_order)
-    for order in fitdata_df['orders'].unique():
+    for order in fitdata_df['order'].unique():
         order_int = int(order)
         p_out = p(pixels, np.asarray([order_int for i in range(pixels_in_order)]))
         wvl = p_out / order_int
@@ -1337,13 +1337,35 @@ def recipe_reduce(recipe_file, data_dir):
             ArrayImage(_res_image).save(_save_name)
 
 
+def update_ref_indices(old_dat, new_dat, ref_indices, identified_lines):
+    old_dat_wvl = load_lines_dat(old_dat)[0]
+    new_dat_wvl = load_lines_dat(new_dat)
+    translation_dict = {}
+    for i, wvl in enumerate(old_dat_wvl):
+        translation_dict[i] = find_nearest(new_dat_wvl, wvl)[1]
+    ref_indices_dict = json_dict_from_file(ref_indices)
+    identified_lines_dict = json_dict_from_file(identified_lines)
+    new_ref_indices = {}
+    for band, band_dict in ref_indices_dict.items():
+        new_ref_indices[band] = {}
+        for order, index in band_dict.items():
+            new_ref_indices[band][order] = [[translation_dict[i] for i in lst] for lst in index]
+    identified_lines_ref_indices = identified_lines_dict['ref_indices_list']
+    new_identified_lines_ref_indices = [[translation_dict[i] for i in lst] for lst in identified_lines_ref_indices]
+    identified_lines_dict['ref_indices_list'] = new_identified_lines_ref_indices
+    new_dat_basename = os.path.basename(new_dat)
+    identified_lines_dict["ref_name"] = new_dat_basename
+    save_dict_to_json(identified_lines_ref_indices, identified_lines.replace('.json', new_dat_basename+'.json'))
+    save_dict_to_json(new_ref_indices, ref_indices.replace('.json', new_dat_basename+'.json'))
+
+
 if __name__ == '__main__':
     run_recipe_reduce = False
     run_gen_oned_spec = False
     run_gen_oned_maps = False
-    run_gen_identified_lines = True
+    run_gen_identified_lines = False
     run_gen_echellogram = False
-    run_gen_echellogram_fit_wvlsol = False
+    run_gen_echellogram_fit_wvlsol = True
     run_gen_ref_indices = False
     run_remove_high_error_lines = False
     run_plot_error = False
@@ -1378,12 +1400,13 @@ if __name__ == '__main__':
     # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\20220622\on-off-subtracted\xenon-mercury-argon.HK.fits'
     # ohline_dat = r'C:\Users\durba\PycharmProjects\plp\master_calib\igrins\ohlines.dat'
     elements = [
-        # 'Xe',
+        'Xe',
         # 'Hg',
         # 'Ne',
         'Ar',
-        # 'Kr',
-        # 'XeHgAr'
+        'Kr',
+        # 'Xe
+        # HgAr'
     ]
     elements_dict = {
         'Xe': 'xenon',
@@ -1459,8 +1482,8 @@ if __name__ == '__main__':
     fit_wvlsol_echellogram_output_filename = fit_wvlsol_echellogram_output_filename.format(pix_deg, order_deg)
     fit_wvlsol_pickle_output_filename = fit_wvlsol_echellogram_output_filename.replace('.json', '.p')
     fit_wvlsol_pickle_init_dict = {
-        # 'HK': r'C:\Users\durba\PycharmProjects\plp\master_calib_creation\rimas_h4rg_arc_comb\HK.XeHgArKr_echellogram_fit_wvlsol__p4_o3.p',
-        'HK': None,
+        # 'HK': None,
+        'HK': r'rimas_h4rg_arc_pattern_test\HK.XeArKr_echellogram_multiple_id_lines_curvefit_peaks_fit_wvlsol__p3_o3.p',
         'YJ': 'rimas_h4rg_arc_comb_low_error\\YJ.XeHgArKr_echellogram_multiple_id_lines_curvefit_peaks_fit_wvlsol__p3_o3.p'
     }
     fit_wvlsol_pickle_init_filename = fit_wvlsol_pickle_init_dict[spectral_band]
@@ -1486,8 +1509,8 @@ if __name__ == '__main__':
         gen_identified_lines(
             skyline_output_filename, wavemap_output_filename, ohline_dat, identified_lines_output_filename,
             ref_indices_output_file, spectral_band,
-            # p_init_pickle=fit_wvlsol_pickle_init_filename,
-            p_init_pickle=os.path.join(output_dir, 'argon_pattern_wvl_sol.p'),
+            p_init_pickle=fit_wvlsol_pickle_init_filename,
+            # p_init_pickle=os.path.join(output_dir, 'argon_pattern_wvl_sol.p'),
             plt_peak=True,
             manual_filter_peak=True,
             domain_starting_pixel=pixel_start, domain_ending_pixel=pixel_end,
@@ -1526,7 +1549,7 @@ if __name__ == '__main__':
             # centroid_solutions_file, 3,
             fit_output_file=fit_output_filename,
             pixel_degree=pix_deg, order_degree=order_deg, pickle_output_file=fit_wvlsol_pickle_output_filename,
-            band=spectral_band, sigma=1, domain_starting_pixel=pixel_start, domain_ending_pixel=pixel_end
+            band=spectral_band, sigma=3, domain_starting_pixel=pixel_start, domain_ending_pixel=pixel_end
             # p_init_pickle=fit_wvlsol_pickle_init_filename
         )
     if run_remove_high_error_lines:
@@ -1537,7 +1560,7 @@ if __name__ == '__main__':
         remove_high_error_lines(
             fit_wvlsol_pickle_init_filename,
             identified_lines_output_format.format('fit.{}'.format(element), spectral_band),
-            r'rimas_h4rg_arc_comb_low_error\fit_p3m3-domain.YJ.json', 5,
+            r'rimas_h4rg_arc_comb_low_error\fit_p3m3-domain.YJ.json', 3,
             [identified_lines_output_format.format('arc.{}'.format(element), spectral_band) for element in elements],
             [ref_indices_output_format.format('arc.{}'.format(element)) for element in elements], spectral_band, None,
             3, pixel_start, pixel_end, 4096
