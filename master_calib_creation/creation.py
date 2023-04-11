@@ -428,7 +428,7 @@ def gen_identified_lines(
         oned_spec_json_file, oned_wavemap_file, lines_dat_file, output_file, ref_indices_output, band,
         p_init_pickle=None,
         plt_peak=False, plt_wvl=False, plt_pix=False, manual_filter_peak=False, domain_starting_pixel=0,
-        domain_ending_pixel=None, sigma_filter=False,
+        domain_ending_pixel=None, sigma_filter=False, peak_finder_sigma=6
 ):
     """
     Creates identified lines calibration file
@@ -455,6 +455,7 @@ def gen_identified_lines(
     domain_starting_pixel :
     domain_ending_pixel :
     sigma_filter :
+    peak_finder_sigma :
 
     Returns
     -------
@@ -512,7 +513,7 @@ def gen_identified_lines(
 
     for order, spec, wavelengths in zip(orders, specs, map_wavelengths_array):
         try:
-            peaks = np.asarray(find_peaks(np.asarray(spec), sigma=6))
+            peaks = np.asarray(find_peaks(np.asarray(spec), sigma=peak_finder_sigma))
             peaks = peaks[np.logical_and(peaks[:,0]<domain_ending_pixel, peaks[:,0] > domain_starting_pixel)]
             peaks, ref_indices_groups = curve_fit_peak(
                 spec, peaks, wavelengths, line_wavelengths, plt_peak=plt_peak, manual_filter_peak=manual_filter_peak,
