@@ -14,10 +14,10 @@ config = {
         # 'Kr',
         # 'Ne'
     ],
-    'wavelength_range': (0.900, 2.600),
+    'wavelength_range': (0.800, 1.00),
     'wavelength_error': 0.0008,
     'units': u.micron,
-    'bands': ['HK', 'YJ'],
+    'bands': ['ArI'],  # ['HK', 'YJ'],
     'wavelength_steps': 0.1
 }
 
@@ -140,7 +140,7 @@ def combine_lines_dat(dat_iterable, output_dat_filename):
     _combined_index = []
 
     for wave in unique_waves:
-        _slice = waves==wave
+        _slice = waves == wave
         _intensity = np.sum(_intensities[_slice])
         _max_int = np.max(_intensities[_slice])
         _max_int_index = np.where(_intensities[_slice] == _max_int)[0][0]

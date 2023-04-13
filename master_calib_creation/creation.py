@@ -428,7 +428,7 @@ def gen_identified_lines(
         oned_spec_json_file, oned_wavemap_file, lines_dat_file, output_file, ref_indices_output, band,
         p_init_pickle=None,
         plt_peak=False, plt_wvl=False, plt_pix=False, manual_filter_peak=False, domain_starting_pixel=0,
-        domain_ending_pixel=None, sigma_filter=False,
+        domain_ending_pixel=None, sigma_filter=False, peak_finder_sigma=6
 ):
     """
     Creates identified lines calibration file
@@ -455,6 +455,7 @@ def gen_identified_lines(
     domain_starting_pixel :
     domain_ending_pixel :
     sigma_filter :
+    peak_finder_sigma :
 
     Returns
     -------
@@ -512,7 +513,7 @@ def gen_identified_lines(
 
     for order, spec, wavelengths in zip(orders, specs, map_wavelengths_array):
         try:
-            peaks = np.asarray(find_peaks(np.asarray(spec), sigma=6))
+            peaks = np.asarray(find_peaks(np.asarray(spec), sigma=peak_finder_sigma))
             peaks = peaks[np.logical_and(peaks[:,0]<domain_ending_pixel, peaks[:,0] > domain_starting_pixel)]
             peaks, ref_indices_groups = curve_fit_peak(
                 spec, peaks, wavelengths, line_wavelengths, plt_peak=plt_peak, manual_filter_peak=manual_filter_peak,
@@ -1363,9 +1364,9 @@ if __name__ == '__main__':
     run_recipe_reduce = False
     run_gen_oned_spec = False
     run_gen_oned_maps = False
-    run_gen_identified_lines = False
+    run_gen_identified_lines = True
     run_gen_echellogram = False
-    run_gen_echellogram_fit_wvlsol = True
+    run_gen_echellogram_fit_wvlsol = False
     run_gen_ref_indices = False
     run_remove_high_error_lines = False
     run_plot_error = False
@@ -1400,13 +1401,14 @@ if __name__ == '__main__':
     # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\20220622\on-off-subtracted\xenon-mercury-argon.HK.fits'
     # ohline_dat = r'C:\Users\durba\PycharmProjects\plp\master_calib\igrins\ohlines.dat'
     elements = [
-        'Xe',
+        # 'Xe',
         # 'Hg',
         # 'Ne',
-        'Ar',
-        'Kr',
+        # 'Ar',
+        # 'Kr',
         # 'Xe
-        # HgAr'
+        # HgAr',
+        'XeHgAr'
     ]
     elements_dict = {
         'Xe': 'xenon',
@@ -1427,7 +1429,8 @@ if __name__ == '__main__':
     spectrum_type = 'arc' + '.' + elements_str
     ohline_dat = r'C:\Users\durba\PycharmProjects\plp\master_calib\rimas\{}_lines.dat'.format(elements_str)
     element_dats = [r'C:\Users\durba\PycharmProjects\plp\master_calib\rimas\{}_lines.dat'.format(e) for e in elements]
-    # combine_lines_dat(element_dats, ohline_dat)
+    combine_dats = [r'C:\Users\durba\PycharmProjects\plp\master_calib\rimas\{}_lines.dat'.format(e) for e in ['Xe', 'Ar']]
+    # combine_lines_dat(combine_dats, ohline_dat)
     # # ohline_dat = 'even_spaced_25.dat'
     # # ohline_dat = 'even_spaced_10.dat'
     # centroid_solutions_file = r'..\calib\primary\20201008\FLAT_rimas.0000.YJ.C0.centroid_solutions.json'
