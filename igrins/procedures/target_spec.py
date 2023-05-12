@@ -612,8 +612,6 @@ def extract_extended_spec(obsset, lacosmic_thresh=0., calculate_sn=True):
         helper = ResourceHelper(obsset)
         wvl_solutions = helper.get("wvl_solutions")
         
-        print("NJM SORTING DOMAIN_LIST THOUGH IT IS PROBABLY ALREADY SORTED")
-        print("WHEN CONVERTING FROM DICTIONARY")
         key_list = []
         domain_list = []
         for key in ap.domain_dict:
@@ -709,8 +707,6 @@ def extract_extended_spec_ver2(obsset, lacosmic_thresh=0., calculate_sn=True):
     if calculate_sn:
         wvl_solutions = helper.get("wvl_solutions")
 
-        print("NJM SORTING DOMAIN_LIST THOUGH IT IS PROBABLY ALREADY SORTED")
-        print("WHEN CONVERTING FROM DICTIONARY")
         key_list = []
         domain_list = []
         for key in ap.domain_dict:

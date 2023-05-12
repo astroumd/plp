@@ -297,7 +297,6 @@ class Apertures(object):
         slices = ni.find_objects(ordermap)
 
         for o in self.orders_to_extract:
-            print("ORDER:", o)
             domain = self.domain_dict[o]
             sl = slices[o-1][0], slice(domain[0], domain[1]+1)
             msk = (ordermap[sl] == o)

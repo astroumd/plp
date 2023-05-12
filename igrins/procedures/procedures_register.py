@@ -108,14 +108,6 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst, domains):
 
             cor = correlate(s_src, s_dst, mode="same")
 
-        #import matplotlib.pyplot as plt
-        #plt.figure()
-        #plt.plot(cor)
-        #plt.figure()
-        #plt.plot(s_src)
-        #plt.plot(s_dst)
-        #plt.show()
-
         cor_list.append(cor)
         offset = center - np.argmax(cor)
         offsets.append(offset)
@@ -135,7 +127,6 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst, domains):
 
     xi = np.arange(len(offsets))
     #data = np.array([xi, offsets]).T
-    print("USING OFFSETS AFTER ADDING IN DOMAIN CUTOFF FOR BETTER OUTLIER CALCULATION")
     data = np.array([xi, offsets_corr]).T
     model_robust, inliers = ransac(data,
                                    LineModel, min_samples=3,
