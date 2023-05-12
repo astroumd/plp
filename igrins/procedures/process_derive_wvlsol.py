@@ -30,14 +30,6 @@ def _fit_2d(xl, yl, zlo, nx, xdeg=4, ydeg=3, p_init=None):
     fit_params = dict(x_degree=xdeg, y_degree=ydeg,
                       x_domain=x_domain, y_domain=y_domain)
 
-    import matplotlib.pyplot as plt
-    plt.figure( 'XL vs YL')
-    plt.scatter(xl[msk], yl[msk])
-    plt.xlabel('X Position')
-    plt.ylabel('Order')
-    plt.show()
-
-
     p, m = fit_2dspec(xl[msk], yl[msk], zlo[msk], p_init=p_init, **fit_params)
 
     from .astropy_poly_helper import serialize_poly_model
@@ -80,9 +72,8 @@ def derive_wvlsol(obsset, fit_type='sky'):
     msk = df["slit_center"] == 0.5
     dfm = df[msk]
 
-    print("REMOVING BAD GAUSSIAN FITS (-20) FROM WVL SOLUTION FIT")
+    #print("REMOVING BAD GAUSSIAN FITS (-20) FROM WVL SOLUTION FIT")
     msk = np.ones(len(dfm), dtype=bool)
-    print("BEFORE:", len(dfm))
     params = dfm['params']
     for i in range(len(dfm)):
         if params[i][0] == -20:

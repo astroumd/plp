@@ -12,6 +12,7 @@ from ..procedures.target_spec import (setup_extraction_parameters,
                                       store_2dspec)
 
 from ..procedures.a0v_flatten import flatten_a0v
+from ..procedures.a0v_telluric_pypeit import flatten_a0v as flatten_a0v_pypeit
 
 from ..pipeline.steps import Step
 
@@ -100,6 +101,10 @@ def update_db(obsset):
 
 steps_a0v = steps_stellar + [Step("Flatten A0V", flatten_a0v),
                              Step("Update db", update_db)
+]
+
+steps_a0v_pypeit = steps_stellar + [Step("Flatten A0V (Pypeit)", flatten_a0v_pypeit),
+                                    Step("Update db", update_db)
 ]
 
 

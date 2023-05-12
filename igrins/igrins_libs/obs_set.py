@@ -236,8 +236,9 @@ class ObsSet(object):
 
             #NOT ANYMORE
             #The RIMAS images are transposed from orders are analyzed in the code
-            #if self.expt.lower() == 'rimas':
-            #    hdu.data = hdu.data.T
+            if self.expt.lower() == 'rimas':
+                print("TRANSPOSING RIMAS DATA")
+                hdu.data = hdu.data.T
 
             #TESTING padding the Deveny image since there is no actual boundary in the
             #image for the order

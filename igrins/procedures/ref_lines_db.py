@@ -120,6 +120,8 @@ def ref_lines_reidentify(ref_lines, s, x,
 def get_ref_list1(ohlines, line_indices,
                   wvlsol0, x=None, domain=None):
     ref_wvl = get_ref_wavelengths(ohlines, line_indices)
+    #print("REF_WVL:", ref_wvl)
+    #print("WVL DOMAIN:", wvlsol0[domain[0]], wvlsol0[domain[1]])
     line_list = get_ref_pixels(ref_wvl, wvlsol0, x=x, domain=domain)
    
     #TODO: REMOVE
@@ -227,8 +229,11 @@ class RefLinesDBBase:
         """
         return RefLinesCollection instance
         """
+        #print("ORDER_LIST:", np.shape(order_list))
+        #print("WVL_LIST:", np.shape(wvl_list))
         ref_lines_list = [self.get_ref_lines(o, wvl, x)
                           for o, wvl in zip(order_list, wvl_list)]
+        #zzz
 
         ref_lines_coll = RefLinesCollection(ref_lines_list)
         return ref_lines_coll
@@ -332,6 +337,8 @@ class ThArLinesDB(RefLinesDBBase):
         """
         thar_ref_data = self._get_refdata()
 
+        #print("THAR_REF_DATA:", thar_ref_data)
+
         tharlines_db = thar_ref_data["tharlines_db"]
         try:
             line_indices = thar_ref_data["tharline_indices"][o]
@@ -340,6 +347,13 @@ class ThArLinesDB(RefLinesDBBase):
 
         _ref_lines = get_ref_list1(tharlines_db, line_indices,
                                    wvl, x=x, domain=self.domain[o])
+
+        #print("ORDER:", o)
+        #print("line_indices:", line_indices)
+        #print("DOMAIN:", self.domain[o])
+        #print("_REF_LINES:", _ref_lines)
+        #if o == 30:
+        #    zzz
        
         _ref_lines["order"] = o
 

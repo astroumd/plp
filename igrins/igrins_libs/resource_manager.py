@@ -15,7 +15,7 @@ from .master_calib import (query_ref_value,
                            query_ref_data_path,
                            get_ref_loader)
 
-
+#TODO: Write DEVENY and RIMAS ref loaders
 class IGRINSRefLoader(object):
     def __init__(self, config, band):
         self.config = config

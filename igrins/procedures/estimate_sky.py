@@ -23,6 +23,18 @@ def estimate_background(data, msk, di=24, min_pixel=10, nx=4096):
         index_selected = index[labeled_sum > min_pixel]
 
         segmented_slices = []
+        #print("SSS:", i0, di, np.shape(data), np.shape(bar))
+        #print("INDEX_SELECTED:", index_selected)
+        #print("SSS:", min_pixel)
+        #print("TTT:", nlabels)
+        #import matplotlib.pyplot as plt
+        #plt.figure('BAR_MSK')
+        #plt.imshow(bar_msk)
+        #plt.figure('LABELED')
+        #plt.imshow(labeled)
+        #plt.show()
+        #zzz
+
         for ind in index_selected:
             sl_y, sl_x = object_slices[ind-1]
             height = sl_y.stop - sl_y.start
@@ -44,6 +56,7 @@ def estimate_background(data, msk, di=24, min_pixel=10, nx=4096):
 
 
         sky_points = []
+        #print("SEGMENTED SLICES:", segmented_slices)
         for sl_y, sl_x, ind in segmented_slices:
             bar_sl = bar[sl_y, sl_x]
             labeled_sl = labeled[sl_y, sl_x]

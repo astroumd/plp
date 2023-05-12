@@ -396,28 +396,10 @@ def extract_stellar_spec(obsset, extraction_mode="optimal",
 
     s_list, v_list, cr_mask, aux_images = _
 
-    #NJM REMOVE EVENTUALLY
-    print("NJM COMMENTED OUT PROFILE_MAP PLOT")
-    #print("SSS:", len(s_list), len(s_list[0]))
-    #import matplotlib.pyplot as plt
-    #plt.figure("S_LIST")
-    #i = 0
-    #for s in s_list[4:-4]:
-    #    plt.plot(s, label=str(i+30))
-    #    i += 1
-    #plt.plot(s_list[0], label='1')
-    #plt.legend(loc=0, prop={'size': 12})
-
-    #plt.figure("PROFILE_MAP")
-    #plt.imshow(profile_map)
-    #plt.show()
-
     if calculate_sn:
         # calculate S/N per resolution
         wvl_solutions = helper.get("wvl_solutions")
 
-        #NJM: SORTING DOMAIN_LIST THOUGH IT IS PROBABLY ALREADY SORTED
-        #WHEN CONVERTING FROM DICTIONARY
         key_list = []
         domain_list = []
         for key in ap.domain_dict:
@@ -427,7 +409,6 @@ def extract_stellar_spec(obsset, extraction_mode="optimal",
         domain_list_sort = []
         for idx in idx_sort:
             domain_list_sort.append(domain_list[idx])
-        #domain_list_sort = domain_list[idx_sort]
 
         sn_list = []
         for wvl, s, v, domain in zip(wvl_solutions,
@@ -658,7 +639,6 @@ def extract_extended_spec(obsset, lacosmic_thresh=0., calculate_sn=True):
             sn_list.append(sn)
 
     first_order = key_list[0]
-    print("SSS:", first_order)
     store_1dspec(obsset, v_list, s_list, sn_list=sn_list,
                  domain_list=domain_list_sort, first_order=first_order)
 

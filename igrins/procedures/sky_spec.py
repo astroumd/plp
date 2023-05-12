@@ -183,9 +183,6 @@ def _sky_subtract_bg(obsset, sky_image,
         bg_hdu = obsset.load_resource_sci_hdu_for(("flat_off",
                                                    DESCS["FLAT_OFF_BG"]))
         bg = bg_hdu.data
-        #bg_exptime = float(bg_hdu.header["exptime"])
-        #print("SETTING bg_exptime to 30 for RIMAS simulations")
-        #bg_exptime = 30.0
         print("NJM SETTING bg_exptime to sky_exptime for RIMAS simulations")
         bg_exptime = sky_exptime
     elif bg_subtraction_mode == "no":
@@ -278,11 +275,6 @@ def extract_spectra_multi(obsset, comb_type='combined_sky'):
 
     data = obsset.load_fits_sci_hdu(DESCS[comb_type]).data
 
-    print("COMMENTING OUT PLOTS OF MULTISPECTRA")
-    #import matplotlib.pyplot as plt
-    #plt.figure("COMBINED_SKY")
-    #plt.imshow(data)
-
     # just to retrieve order information
     wvlsol_v0 = obsset.load_resource_for("wvlsol_v0")
     orders = wvlsol_v0["orders"]
@@ -292,7 +284,6 @@ def extract_spectra_multi(obsset, comb_type='combined_sky'):
     def make_hdu(s_up, s_down, data):
         len_data = [len(tmp) for tmp in data]
         #save_domain = len(np.unique(len_data)) != 1
-        print("SETTING SAVE_DOMAIN TO TRUE")
         save_domain = True
 
         h = [("NSLIT", n_slice_one_direction*2 + 1),

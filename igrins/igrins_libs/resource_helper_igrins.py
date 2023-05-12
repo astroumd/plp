@@ -39,7 +39,7 @@ class ResourceHelper(object):
         pix_mask = self.get("badpix_mask")
 
         d_bias = self.obsset.load_resource_for("bias_mask")
-
+        
         mask = d_bias
         mask[pix_mask] = True
         mask[:4] = True

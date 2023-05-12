@@ -301,10 +301,15 @@ def load_recipe_as_dict(fn):
         else:
             expt = 'IGRINS'
 
-    dtypes = [('OBJNAME', np.unicode), ('OBJTYPE', np.unicode),
-              ('GROUP1', np.unicode), ('GROUP2', np.unicode),
-              ('EXPTIME', 'f'), ('RECIPE', np.unicode),
-              ('OBSIDS', np.unicode),  ('FRAMETYPES', np.unicode)]
+    #dtypes = [('OBJNAME', np.unicode), ('OBJTYPE', np.unicode),
+    #          ('GROUP1', np.unicode), ('GROUP2', np.unicode),
+    #          ('EXPTIME', 'f'), ('RECIPE', np.unicode),
+    #          ('OBSIDS', np.unicode),  ('FRAMETYPES', np.unicode)]
+    
+    dtypes = [('OBJNAME', np.compat.unicode), ('OBJTYPE', np.compat.unicode),
+              ('GROUP1', np.compat.unicode), ('GROUP2', np.compat.unicode),
+              ('EXPTIME', 'f'), ('RECIPE', np.compat.unicode),
+              ('OBSIDS', np.compat.unicode),  ('FRAMETYPES', np.compat.unicode)]
 
     df = pd.read_csv(fn, skiprows=0, dtype=dtypes, comment="#",
                      escapechar="\\", skipinitialspace=True,

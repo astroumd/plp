@@ -21,8 +21,8 @@ def _get_combined_image(obsset):
 def remove_pattern(data_minus, mask=None, remove_level=1,
                    remove_amp_wise_var=True, nx=4096):
 
+    #NOTE: No pattern removal for RIMAS or DEVENY
     if nx != 2048:
-        print("SKIPPING REMOVE_PATTERN BECAUSE NX =", nx)
         return data_minus
 
     d1 = remove_pattern_from_guard(data_minus, nx=nx)
@@ -148,7 +148,6 @@ def get_variances(data_minus, data_plus, gain, nx=4096, ny=4096):
     """
     from igrins.procedures.procedure_dark import get_per_amp_stat
 
-    print("UPDATE GUARDS FOR NX=4096???")
     guards = data_minus[:, [0, 1, 2, 3, -4, -3, -2, -1]]
 
     namp = ny // 64
@@ -252,9 +251,8 @@ def make_combined_images(obsset, allow_no_b_frame=False,
     
     gain = float(obsset.rs.query_ref_value("GAIN"))
     
-    #if obsset.detector.name == 'deveny':
     if hasattr(obsset.detector, 'npad_p'):
-        print("FIX DEVENY VARIANCE CALCULATION")
+        #print("FIX DEVENY VARIANCE CALCULATION")
         #print("Variance only works with padding in positive y direction")
         y1 = obsset.detector.ny0 + obsset.detector.npad_m
         #ny_var = 2**(int(np.log2(y1)))

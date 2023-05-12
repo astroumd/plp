@@ -50,10 +50,10 @@ def combine_flat_off_cube_201909(hdul, rp_remove_mod, bg_y_slice):
 
 def combine_flat_off_rimas(hdul, rp_remove_mod, bg_y_slice):
 
-    data_list = np.array([hdu.data[:].astype(np.float)
+    data_list = np.array([hdu.data[:].astype(float)
                           for hdu in hdul])
 
-    rp_remove_mod = 0
+    rp_remove_mod = 0 #no pattern removal
 
     #cards, cube = make_flat_off_rimas(hdul, rp_remove_mod, bg_y_slice)
     cards, cube = make_initial_flat_cube(data_list, rp_remove_mod, bg_y_slice)
@@ -158,7 +158,7 @@ def make_hotpix_mask(obsset,
     flat_off = flat_off_hdu.data
 
     if obsset.expt.lower() == 'rimas':
-        print("MODIFYING SIGMA_CLIP2 TO 20 FOR RIMAS")
+        print("NJM: MODIFYING SIGMA_CLIP2 TO 20 FOR RIMAS")
         sigma_clip2 = 20
 
     bg_std, hotpix_mask = bp.badpixel_mask(flat_off,
@@ -195,10 +195,8 @@ def make_initial_flat_on(data_list, expt='igrins'):
         cube = np.array([remove_pattern_from_guard(d1)
                          for d1 in data_list])
     elif expt.lower() == 'rimas' or expt.lower() == 'deveny':
-        print("FLAT ON RIMAS")
-        recipes = ['amp_wise_bias_r2', 'p64_0th_order']
-        #cube = np.array([remove_pattern_from_guard(d1, recipes=recipes, tmp=False, expt=expt)
-        #                 for d1 in data_list])
+        #NOTE: No pattern removal for RIMAS since this should be
+        #removed in processing before analysis
         cube = np.array([d1 for d1 in data_list])
 
     return cube
@@ -213,7 +211,7 @@ def combine_flat_on(obsset):
 
     obsset_on = obsset.get_subset("ON")
 
-    data_list = [hdu.data[:].astype(np.float) for hdu in obsset_on.get_hdus()]
+    data_list = [hdu.data[:].astype(float) for hdu in obsset_on.get_hdus()]
     
     # data_list1 = [dh.sub_p64_from_guard(d) for d in data_list]
 
@@ -266,15 +264,6 @@ def _make_deadpix_mask(flat_on, flat_std, hotpix_mask,
                                        size=(3, 3))
     bg_fwhm_norm = bg_fwhm/norm_factor
 
-    #print("BGGG:", bg_fwhm_norm, bg_fwhm, norm_factor)
-    #import matplotlib.pyplot as plt
-    #plt.figure('FLAT ON')
-    #plt.imshow(flat_on_tmp)
-    #import matplotlib.pyplot as plt
-    #plt.figure("HOTPIX")
-    #plt.imshow(hotpix_mask)
-    #plt.show()
-    
     # mask out bpix
     flat_bpixed = flat_normed.astype("d")
     # by default, astype returns new array.
@@ -300,6 +289,11 @@ def _make_deadpix_mask(flat_on, flat_std, hotpix_mask,
                     flat_std_mask & flat_mask & (~refpixel_mask))
 
     if deadpix_mask_old is not None:
+        if npad is not None:
+            deadpix_tmp = np.zeros_like(deadpix_mask)
+            deadpix_tmp[npad_m:-npad_p, :] = deadpix_mask_old
+            deadpix_mask_old = deadpix_tmp
+            
         deadpix_mask = deadpix_mask | deadpix_mask_old
     
 
@@ -339,15 +333,15 @@ def make_deadpix_mask(obsset,  # helper, band, obsids,
 
     f = obsset.load_ref_data(kind="DEFAULT_DEADPIX_MASK")
 
-    print("DEBUG: TRY STATEMENT FOR WHICH HDU OBJECT FOR DEADPIX MASK")
     try:
         deadpix_mask_old = f[0].data.astype(bool)
     except AttributeError:
         deadpix_mask_old = f[1].data.astype(bool)
 
     # main routine
-    print("SETTING DEADPIX_MASK_OLD TO NONE")
-    deadpix_mask_old = None
+    if obsset.expt.lower() == 'rimas':
+        print("RIMAS: SETTING DEADPIX_MASK_OLD TO NONE")
+        deadpix_mask_old = None
 
     npad = None
     if hasattr(obsset.detector, "npad_m"):
@@ -388,7 +382,7 @@ def identify_order_boundaries(obsset):
     if obsset.expt.lower() == 'igrins':
         max_sep_order = 150
     elif obsset.expt.lower() == 'rimas':
-        print("EXPERIMENT WITH LARGER MAX_SEP_ORDER FOR RIMAS")
+        print("NJM: CHECK MAX SEP ON REAL DATA")
         #max_sep_order = 55
         max_sep_order = 120
         #bound = [900, -1]
@@ -454,7 +448,10 @@ def trace_order_boundaries(obsset):
     cent_x = None
     if obsset.expt.lower() == 'rimas':
         stitch_objects = True
-        cent_x = 1630
+        if obsset.rs.basename_helper.band == 'YJ':
+            cent_x = 1630
+        elif obsset.rs.basename_helper.band == 'HK':
+            cent_x = 2048
     elif obsset.expt.lower() == 'igrins':
         stitch_objects = True
     elif obsset.expt.lower() == 'deveny':
@@ -479,22 +476,11 @@ def trace_order_boundaries(obsset):
                                             cent_x=cent_x)
 
     cent_up_list = _check_boundary_orders(cent_up_list, nx=nx)
-    
-    import matplotlib.pyplot as plt
-    plt.figure()
-    for c_tmp in cent_bottom_list:
-        plt.plot(c_tmp[0], c_tmp[1], 'b')
-    for c_tmp in cent_up_list:
-        plt.plot(c_tmp[0], c_tmp[1], 'r')
-    plt.show()
-
+   
     if obsset.expt.lower() == 'deveny':
         print("Modifying Boundaries by 4 for DEVENY")
         cent_bottom_list[0] = (cent_bottom_list[0][0], cent_bottom_list[0][1]+4)
         cent_up_list[0] = (cent_up_list[0][0], cent_up_list[0][1]-4)
-
-        print("CENT_BOTTOM:", cent_bottom_list[0][1])
-        print("CENT_UP:", cent_up_list[0][1])
 
     obsset_on.store(DESCS["FLATCENTROIDS_JSON"],
                     dict(bottom_centroids=cent_bottom_list,
@@ -570,9 +556,23 @@ def make_bias_mask(obsset):
     ap = Apertures(orders, bottomup_solutions, domain_list=domain_list, nx=obsset.detector.nx,
                    ny=obsset.detector.ny)
 
+    if obsset.expt.lower() == 'deveny':
+        mask_top_bottom = False
+    else:
+        mask_top_bottom = True
+
     order_map2 = ap.make_order_map(mask_top_bottom=True)
+    #order_map2 = ap.make_order_map(mask_top_bottom=mask_top_bottom)
 
     flat_mask = obsset_on.load(DESCS["flat_mask"])
+
+    #import matplotlib.pyplot as plt
+    #plt.figure("FLAT_MASK")
+    #plt.imshow(flat_mask)
+    #plt.figure('ORDER_MAP2')
+    #plt.imshow(order_map2)
+    #plt.show()
+
     bias_mask = flat_mask & (order_map2 > 0)
 
     obsset_on.store(DESCS["bias_mask"], bias_mask)

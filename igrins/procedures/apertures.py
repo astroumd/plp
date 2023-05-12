@@ -103,7 +103,7 @@ class Apertures(object):
                     domain = self.domain_dict[order]
                     m_up = yy > bottom[i1]
                     m_down = yy < top[i1]
-                    x_test = ((i1 >= domain[0]) & (i1 <= domain[1])) * np.ones_like(yy, dtype=np.bool)
+                    x_test = ((i1 >= domain[0]) & (i1 <= domain[1])) * np.ones_like(yy, dtype=bool)
                     order_map1[m_up & m_down & x_test] = order
 
                 return order_map1
@@ -112,9 +112,11 @@ class Apertures(object):
                 order_map1 = np.zeros(len(yy), dtype="i")
                 for order, bottom, top in zip(self.orders,
                                               bottom_list, top_list):
+                    domain = self.domain_dict[order]
                     m_up = yy > bottom[i1]
                     m_down = yy < top[i1]
-                    order_map1[m_up & m_down] = order
+                    x_test = ((i1 >= domain[0]) & (i1 <= domain[1])) * np.ones_like(yy, dtype=bool)
+                    order_map1[m_up & m_down & x_test] = order
 
                 order_map1[yy > top_list[-1][i1]] = 999
                 order_map1[yy < bottom_list[0][i1]] = 999
@@ -572,12 +574,6 @@ class Apertures(object):
         if bins is None:
             bins = np.linspace(0., 1., 40)
 
-        #NJM REMOVED SLITPOS_MAP
-        #print("ORDERS:", self.orders)
-        #import matplotlib.pyplot as plt
-        #plt.figure("TTT")
-        #plt.imshow(slitpos_map)
-
         for o in self.orders:
             sl = slices[o-1][0], slice(x1, x2)
             msk = (order_map[sl] == o)
@@ -725,85 +721,6 @@ class Apertures(object):
                 #profile1 /= np.sqrt(profile_sum)
             profile_map[sl][msk] = profile1[msk]
 
-        print("NJM COMMENTED OUT PLOTS IN AP.MAKE_PROFILE_MAP2")
-        '''
-        tmp = order_map != 43
-        #tmp = order_map != 105
-        profile2 = np.copy(profile_map)
-        profile2[tmp] = 0
-        spec = np.sum(profile2**2, axis=0)
-        import matplotlib.pyplot as plt
-        plt.figure("TESTA")
-        plt.plot(spec)
-
-        spec2 = np.sum(np.abs(profile2), axis=0)
-        plt.figure("TESTB")
-        plt.plot(spec2)
-
-        plt.figure("ORDER_MAP")
-        plt.imshow(order_map)
-
-        xxx = np.arange(4096)
-
-        d43 = self.domain_dict[43]
-        x43 = np.arange(d43[0], d43[1]+1)
-        
-        b43 = self.apcoeffs[43].bottom_solution(x43)
-        t43 = self.apcoeffs[43].up_solution(x43)
-
-        b43i = np.round(b43)
-        t43i = np.round(t43)
-
-        plt.figure("TESTC")
-        plt.plot(x43, t43, 'b')
-        plt.plot(x43, b43, 'b')
-        plt.plot(x43, t43i, 'g')
-        plt.plot(x43, b43i, 'g')
-        plt.plot(x43, spec[x43]*44000, 'k')
-
-        d43 = t43 - b43
-        d43i = t43i - b43i
-
-        plt.plot(x43, d43, 'b')
-        plt.plot(x43, d43i, 'g')
-
-        for i in range(0, 400, 10):
-            t43b = t43 + i #modify top
-            y0 = int(np.floor(np.min(b43)))
-            y1 = int(np.ceil(np.max(t43b)))
-            yvals = np.arange(y0, y1+1)
-            ny = y1 - y0 + 1
-            nx = len(x43)
-            slitpos43 = np.zeros([ny, nx])
-            iy2, ix2 = np.indices(slitpos43.shape)
-            slitpos43 = (iy2 - (b43[None, :] - y0)) / (t43b[None, :] - b43[None, :])
-            slitpos43[slitpos43 < 0] = 0
-            slitpos43[slitpos43 > 1] = 0
-            idx = slitpos43 == 0
-
-            profile_test = lsf(43, ix2, slitpos43)
-            profile_test[idx] = 0
-
-            profile_sum = np.abs(profile_test).sum(axis=0)
-            profile_test /= profile_sum
-
-            spec_test = np.sum(profile_test**2, axis=0)
-            spec_test /= np.max(spec_test)
-
-            plt.figure("TESTZZZ")
-            plt.plot(spec_test, label=str(i))
-
-        plt.figure("TESTZZZ")
-        plt.legend(loc=0, prop={'size': 12})
-
-        plt.figure("PROFILE")
-        zzz = np.linspace(0, 1, num=200)
-        profile_test = lsf(0, 0, zzz)
-        plt.plot(profile_test)
-
-        plt.show()
-        '''
-
         return profile_map
 
     def make_profile_map(self, order_map, slitpos_map, lsf,
@@ -841,87 +758,6 @@ class Apertures(object):
                 profile1 /= profile_sum
                 #profile1 /= np.sqrt(profile_sum)
             profile_map[sl][msk] = profile1[msk]
-
-        print("NJM COMMENTED OUT PLOTS IN AP.MAKE_PROFILE_MAP")
-        '''
-        tmp = order_map != 43
-        #tmp = order_map != 105
-        profile2 = np.copy(profile_map)
-        profile2[tmp] = 0
-        spec = np.sum(profile2**2, axis=0)
-        import matplotlib.pyplot as plt
-        plt.figure("TESTA")
-        plt.plot(spec)
-
-        spec2 = np.sum(np.abs(profile2), axis=0)
-        plt.figure("TESTB")
-        plt.plot(spec2)
-
-        plt.figure("ORDER_MAP")
-        plt.imshow(order_map)
-
-        xxx = np.arange(4096)
-
-        d43 = self.domain_dict[43]
-        x43 = np.arange(d43[0], d43[1]+1)
-        
-        b43 = self.apcoeffs[43].bottom_solution(x43)
-        t43 = self.apcoeffs[43].up_solution(x43)
-
-        b43i = np.round(b43)
-        t43i = np.round(t43)
-
-        plt.figure("TESTC")
-        plt.plot(x43, t43, 'b')
-        plt.plot(x43, b43, 'b')
-        plt.plot(x43, t43i, 'g')
-        plt.plot(x43, b43i, 'g')
-        plt.plot(x43, spec[x43]*44000, 'k')
-
-        d43 = t43 - b43
-        d43i = t43i - b43i
-
-        plt.plot(x43, d43, 'b')
-        plt.plot(x43, d43i, 'g')
-
-        print("AAA:", lsf(43, 2000, 0.5), lsf(35, 1500, 0.5))
-
-        for i in range(0, 400, 10):
-            t43b = t43 + i #modify top
-            y0 = int(np.floor(np.min(b43)))
-            y1 = int(np.ceil(np.max(t43b)))
-            yvals = np.arange(y0, y1+1)
-            ny = y1 - y0 + 1
-            nx = len(x43)
-            slitpos43 = np.zeros([ny, nx])
-            iy2, ix2 = np.indices(slitpos43.shape)
-            slitpos43 = (iy2 - (b43[None, :] - y0)) / (t43b[None, :] - b43[None, :])
-            slitpos43[slitpos43 < 0] = 0
-            slitpos43[slitpos43 > 1] = 0
-            idx = slitpos43 == 0
-
-            profile_test = lsf(43, ix2, slitpos43)
-            profile_test[idx] = 0
-
-            profile_sum = np.abs(profile_test).sum(axis=0)
-            profile_test /= profile_sum
-
-            spec_test = np.sum(profile_test**2, axis=0)
-            spec_test /= np.max(spec_test)
-
-            plt.figure("TESTZZZ")
-            plt.plot(spec_test, label=str(i))
-
-        plt.figure("TESTZZZ")
-        plt.legend(loc=0, prop={'size': 12})
-
-        plt.figure("PROFILE")
-        zzz = np.linspace(0, 1, num=200)
-        profile_test = lsf(0, 0, zzz)
-        plt.plot(profile_test)
-
-        plt.show()
-        '''
 
         return profile_map
 

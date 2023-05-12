@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 from ..utils.image_combine import image_median
@@ -33,6 +35,12 @@ def model_bg(dark3, destripe_mask, nx=2048, ny=None):
 
     if ny is None:
         ny = nx
+
+    #import matplotlib.pyplot as plt
+    #plt.figure()
+    #plt.imshow(V)
+    #plt.show()
+
     ZI3 = get_interpolated_cubic(nx, ny, xc, yc, v)
 
     return ZI3
@@ -41,8 +49,10 @@ def model_bg(dark3, destripe_mask, nx=2048, ny=None):
 def _sub_median_row_with_mask(d1, mask):
     k = np.ma.array(d1, mask=mask).filled(np.nan)
 
-    with np.warnings.catch_warnings():
-        np.warnings.filterwarnings('ignore', r'All-NaN (slice|axis)')
+    #with np.warnings.catch_warnings():
+    #    np.warnings.filterwarnings('ignore', r'All-NaN (slice|axis)')
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', r'All-NaN (slice|axis)')
 
         c = np.nanmedian(k, axis=1)
 
@@ -58,8 +68,8 @@ def _sub_with_bg_old(d, bg, destripe_mask=None):
 
 def _sub_with_bg_201909(d, bg, destripe_mask=None):
 
-    with np.warnings.catch_warnings():
-        np.warnings.filterwarnings('ignore', r'All-NaN (slice|axis)')
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', r'All-NaN (slice|axis)')
 
         r = apply_rp_2nd_phase(d - bg, destripe_mask) + bg
 
@@ -67,15 +77,17 @@ def _sub_with_bg_201909(d, bg, destripe_mask=None):
 
 def _sub_with_bg_rimas(d, bg, destripe_mask=None):
 
-    with np.warnings.catch_warnings():
-        np.warnings.filterwarnings('ignore', r'All-NaN (slice|axis)')
+    #NJM: no pattern removal for RIMAS as that should be done
+    #before this analysis
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', r'All-NaN (slice|axis)')
 
         r = d - bg + bg
 
     return r
 
 def _sub_with_bg_deveny(d, bg, destripe_mask=None):
-    
+   
     return _sub_with_bg_rimas(d, bg, destripe_mask=destripe_mask)
 
 def make_dark_with_bg(data_list, bg_model,
@@ -86,13 +98,9 @@ def make_dark_with_bg(data_list, bg_model,
         data_list5 = [_sub_with_bg_201909(d, bg_model, destripe_mask)
                       for d in data_list]
     elif expt == 'rimas':
-        print("NOT APPLYING SOME PATTERN REMOVAL DURING FLAT OFF 2nd PHASE. THIS NEEDS TO")
-        print("BE ADDED AFTER REAL DATA HAS BEEN TAKEN")
         data_list5 = [_sub_with_bg_rimas(d, bg_model, destripe_mask)
                       for d in data_list]
     elif expt == 'deveny':
-        print("NOT APPLYING SOME PATTERN REMOVAL DURING FLAT OFF 2nd PHASE.")
-        print("THIS NEEDS TO BE FIGURED OUT FOR DEVENY")
         data_list5 = [_sub_with_bg_deveny(d, bg_model, destripe_mask)
                       for d in data_list]
 

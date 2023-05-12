@@ -25,6 +25,10 @@ def identify_lines_from_spec(orders, spec_data, wvlsol,
     small_list.append(fitted_pixels_oh)
     small_keys.append("OH")
 
+    #print("FITTED_PIXELS_oh:", fitted_pixels_oh)
+    #print("LEN:", len(fitted_pixels_oh))
+    #zzz
+
     # if obsset.band == "K":
     if ref_lines_db_hitrans is not None:
         fitted_pixels_hitran = ref_lines_db_hitrans.identify(spec)
@@ -56,7 +60,6 @@ def identify_multiline_thar(obsset):
     for hdu in multi_spec:
         slit_center = hdu.header["FSLIT_CN"]
         keys.append(slit_center)
-        print("SLIT CENTER:", slit_center)
 
         str_test = str(orders[0]) + '_LO'
         if str_test in hdu.header:
@@ -66,23 +69,13 @@ def identify_multiline_thar(obsset):
                 str_hi = str(order) + '_HI'
                 domains.append([int(hdu.header[str_lo]), int(hdu.header[str_hi])])
 
-        idxs = [10, 11, 12] #15
-        import matplotlib.pyplot as plt
-        for idx in idxs:
-            dom = domains[idx]
-            xvals = np.arange(dom[0],dom[1]+1)
-            npts = dom[1] - dom[0] + 1
-            plt.figure('FULL SPEC ' + str(orders[idx]))
-            plt.title(str(dom[0]) + ' ' + str(dom[1]))
-            plt.plot(xvals, hdu.data[idx, :npts])
-
         fitted_pixels_ = identify_lines_from_spec(orders, hdu.data, wvlsol,
                                                   ref_lines_db,
                                                   ref_lines_db_hitrans,
                                                   domains=domains)
         
         fitted_pixels_list.append(fitted_pixels_)
-
+    
     #import matplotlib.pyplot as plt
     #plt.show()
 

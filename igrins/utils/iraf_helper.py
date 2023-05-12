@@ -24,8 +24,8 @@ def get_wat_spec(orders, wvl_sol):
     wvl_sol should be a list of Chebyshev polynomials.
     """
     
-    print("FIX GET_WAT_SPEC: WAVELENGTH STUFF IS BAD")
-    print("WAVELENGTHS OUTSIDE OF FITTED REGIONS ARE PROBABLY NOT GOOD")
+    #print("FIX GET_WAT_SPEC: WAVELENGTH STUFF IS BAD")
+    #print("WAVELENGTHS OUTSIDE OF FITTED REGIONS ARE PROBABLY NOT GOOD")
 
     # specN = ap beam dtype w1 dw nw z aplow aphigh
     specN_tmpl = "{ap} {beam} {dtype} {w1} {dw} {nw} {z} {aplow} {aphigh}"

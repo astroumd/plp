@@ -41,12 +41,9 @@ def estimate_bg_mean_std(flat, pad=4, smoothing_length=150):
     flat_gradient = ni.gaussian_filter1d(flat_sorted,
                                          smoothing_length, order=1)
     
-    #import matplotlib.pyplot as plt
-    #plt.figure('FLAT SORTED')
-    #plt.plot(flat_sorted)
     corr = False
     if np.min(flat_gradient) == 0:
-        print("CORR")
+        print("NJM: CORR, CHECK ON REAL DATA")
         fact = 0.1
         tmp = np.unique(flat_sorted)
         diff = tmp[1] - tmp[0]
@@ -102,8 +99,6 @@ def get_flat_mask_auto(flat_bpix):
     # now we try to build a reasonable mask
     # start with a simple thresholded mask
 
-    print("IN FLAT MASK AUTO")
-
     bg_mean, bg_fwhm = estimate_bg_mean_std(flat_bpix, pad=4,
                                             smoothing_length=150)
     with np.errstate(invalid="ignore"):
@@ -152,6 +147,8 @@ def get_y_derivativemap(flat, flat_bpix, bg_std_norm,
     flat_max = ni.maximum_filter1d(flat_deriv, size=max_sep_order, axis=0)
     flat_min = ni.minimum_filter1d(flat_deriv, size=max_sep_order, axis=0)
 
+    '''
+    REMOVE
     import matplotlib.pyplot as plt
     plt.figure("FLAT")
     plt.imshow(flat)
@@ -161,7 +158,8 @@ def get_y_derivativemap(flat, flat_bpix, bg_std_norm,
     plt.imshow(flat_max)
     plt.figure("FLAT MASK")
     plt.imshow(flat_mask)
-     
+    '''
+
     # mask for aperture boundray
     if pad is None:
         sl = slice()
@@ -170,7 +168,8 @@ def get_y_derivativemap(flat, flat_bpix, bg_std_norm,
 
     flat_deriv_masked = np.zeros_like(flat_deriv)
     flat_deriv_masked[sl, sl] = flat_deriv[sl, sl]
-   
+  
+    '''
     print("SSS:", np.shape(flat_deriv_masked), np.shape(flat_deriv), np.shape(flat_max))
 
     #x_idx = 2450
@@ -188,6 +187,7 @@ def get_y_derivativemap(flat, flat_bpix, bg_std_norm,
     #plt.plot(flat_deriv_masked[2450, :], 'b')
     #plt.plot(flat_max[2450, :], 'r')
     #plt.plot(flat_min[2450, :], 'g')
+    '''
 
     flat_mask[:] = 1
 
@@ -335,7 +335,6 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
     # thre_dx = 30
     if cent_x is None:
         cent_x = nx//2
-    print("CENT_X:", cent_x)
     #center_cut = im_labeled[:, nx//2-thre_dx:nx//2+thre_dx]
     center_cut = im_labeled[:, cent_x-thre_dx:cent_x+thre_dx]
     labels_ = list(set(np.unique(center_cut)) - set([0]))
@@ -401,10 +400,6 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
     centroid_list = []
     print("SETTING BG_STD TO NONE:", bg_std)
     bg_std = None
-    import matplotlib.pyplot as plt
-    plt.figure('MASKED DERIV MAP')
-    plt.imshow(mmp)
-    #plt.show()
     for indx in labels_center_column:
 
         sl = slice_map[indx]
@@ -433,18 +428,6 @@ def identify_horizontal_line(d_deriv, mmp, pad=20, bg_std=None,
             # This suprress the lowest order of K band
             if bg_std is not None:
                 msk = msk | (ys/yn < bg_std)
-                '''
-                print("ys/yn:", (ys/yn)[:10])
-                import matplotlib.pyplot as plt
-                plt.figure()
-                plt.plot(ys/yn)
-                plt.plot(np.ones_like(ys)*bg_std)
-                plt.figure()
-                plt.imshow(d_deriv)
-                plt.figure()
-                plt.imshow(mmp)
-                plt.show()
-                '''
                 # msk = msk | (ys/yn < 0.0006 + 0.0003)
 
             # mask out columns with # of valid pixel is too many

@@ -28,10 +28,6 @@ class TelluricTransmission(object):
 
         self._data = np.load(fn, allow_pickle=True)
         
-        #print("TELLURIC TRANSMISSION HAS BEEN SET TO 1")
-        #print("NOT 1 TELLURIC NEEDS BETTER NUMPY FILE FOR DEVENY")
-        #self._data[:, 1] = 1.0
-
         #self.dd = np.genfromtxt(fn)
         self.trans = self._data[:, 1]
         self.wvl = air2vac(self._data[:, 0]/1.e3)
@@ -137,17 +133,6 @@ class SpecFlattener(object):
         # subtract baseline from derivative.
         dd1 = (ratiom - dd)
 
-        import matplotlib.pyplot as plt
-        plt.figure("INITIAL_MASK")
-        plt.plot(ratiom, 'b')
-        plt.plot(dd, 'g')
-        plt.plot(dd_small, 'r')
-
-        plt.figure('RATIO DERIV')
-        plt.plot(np.abs(dd1), 'b')
-        plt.plot([0, len(dd1)-1], [0.0005, 0.0005], 'g')
-        plt.plot([0, len(dd1)-1], [0.001, 0.001], 'r')
-
         # mask out areas of high deriv.
         # The threshold is arbitrary but seem to work for most of orders.
         msk = np.abs(dd1) > 0.0005
@@ -157,11 +142,6 @@ class SpecFlattener(object):
         # do binary-closing for mask
         msk0 = np.copy(msk)
         msk = ni.binary_closing(msk, iterations=2) | ~np.isfinite(dd1)
-
-        plt.figure("MASK")
-        plt.plot(msk0, label='Ratio Rejection')
-        plt.plot(msk, label='Binary Closing')
-        plt.legend(loc=0, prop={'size': 12})
 
         dd1[msk] = np.nan
 
@@ -285,28 +265,12 @@ class SpecFlattener(object):
     def flatten_base(self, w1, s1_orig, of,
                      s_a0v, tt):
 
-        import matplotlib.pyplot as plt
-        plt.figure("TETTT")
-        plt.plot(s1_orig, 'b')
-        plt.plot(s_a0v, 'g')
-
-        plt.figure("PLOT2")
-        plt.plot(w1, label='ICM')
-        plt.plot(of, label='Orderflat Response')
-
-
         s1_orig_c = s1_orig / s_a0v
         s1m = self.get_norm_const(w1, s1_orig_c, of)
 
         s1_orig_cn = s1_orig_c/s1m # normalize
 
         ratio = s1_orig_cn/tt # model corrected spec
-
-        plt.figure("CORR")
-        plt.plot(s1_orig_cn, label='Orig/A0V')
-        plt.plot(tt, label='Telluric')
-        plt.plot(ratio, label='Ratio')
-        plt.legend(loc=0, prop={'size': 12})
 
         dd1, msk_i = self.get_initial_mask(ratio, tt)
         if np.all(msk_i):
@@ -324,22 +288,6 @@ class SpecFlattener(object):
         except ValueError:
             msk_sv = msk_i
 
-        plt.figure("MASK SV")
-        plt.plot(msk_sv, label='SV')
-        plt.plot(msk_i+1.5, label='Init')
-        plt.plot((msk_sv*1.0 - msk_i*1.0)-1.5, label='Diff')
-        plt.legend(loc=0, prop={'size': 12})
-        
-        plt.figure("MASKED S1_ORIG")
-        tmp = np.copy(s1_orig)
-        tmp2 = np.copy(s1_orig)
-        tmp[msk_i] = np.nan
-        tmp2[msk_sv] = np.nan
-        plt.plot(s1_orig, 'b', label='Orig')
-        plt.plot(tmp, 'r', label='Mask Init')
-        plt.plot(tmp2, 'g', label='Mask SV')
-        plt.legend(loc=0, prop={'size': 12})
-
         rad1, rad2, frac = self.get_smoothing_param(msk_sv)
         from ..igrins_libs.logger import info, debug
         debug("smoothing radius: {} {}".format(int(rad1), int(rad2)))
@@ -349,12 +297,6 @@ class SpecFlattener(object):
         lll = self.get_of_interpolated(ratio_msk, tt, of, msk_sv,
                                        weight_func=weight_func)
 
-        print("WEIGHT FUNC:", weight_func, rad1, rad2, frac)
-        plt.figure("OF INTERPOLATED")
-        plt.plot(of, label='Input Orderflat Response')
-        plt.plot(lll, label='Output Interpolated')
-        plt.legend(loc=0, prop={'size': 12})
-        
         # if False:
         #     # recover area where continuum is underestimated
         #     ratio0 = s1_orig_cn/tt # model corrected spec
@@ -370,28 +312,6 @@ class SpecFlattener(object):
 
         fitted_continuum = f12*s1m*s_a0v
 
-        plt.figure("COMPONENTS")
-        plt.plot(f12/np.nanmax(f12), 'b', label='OF')
-        plt.plot(s_a0v/np.nanmax(s_a0v), 'g', label='Calibration A0V')
-        plt.plot(tt/np.nanmax(tt), 'r', label='Telluric')
-        plt.legend(loc=0, prop={'size': 12})
-        print("S1M:", s1m)
-
-        i0 = 1660
-        i1 = 1700
-        plt.figure("SCALED COMPONENTS")
-        plt.plot(f12[i0:i1] / np.max(f12[i0:i1]), label='OF')
-        plt.plot(s_a0v[i0:i1] / np.max(s_a0v[i0:i1]), label='Calibration A0V')
-        plt.plot(fitted_continuum[i0:i1] / np.max(fitted_continuum[i0:i1]), label='Fitted Continuum')
-        plt.legend(loc=0, prop={'size': 12})
-        plt.title(str(i0) + ' to ' + str(i1))
-
-        plt.figure("CONTINUUM VS ORIG")
-        plt.plot(fitted_continuum)
-        plt.plot(s1_orig)
-        
-        plt.show()
-        
         return msk_i, msk_sv, fitted_continuum
 
     def plot_fitted(self, w1, s1_orig, s_a0v, tt,
@@ -655,6 +575,9 @@ def get_a0v_flattened(a0v_interp1d, tel_interp1d_f,
                                        orderflat_response,
                                        domain_list):
 
+        #print("AAA:", len(w1), len(s1_orig), len(of), domain)
+        #zzz
+
         of = np.array(of).astype("d")
 
         #Reduce the size of the arrays to the correct size
@@ -680,14 +603,6 @@ def get_a0v_flattened(a0v_interp1d, tel_interp1d_f,
             _interim_result.append((w1, s1_orig, of, s1_a0v, tt1, _))
             msk_i, msk_sv, fitted_continuum = _
             ccc.append((fitted_continuum, msk_sv, s1_a0v, tt1))
-            #import matplotlib.pyplot as plt
-            #plt.close("all")
-            #plt.figure("A0V FLATTEN")
-            #plt.plot(s1_orig, 'b')
-            #plt.plot(s1_a0v, 'g')
-            #plt.plot(tt1, 'r')
-            #plt.plot(fitted_continuum, 'c')
-            #plt.show()
          
     #For some reason this is making a 1D array with Object dtype and not a 2D array
     #continuum_array = np.array([np.copy(c).resize(npts_orig) for c, m, a, t in ccc])
@@ -712,14 +627,6 @@ def get_a0v_flattened(a0v_interp1d, tel_interp1d_f,
     # if self.fill_nan is not None:
     #     flattened_s[~np.isfinite(flattened_s)] = self.fill_nan
     
-    import matplotlib.pyplot as plt
-    plt.figure("A0V FLATTEN")
-    plt.plot(s_list[4], 'b')
-    plt.plot(a0v_array[4, :], 'g')
-    plt.plot(teltrans_array[4, :], 'r')
-    plt.plot(continuum_array[4, :], 'm')
-    plt.show()
-
     data_list = [("flattened_spec", flattened_s),
                  ("wavelength", np.array(wvl)),
                  ("fitted_continuum", continuum_array),

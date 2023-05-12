@@ -45,6 +45,8 @@ def get_recipe_list():
                    create_argh_command("extract-arc", ["ARC_*"]),
                    create_argh_command("a0v-ab", ["A0V_AB"]),
                    create_argh_command("a0v-onoff", ["A0V_ONOFF"]),
+                   create_argh_command("a0v-ab-pypeit", ["A0V_AB"]),
+                   create_argh_command("a0v-onoff-pypeit", ["A0V_ONOFF"]),
                    create_argh_command("stellar-ab", ["STELLAR_AB"]),
                    create_argh_command("stellar-ab-pp", ["STELLAR_AB"]),
                    create_argh_command("stellar-onoff", ["STELLAR_ONOFF"]),

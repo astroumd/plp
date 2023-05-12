@@ -91,19 +91,13 @@ def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
                     bounds=list(zip(params_min, params_max)),
                     approx_grad=True, disp=0)
 
+    '''
     global i00
     i00 = i00 + 1
     if lines[0] > 1100 and lines[0] < 1250:
         print("TEST:", i00, lines[0])
 
     #TODO: NJM REMOVE
-    #if np.abs(lines[0] - 2851.55) < 0.01:
-    #if np.abs(lines[0] - 1000000) < 0.01:
-    #if np.abs(lines[0] - 1506.9) < 0.1:
-    #if np.abs(lines[0] - 2173.56) < 0.01:
-    #if np.abs(lines[0] - 1155.92) < 0.01:
-    #if np.abs(lines[0] - 1820.44) < 0.01:
-    #print("AAA:", lines[0])
     if np.abs(lines[0]) > 0:
         global x00
         params_opt = sol_[0]
@@ -136,18 +130,6 @@ def fit_gaussian_simple(x, s, lines, xminmax=None, sigma_init=1.5,
             #print("SSS:", params_opt[0], lines[0])
             params_opt[0] = lines[0] + np.random.randn()*0.01
             #pass
-
-    #TODO: NJM REMOVE
-    '''
-    if len(lines) == 2:
-        if np.abs(lines[0] - 1107.53680408) < 0.001 and np.abs(lines[1] - 1107.61295184) < 0.001:
-            params_opt = sol_[0]
-            print("params_opt:", params_opt)
-            print("dcenter0:", dcenters0)
-            #yy_opt = _gauss0_w_dcenters(xx, params_opt, dcenters0)
-            #print("ABC:", np.shape(xx), np.shape(yy_opt))
-            #plt.plot(xx, yy_opt, 'r')
-            plt.show()
     '''
 
     if do_plot:

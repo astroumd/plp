@@ -57,7 +57,6 @@ def _get_df(obsset, fit_type='sky'):
         d = obsset.load("THAR_FITTED_PIXELS_JSON")
 
     df = pd.DataFrame(**d)
-    print("DF:", df)
 
     index_names = ["kind", "order", "wavelength"]
     df = df.set_index(index_names)[["slit_center", "pixels"]]
@@ -65,10 +64,10 @@ def _get_df(obsset, fit_type='sky'):
     dd = _append_offset(df)
 
     pix_dist = 0.6
-    print("FILTERING ON A MAXIMUM PIXEL FIT VARIATION OF", pix_dist, "pixels")
+    print("     FILTERING ON A MAXIMUM PIXEL FIT VARIATION OF", pix_dist, "pixels")
     #print("NOT FILTERING FITS")
     data = np.unique(dd['pixels0'])
-    keep = np.ones(len(dd), dtype=np.bool)
+    keep = np.ones(len(dd), dtype=bool)
     for d0 in data:
         idx = dd['pixels0'] == d0
         if d0 == -20:
@@ -78,15 +77,7 @@ def _get_df(obsset, fit_type='sky'):
         offs = dd[idx]['offsets']
         if (np.max(offs) - np.min(offs)) > pix_dist:
             keep[idx] = False
-    #print("TEST:", len(dd), np.sum(keep))
-    #zzz
     dd = dd[keep]
-
-    import matplotlib.pyplot as plt
-    plt.figure('PIXELS V OFFSETS IN FILTER')
-    plt.scatter(dd['pixels0'], dd['offsets'])
-    #plt.show()
-    #zzz
 
     return dd
 
@@ -130,89 +121,12 @@ def volume_fit(obsset, fit_type='sky'):
                               dd["order"][msk],
                               cc0[msk]]))
 
-    #print("DD KEYS:", dd.keys())
-    #tmp = dd["order"] == 35
-    #print("ORDER 35")
-    #print("PIXELS0:", dd["pixels0"][tmp])
-    #print("PIXELS:", dd["pixels"][tmp])
     minx = np.min(dd["pixels0"][msk])
     maxx = np.min(dd["pixels0"][msk])
     
     scalar = dd["offsets"][msk] / cc0[msk]
 
-    idx = points["order"] == 35
-    print("ORDER 35:", points['pixel'][idx]) 
-    idx = points["order"] == 34
-    print("ORDER 34:", points['pixel'][idx]) 
-    idx = points["order"] == 33
-    print("ORDER 33:", points['pixel'][idx]) 
-
-    print("NPTS:", len(scalar), len(points['pixel']))
-    import matplotlib.pyplot as plt
-    plt.figure("ORDER")
-    plt.scatter(points['pixel'], dd["order"][msk])
-
-    plt.figure("OFFSETS")
-    plt.scatter(points['pixel'], dd["offsets"][msk])# + dd["order"][msk])
-
-    plt.figure("PIX SCALAR")
-    plt.scatter(points['pixel'], scalar)
-    
-    plt.figure("ORDER SCALAR")
-    plt.scatter(points['order'], scalar)
-    
-    plt.figure("SLIT SCALAR")
-    plt.scatter(points['slit'], scalar)
-
-    #zzz
-
     poly, params = _volume_poly_fit(points, scalar, orders, names)
-
-    print("DOING COMPARISON OF FIT")
-    scalar_1 = poly.multiply(points, params[0])
-
-    plt.figure("PIX SCALAR")
-    plt.scatter(points['pixel'], scalar_1, color='r')
-    plt.figure("ORDER SCALAR")
-    plt.scatter(points['order'], scalar_1, color='r')
-    plt.figure("SLIT SCALAR")
-    plt.scatter(points['slit'], scalar_1, color='r')
-
-    plt.figure("PIX OFFSETS")
-    plt.scatter(points['pixel'], scalar * cc0[msk])
-    plt.scatter(points['pixel'], scalar_1 * cc0[msk], color='r')
-    plt.figure("ORDER OFFSETS")
-    plt.scatter(points['order'], scalar * cc0[msk])
-    plt.scatter(points['order'], scalar_1 * cc0[msk], color='r')
-    plt.figure("SLIT OFFSETS")
-    plt.scatter(points['slit'], scalar * cc0[msk])
-    plt.scatter(points['slit'], scalar_1 * cc0[msk], color='r')
-    
-    #plt.show()
-
-    #NJM REMOVE
-    '''
-    values_test = {}
-    values_test['pixel'] = np.array([965.096049, 965.096049, 965.096049, 965.096049])
-    values_test['order'] = np.array([32.0, 32.0, 32.0, 32.0])
-    values_test['slit'] = np.array([0.2, 0.4, -0.2, -0.4])
-    off1 = poly.multiply(values_test, params[0])
-    print("FIT")
-    print("TTT0:", values_test['pixel'])
-    print("UUU0:", values_test['order'])
-    print("VVV0:", values_test['slit'])
-    print("PREF1:", off1)
-    print("OFFSET0:", off1*values_test['slit'])
-    print("INPUT")
-    print("TTT:", np.array(points['pixel'])[20:24])
-    print("UUU:", np.array(points['order'])[20:24])
-    print("VVV:", np.array(points['slit'])[20:24])
-    print("SCALAR:", np.array(scalar)[20:24])
-    print("OFFSET:", np.array(scalar)[20:24]*np.array(points['slit'])[20:24])
-    zzz
-    from IPython import embed; embed()
-    zzz
-    '''
 
     # save
     out_df = poly.to_pandas(coeffs=params[0])

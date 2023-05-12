@@ -20,17 +20,10 @@ class RIMASH2RGDetector(Detector):
     name = 'rimash2rg'
 
 class DEVENYDetector(Detector):
-    print("ADD INFO ABOUT PADDING TO DETECTORS.PY")
-    print("DO I NEED TO MODIFY THE FILL OF PADDING")
     ny0 = 516
     nx = 2148
-    #print("USING 508x2043 detectors for Deveny")
-    #ny0 = 508
-    #nx = 2043
     npad_m = 0
-    #npad_p = 14
     npad_p = 50
-    #npad = npad_p
     ny = ny0 + npad_m + npad_p
     name = 'deveny'
 

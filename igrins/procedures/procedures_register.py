@@ -122,9 +122,6 @@ def _get_offset_transform(thar_spec_src, thar_spec_dst, domains):
 
         offsets_corr.append(offset + dom[0])
 
-    print("OFFSETS:", offsets)
-    print("OFFSETS_CORR:", offsets_corr)
-
     if len(offsets) == 1:
         offsets2 = [offsets[0]]
         sol_list = [get_offsetter(offset_) for offset_ in offsets2]
@@ -181,8 +178,6 @@ def _get_offset_transform_between_2spec(ref_spec, tgt_spec):
     orders_intersection = set(orders_ref).intersection(orders_tgt)
     orders_intersection = sorted(orders_intersection)
 
-    print("INTERSECTION:", orders_intersection)
-
     def filter_order(orders, s_list, orders_intersection):
         s_dict = dict(zip(orders, s_list))
         s_list_filtered = [s_dict[o] for o in orders_intersection]
@@ -219,14 +214,17 @@ def identify_lines(obsset):
     intersected_orders, d = _get_offset_transform_between_2spec(ref_spec,
                                                                 tgt_spec)
 
+    #NJM: Remove
+    #print("SSS:", np.shape(ref_spec['specs'][0]))
     #import matplotlib.pyplot as plt
     #plt.figure()
     #plt.plot(tgt_spec['specs'][0], 'b', label='TGT Spec')
-    #plt.plot(ref_spec['specs'][0][56:], 'r', label='Ref Spec 56')
-    #plt.plot(ref_spec['specs'][0][57:], 'm', label='Ref Spec 57')
+    #plt.plot(ref_spec['specs'][0], 'r', label='Ref Spec')
+    ##plt.plot(ref_spec['specs'][0][56:], 'r', label='Ref Spec 56')
+    ##plt.plot(ref_spec['specs'][0][57:], 'm', label='Ref Spec 57')
     #plt.legend(loc=0, prop={'size': 12})
     #plt.show()
-    #zzz
+    ##zzz
 
     # REF_TYPE="OH"
     # fn = "../%s_IGRINS_identified_%s_%s.json" % (REF_TYPE, band,
@@ -372,22 +370,6 @@ def _get_wavelength_solutions(affine_tr_matrix, zdata,
         oo.fill(o)
         wvl = p(xx, oo) / o
         wvl_sol.append(list(wvl))
-
-    print("COMMENTED OUT PLOT IN procedures_register._get_wavelength_solutions")
-    '''
-    print("wvl_sol:", wvl_sol[4][950:955])
-    import matplotlib.pyplot as plt
-    oo2 = np.ones_like(tmp1)*30
-    wvl2 = p(tmp1, oo2) / 30.0
-    plt.figure()
-    plt.plot(tmp1, tmp0, 'b', label='Affine Transformation')
-    plt.plot(xx, wvl_sol[4], 'g', label='2D Cheby Fit')
-    plt.xlim([950, 960])
-    plt.ylim([1.3084, 1.3086])
-    plt.legend(loc=0, prop={'size': 12})
-    plt.figure()
-    plt.plot(tmp1, tmp0 - wvl2)
-    '''
 
     return wvl_sol
 

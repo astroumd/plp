@@ -120,9 +120,9 @@ def extract_spec_using_profile(ap, profile_map,
                                data_minus_flattened, slitoffset_map,
                                debug=False)
 
-    print("Ignoring attempt to remove cosmic rays")
-    print("REMOVING SECOND CALL TO EXTRACT STELLAR")
     '''
+    print("NJM: Ignoring attempt to remove cosmic rays")
+    print("NJM: REMOVING SECOND CALL TO EXTRACT STELLAR")
     _ = ap.extract_stellar_from_shifted(ordermap_bpixed,
                                         shifted.profile_map,
                                         shifted.variance,

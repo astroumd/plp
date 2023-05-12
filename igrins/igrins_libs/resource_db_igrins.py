@@ -108,7 +108,10 @@ class ResourceDBFile(ResourceDBBase):
 
                 try:
                     #obsid_ = int(l1.strip().split("_")[-1])
-                    obsid_ = l1.strip().split("_")[-1]
+                    if "rimas" in l1:
+                        obsid_ = l1.strip().split('.')[-2]
+                    else:
+                        obsid_ = l1.strip().split("_")[-1]
                 except ValueError:
                     continue
 
@@ -120,7 +123,7 @@ class ResourceDBFile(ResourceDBBase):
 
             if obsid_list:
                 # return last one with minimum distance
-                obsid_dist = np.abs(np.array(obsid_list, dtype=np.int) - obsid)
+                obsid_dist = np.abs(np.array(obsid_list, dtype=int) - obsid)
                 i = np.where(obsid_dist == np.min(obsid_dist))[0][-1]
                 return basename_list[i]
             else:
