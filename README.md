@@ -1,5 +1,9 @@
 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.18579.svg)](http://dx.doi.org/10.5281/zenodo.18579)
 
+# RIMAS Pipeline Package
+
+The RIMAS pipeline package is a fork of the IGRINS pipeline and the README for the IGRINS pipeline is reproduced below. The same process should be used to run the RIMAS pipeline.
+
 # IGRINS Pipeline Package
 
 IGRINS pipeline package is currently in active development. Version 1, that was originally developed by Prof. Soojong Pak's team at Kyung Hee University (KHU), is deprecated and is not recommended to use. While the version 2 of the pipeline is still in active development, it is encouraged that you try this version.
