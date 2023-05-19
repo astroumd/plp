@@ -2,13 +2,11 @@
 
 # RIMAS Pipeline Package
 
-The RIMAS pipeline package is a fork of the IGRINS pipeline and the README for the IGRINS pipeline is reproduced below. The same process should be used to run the RIMAS pipeline.
+The RIMAS pipeline package is a fork of the IGRINS pipeline and the README for the IGRINS pipeline is reproduced below. The same process should be used to run the RIMAS pipeline. A link to the IGRINS pipeline wiki is provided. The only real difference when running the code is that `a0v-ab-pypeit` and `a0v-onoff-pypeit` should be run on the A0V stars to use the PypeIt telluric correction code. In order to use that code, PypeIt must be installed. Installation instructions can be seen at https://pypeit.readthedocs.io/en/release/
 
 # IGRINS Pipeline Package
 
 IGRINS pipeline package is currently in active development. Version 1, that was originally developed by Prof. Soojong Pak's team at Kyung Hee University (KHU), is deprecated and is not recommended to use. While the version 2 of the pipeline is still in active development, it is encouraged that you try this version.
-
-- https://github.com/igrins/plp/releases
 
 ## Version 2
 
