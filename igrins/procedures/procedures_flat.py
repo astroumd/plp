@@ -339,9 +339,9 @@ def make_deadpix_mask(obsset,  # helper, band, obsids,
         deadpix_mask_old = f[1].data.astype(bool)
 
     # main routine
-    if obsset.expt.lower() == 'rimas':
-        print("RIMAS: SETTING DEADPIX_MASK_OLD TO NONE")
-        deadpix_mask_old = None
+    #if obsset.expt.lower() == 'rimas':
+    #    print("RIMAS: SETTING DEADPIX_MASK_OLD TO NONE")
+    #    deadpix_mask_old = None
 
     npad = None
     if hasattr(obsset.detector, "npad_m"):

@@ -427,27 +427,6 @@ class Apertures(object):
             s_list.append(s)
             v_list.append(v)
            
-            if o == 20:
-                import matplotlib.pyplot as plt
-                plt.figure("Order 43")
-                plt.plot(s)
-
-                plt.figure("Sum_Weighted_Spectra1")
-                plt.plot(sum_weighted_spectra1)
-
-                plt.figure("Sum_Weights1")
-                plt.plot(sum_weights1)
-                plt.title('Profile**2 / Variance')
-
-                plt.figure("Profile**2")
-                plt.plot((profile_map1**2).sum(axis=0))
-
-                plt.figure("PROFILE")
-                plt.imshow(profile_map)
-                plt.show()
-
-            #import matpl
-
             # if SAVE_PROFILE:
             #     hl.append(pyfits.ImageHDU(np.array([sum_weighted_spectra1,
             #                                         sum_weights1,
