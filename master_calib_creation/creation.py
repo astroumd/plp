@@ -1324,8 +1324,9 @@ def recipe_parser(recipe_file):
     return _dicts
 
 
-def recipe_reduce(recipe_file, data_dir):
-    _reduce_dir = os.path.join(data_dir, 'reduced')
+def recipe_reduce(recipe_file, data_dir, _reduce_dir=None):
+    if _reduce_dir is None:
+        _reduce_dir = os.path.join(data_dir, 'reduced')
     _recipe_dicts = recipe_parser(recipe_file)
     for _recipe in _recipe_dicts:
         for _band in ('yj', 'hk'):
@@ -1364,9 +1365,9 @@ if __name__ == '__main__':
     run_recipe_reduce = False
     run_gen_oned_spec = False
     run_gen_oned_maps = False
-    run_gen_identified_lines = True
-    run_gen_echellogram = False
-    run_gen_echellogram_fit_wvlsol = False
+    run_gen_identified_lines = False
+    run_gen_echellogram = True
+    run_gen_echellogram_fit_wvlsol = True
     run_gen_ref_indices = False
     run_remove_high_error_lines = False
     run_plot_error = False
@@ -1374,22 +1375,25 @@ if __name__ == '__main__':
     run_plot_residuals = False
     run_id_lines_ref_indices_pattern_matching = False
     # observation_date = 20230104
-    observation_date = 20220622
+    observation_date = 20230726
+    slit_width = 80
     pix_deg = 3
     order_deg = 3
     # RIMAS files
     spectral_band = 'HK'
     band_domain = {
-        'YJ': (1300, 2000),
-        'HK': (1700, 3100)
+        'YJ': (1240, 2200),
+        'HK': (1500, 3330)
     }
     pixel_start, pixel_end = band_domain[spectral_band]
-    order_map = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\rimas_h4rg\rollover-removed\{}_order_map_extended.fits'.format(spectral_band)
-    wavemap   = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\rimas_h4rg\rollover-removed\{}_wavmap_extended.fits'.format(spectral_band)
+    order_map = r'..\indata\{}\{}-micron-grism-maps\{}_order_map_extended.fits'.format(
+        observation_date, slit_width, spectral_band)
+    wavemap = r'..\indata\{}\{}-micron-grism-maps\{}_wavmap_extended.fits'.format(
+        observation_date, slit_width, spectral_band)
     # xenon - mercury - argon
     # spectrum = r''
-    flat_spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\{}\reduced\cals.{}.fits'.format(
-        observation_date, spectral_band)
+    flat_spectrum = r'..\indata\{}\{}-micron-grism-reduced\cals-{}.{}.fits'.format(
+        observation_date, slit_width, spectral_band.lower(), spectral_band)
     # order_map = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\rimas_h4rg\rollover-removed\HK_order_map_extended.fits'
     # wavemap = r'G:\My Drive\RIMAS\RIMAS spectra\modeled_spectra\rimas_h4rg\rollover-removed\HK_wavmap_extended.fits'
     # # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\echelle simulator\simulations\20210304\ohlines\ohlines.fits'
@@ -1403,20 +1407,24 @@ if __name__ == '__main__':
     elements = [
         # 'Xe',
         # 'Hg',
-        # 'Ne',
         # 'Ar',
         # 'Kr',
-        # 'Xe
-        # HgAr',
-        'XeHgAr'
+        # 'Ne',
+        # 'HgAr',
+        # 'XeHgAr',
+        # 'XeHgArKr',
+        'arc'
     ]
     elements_dict = {
         'Xe': 'xenon',
         'Hg': 'mercury',
         'Ar': 'argon',
         'Kr': 'krypton',
+        'Ne': 'mercury',
         'XeHgAr': 'xenon-mercury-argon',
-        'XeHgArKr': 'xenon-argon-krypton-mercury',
+        # 'XeHgArKr': 'xenon-argon-krypton-mercury',
+        'XeHgArKr': 'xenon-mercury-argon-krypton',
+        'arc': 'xenon-mercury-argon-krypton'
     }
     elements_str = ''.join(elements)
     # elements_str = 'Kr'
@@ -1424,12 +1432,14 @@ if __name__ == '__main__':
         element = elements_dict[elements_str]
     except KeyError:
         element = ''
-    spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\{}\reduced\{}.{}.fits'.format(
-        observation_date, element, spectral_band)
+    # spectrum = r'G:\My Drive\RIMAS\RIMAS spectra\{}\reduced\{}.{}.fits'.format(
+    #     observation_date, element, spectral_band)
+    spectrum = r'..\indata\{}\{}-micron-grism-reduced\{}.{}.fits'.format(
+        observation_date, slit_width, element, spectral_band)
     spectrum_type = 'arc' + '.' + elements_str
-    ohline_dat = r'C:\Users\durba\PycharmProjects\plp\master_calib\rimas\{}_lines.dat'.format(elements_str)
-    element_dats = [r'C:\Users\durba\PycharmProjects\plp\master_calib\rimas\{}_lines.dat'.format(e) for e in elements]
-    combine_dats = [r'C:\Users\durba\PycharmProjects\plp\master_calib\rimas\{}_lines.dat'.format(e) for e in ['Xe', 'Ar']]
+    ohline_dat = r'..\master_calib\rimas\{}_lines.dat'.format(elements_str)
+    element_dats = [r'..\master_calib\rimas\{}_lines.dat'.format(e) for e in elements]
+    combine_dats = [r'..\master_calib\rimas\{}_lines.dat'.format(e) for e in ['Xe', 'Ar']]
     # combine_lines_dat(combine_dats, ohline_dat)
     # # ohline_dat = 'even_spaced_25.dat'
     # # ohline_dat = 'even_spaced_10.dat'
@@ -1439,7 +1449,7 @@ if __name__ == '__main__':
     # # output_dir = 'even_spaced_25-stuermer'
     # # output_dir = 'even_spaced_10-stuermer'
     # output_dir = 'rimas_h4rg_arc_comb_low_error'
-    output_dir = 'rimas_h4rg_arc_pattern_test'
+    output_dir = 'rimas_h4rg_{}_micron'.format(slit_width)
 
     # DeVeny files
 
@@ -1474,20 +1484,23 @@ if __name__ == '__main__':
     ref_indices_output_file = ref_indices_output_format.format(spectrum_type)
     updated_identified_lines_output_filename = identified_lines_output_filename.replace('.json', 'update.json')
     curve_fit_echellogram_output_filename = echellogram_output_file.replace('.json', '_curvefit.json')
-    fit_wvlsol_echellogram_output_filename = echellogram_output_file.replace('.json', '_multiple_id_lines_curvefit_peaks_fit_wvlsol__p{}_o{}.json')
+    fit_wvlsol_echellogram_output_filename = echellogram_output_file.replace(
+        '.json', '_multiple_id_lines_curvefit_peaks_fit_wvlsol__p{}_o{}.json'
+    )
     # p_init_pickle_filename = echellogram_output_file.replace('.json', 'fit_wvlsol__p{}_o{}.json')
     # p_init_pickle_filename = r'C:\Users\durba\PycharmProjects\plp\master_calib_creation\rimas_h4rg_arc_comb\HK.XeHgArKr_echellogram_fit_wvlsol__p4_o3.p'
     # even_spaced_dat = 'even_spaced_10.dat'
     # even_spaced_csv = even_spaced_dat.replace('dat', 'csv')
-    fit_output_filename = 'fit_p{}m{}-domain.json' + spectral_band
-    fit_output_filename = fit_output_filename.format(pix_deg, order_deg)
-    fit_output_filename = fit_wvlsol_echellogram_output_filename.replace('.json', fit_output_filename)
     fit_wvlsol_echellogram_output_filename = fit_wvlsol_echellogram_output_filename.format(pix_deg, order_deg)
     fit_wvlsol_pickle_output_filename = fit_wvlsol_echellogram_output_filename.replace('.json', '.p')
+    fit_output_filename = '.{}.fit_p{}m{}-domain.json'
+    fit_output_filename = fit_output_filename.format(spectral_band, pix_deg, order_deg)
+    fit_output_filename = fit_wvlsol_echellogram_output_filename.replace('.json', fit_output_filename)
     fit_wvlsol_pickle_init_dict = {
         # 'HK': None,
-        'HK': r'rimas_h4rg_arc_pattern_test\HK.XeArKr_echellogram_multiple_id_lines_curvefit_peaks_fit_wvlsol__p3_o3.p',
-        'YJ': 'rimas_h4rg_arc_comb_low_error\\YJ.XeHgArKr_echellogram_multiple_id_lines_curvefit_peaks_fit_wvlsol__p3_o3.p'
+        # 'YJ': None,
+        'HK': r'rimas_h4rg_80_micron\HK.XeHgArKr_echellogram_multiple_id_lines_curvefit_peaks_fit_wvlsol__p3_o3.p',
+        'YJ': r'rimas_h4rg_80_micron\YJ.Ar_echellogram_multiple_id_lines_curvefit_peaks_fit_wvlsol__p3_o3.p'
     }
     fit_wvlsol_pickle_init_filename = fit_wvlsol_pickle_init_dict[spectral_band]
     # p_init_pickle_filename = p_init_pickle_filename.format(pix_deg, order_deg)
@@ -1500,8 +1513,9 @@ if __name__ == '__main__':
     # gen_even_spaced_lines_csv_file(even_spaced_csv, spacing=0.0010)
     if run_recipe_reduce:
         data_date = str(observation_date)
-        reduce_dir = r'G:\My Drive\RIMAS\RIMAS spectra\{}'.format(data_date)
-        recipe_reduce(os.path.join(reduce_dir, data_date+'.recipes'), reduce_dir)
+        reduce_dir = r'..\indata\{}'.format(data_date)
+        recipe_dir = r'..\recipe_logs'
+        recipe_reduce(os.path.join(recipe_dir, data_date+'.recipes'), reduce_dir)
     if run_gen_oned_spec:
         gen_oned_spec(order_map, spectrum, skyline_output_filename, 0)
         # gen_oned_spec(order_map, flat_spectrum, flat_output_filename, 0)

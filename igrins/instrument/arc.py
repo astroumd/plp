@@ -8,16 +8,16 @@ import numpy as np
 
 config = {
     'elements': [
-        # 'Xe',
-        # 'Hg',
-        'Ar I',
-        # 'Kr',
+        'Xe',
+        'Hg',
+        'Ar',
+        'Kr',
         # 'Ne'
     ],
     'wavelength_range': (0.800, 1.00),
     'wavelength_error': 0.0008,
     'units': u.micron,
-    'bands': ['ArI'],  # ['HK', 'YJ'],
+    'bands': ['HK', 'YJ'],  # ['ArI'],
     'wavelength_steps': 0.1
 }
 
@@ -169,26 +169,26 @@ if __name__ == '__main__':
     bands = ['HK', 'YJ']
     csv_dir = r'C:\Users\durba\Downloads'
     dat_dir = "..\\..\\master_calib\\rimas"
-    for _element, wavelengths in get_lines_atomic().items():
-        element_str = _element.split()[0]
-        for band in bands:
-            csv_file = '{band}_{element}_spectrum.csv'.format(band=band, element=element_str)
-            csv_file = os.path.join(csv_dir, csv_file)
-            intensities = get_intensities(csv_file, wavelengths)
-            dat_file = "{band}_{element}_lines.dat".format(band=band, element=element_str)
-            dat_file = os.path.join(dat_dir, dat_file)
-            save_lines(dat_file, wavelengths, intensities)
+    # for _element, wavelengths in get_lines_atomic().items():
+    #     element_str = _element.split()[0]
+    #     for band in bands:
+    #         csv_file = '{band}_{element}_spectrum.csv'.format(band=band, element=element_str)
+    #         csv_file = os.path.join(csv_dir, csv_file)
+    #         intensities = get_intensities(csv_file, wavelengths)
+    #         dat_file = "{band}_{element}_lines.dat".format(band=band, element=element_str)
+    #         dat_file = os.path.join(dat_dir, dat_file)
+    #         save_lines(dat_file, wavelengths, intensities)
     input_dat_template = os.path.join(dat_dir, "{band}_{element}_lines.dat")
     element_dat_template = os.path.join(dat_dir, "{element}_lines.dat")
     final_dat = element_dat_template.format(element='arc')
-    for element in config['elements']:
-        element_str = element.split()[0]
-        combine_lines_dat(
-            [input_dat_template.format(band=band, element=element_str) for band in config['bands']],
-            element_dat_template.format(element=element_str)
-        )
+    # for element in config['elements']:
+    #     element_str = element.split()[0]
+    #     combine_lines_dat(
+    #         [input_dat_template.format(band=band, element=element_str) for band in config['bands']],
+    #         element_dat_template.format(element=element_str)
+    #     )
     element_str = ''.join([e.split()[0] for e in config['elements']])
     combine_lines_dat(
-        [element_dat_template.format(element=element_str) for element in config['elements']],
+        [element_dat_template.format(element=element) for element in config['elements']],
         final_dat
     )
