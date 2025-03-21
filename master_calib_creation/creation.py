@@ -18,6 +18,12 @@ from igrins.procedures.process_derive_wvlsol import fit_wvlsol
 from igrins.instrument.arc import combine_lines_dat, load_lines_dat
 
 
+def show_twod_spec(twod_spectrum_file, vmin=None, vmax=None):
+    plt.imshow(ExistingImage(twod_spectrum_file).image, vmin=vmin, vmax=vmax)
+    plt.title(os.path.basename(twod_spectrum_file))
+    plt.show()
+
+
 def gen_oned_spec(
     order_map_file, twod_spectrum_file, output_file, aggregation_axis=0, aggregation=np.nanmedian
 ):
@@ -715,7 +721,6 @@ def id_lines_ref_indices_pattern_matching(
     #  save new output_reference_indices
 
 
-
 def gen_echellogram(order_map_file, oned_wavemap_file, output_file, aggregation_axis=0, aggregation=np.nanmean):
     """
     Creates echellogram calibration json file using 1D wavemap file and 2D order_map
@@ -904,6 +909,13 @@ def gen_echellogram_fit_wvlsol(
         identified_lines_json_files, ref_indices_json_files, band, centroid_solutions_json_file, domain_starting_index,
         domain_starting_pixel, domain_ending_pixel, pixels_in_order
     )
+
+    print()
+    print(fitdata_df.to_latex())
+    print()
+
+    input('Stop it now!!!')
+
     if p_init_pickle is not None:
         with open(p_init_pickle, 'rb') as f:
             p_init = pickle.load(f)
@@ -1133,6 +1145,7 @@ def plot_with_order_legend(fit_json_file, x_axis_key, x_axis_label=None, x_axis_
     _f.set_figheight(10)
     fit_dict = json_dict_from_file(fit_json_file)
     df = pd.DataFrame(fit_dict)
+    df = df.sort_values('order')
     orders = df.order.unique()
     order_df = OrderedDict()
 
@@ -1233,10 +1246,23 @@ def gen_even_spaced_lines_csv_file(
 
 def plot_oned_spec(
         oned_spec_file, identified_lines_file, fit_pickle, title='', cutoff=0, pixel_domain_start=0,
-        pixel_domain_end=None
+        pixel_domain_end=None, line_id_offset_min=20, line_id_offset_max=220, intensity_cutoff=1.0
 ):
     oned_spec = json_dict_from_file(oned_spec_file)
     identified_lines = json_dict_from_file(identified_lines_file)
+    reference_dat = os.path.join(r'C:\PycharmProjects\plp\master_calib\rimas\20230726', identified_lines['ref_name'])
+    reference = pd.read_csv(reference_dat, header=None, names=['wvl', 'a', 'b', 'element'], sep=' ')
+    keys = 'orders', 'pix_amps_list', 'wvl_list', 'ref_indices_list'
+    dfs = []
+    for order, pix_amps, wvls, ref_indices in zip(*[identified_lines[k] for k in keys]):
+        dfs.append(pd.DataFrame({'amplitude': pix_amps, 'wavelength': wvls, 'ref_index': ref_indices}))
+
+    df = pd.concat(dfs, ignore_index=True)
+
+    identified_lines = df.groupby('wavelength').aggregate('max')
+    csv_name = identified_lines_file.replace('.json', '.csv')
+    identified_lines.to_csv(csv_name)
+    identified_lines = pd.read_csv(csv_name)
     # wavelengths_all = []
     # intensities_all = []
     with open(fit_pickle, 'rb') as f:
@@ -1257,7 +1283,26 @@ def plot_oned_spec(
         plt.xlabel('Wavelength (microns)')
         plt.ylabel('Intensity (ADU)')
         plt.title(title)
+        plt.tight_layout()
         plt.legend()
+
+    identified_lines['line_max'] = identified_lines.amplitude + line_id_offset_max + np.asarray([np.max(identified_lines.amplitude)*0.000*(i%2) for i in range(identified_lines.shape[0])])
+    plt.vlines(
+        identified_lines.wavelength, identified_lines.amplitude + line_id_offset_min,
+        identified_lines.line_max, color='#2F4A5E'
+    )
+    for i in range(identified_lines.shape[0]):
+        # print(identified_lines.wavelength[i])
+        if identified_lines.amplitude[i] > 60:
+            _element = reference.element[identified_lines.ref_index[i]][:2]
+            plt_str = '{:0.05f} {}'.format(identified_lines.wavelength[i], _element)
+            print(plt_str)
+            print(reference.wvl[identified_lines.ref_index[i]]/10000)
+            print()
+            plt.text(
+                identified_lines.wavelength[i] - 0.000, identified_lines.line_max[i]+5, plt_str,
+                fontsize=10, fontweight='light', ha='right'
+            )
     plt.show()
 
 
@@ -1267,8 +1312,9 @@ def plt_resolving_power(identified_lines_json):
     _f.set_figwidth(15)
     _f.set_figheight(10)
     _dict = json_dict_from_file(identified_lines_json)
-    fwhm_conversion_factor = 4 * np.sqrt(np.log(2))  # TODO fix width in gen_identified_lines and remove this factor
-    wvls = _dict['wvl_list']
+    fwhm_conversion_factor = np.sqrt(2*np.log(2))
+    # wvls = _dict['wvl_list']
+    wvls = _dict['detected_wvl_list']
     wvl_widths = _dict['wvl_widths_list']
     wvls_flat = np.asarray([item for sublist in wvls for item in sublist])
     wvl_widths_flat = np.asarray([item for sublist in wvl_widths for item in sublist]) * fwhm_conversion_factor
@@ -1283,8 +1329,10 @@ def plt_resolving_power(identified_lines_json):
     plt.xlabel('Wavelength (microns)')
     plt.ylabel('Resolving Power')
     plt.show()
-    print('resolving power', np.median(resolving_power))
-    print('resolving power dev', np.std(resolving_power))
+    print('resolving power median', np.median(resolving_power))
+    print('resolving power mean', np.mean(resolving_power))
+    print('resolving power std_dev', np.std(resolving_power))
+    print('resolving power std_err', np.std(resolving_power)/np.sqrt(resolving_power.shape[0]))
 
 
 def recipe_parser(recipe_file):
@@ -1335,8 +1383,11 @@ def recipe_reduce(recipe_file, data_dir, _reduce_dir=None):
             _neg_files = [os.path.join(data_dir, _f) for _f in _recipe['files_{}'.format(_band)][np.logical_not(_recipe['pos_neg'])]]
             _pos_images = [ExistingImage(_f).image for _f in _pos_files]
             _neg_images = [ExistingImage(_f).image for _f in _neg_files]
-            _res_image = np.median(np.asarray(_pos_images), axis=0) - np.median(np.asarray(_neg_images), axis=0)
-            ArrayImage(_res_image).save(_save_name)
+            if len(_neg_images) == 0:
+                _res_image = np.median(np.asarray(_pos_images), axis=0)
+            else:
+                _res_image = np.median(np.asarray(_pos_images), axis=0) - np.median(np.asarray(_neg_images), axis=0)
+            ArrayImage(_res_image[:4096, :4096]).save(_save_name)
 
 
 def update_ref_indices(old_dat, new_dat, ref_indices, identified_lines):
@@ -1361,18 +1412,43 @@ def update_ref_indices(old_dat, new_dat, ref_indices, identified_lines):
     save_dict_to_json(new_ref_indices, ref_indices.replace('.json', new_dat_basename+'.json'))
 
 
+def plot_ref_spec(spec_file, spec_element=None, band=None, limits=None, order_offset=500):
+    spec_dict = json_dict_from_file(spec_file)
+    n_orders = len(spec_dict['orders'])
+    offset = (n_orders + 1) * order_offset
+    if spec_element is not None and band is not None:
+        title = '{} - {}'.format(spec_element, band)
+    elif spec_element is not None:
+        title = spec_element
+    elif band is not None:
+        title = band
+    else:
+        title = ''
+    for order, spec in zip(spec_dict['orders'], spec_dict['specs']):
+        spec_array = np.asarray(spec)
+        pixels = np.arange(spec_array.shape[0])
+        offset -= order_offset
+        plt.plot(pixels, spec_array+offset, label=order)
+    plt.xlabel('Column (pixels)')
+    plt.ylabel('Intensity (ADU)')
+    plt.title(title)
+    plt.legend()
+    plt.show()
+
+
 if __name__ == '__main__':
     run_recipe_reduce = False
+    run_show_twod_spec = False
     run_gen_oned_spec = False
     run_gen_oned_maps = False
     run_gen_identified_lines = False
-    run_gen_echellogram = True
-    run_gen_echellogram_fit_wvlsol = True
+    run_gen_echellogram = False
+    run_gen_echellogram_fit_wvlsol = False
     run_gen_ref_indices = False
     run_remove_high_error_lines = False
     run_plot_error = False
-    run_plot_oned_spec = False
-    run_plot_residuals = False
+    run_plot_oned_spec = True
+    run_plot_resolving_power = False
     run_id_lines_ref_indices_pattern_matching = False
     # observation_date = 20230104
     observation_date = 20230726
@@ -1380,6 +1456,7 @@ if __name__ == '__main__':
     pix_deg = 3
     order_deg = 3
     # RIMAS files
+    # spectral_band = 'YJ'
     spectral_band = 'HK'
     band_domain = {
         'YJ': (1240, 2200),
@@ -1406,14 +1483,17 @@ if __name__ == '__main__':
     # ohline_dat = r'C:\Users\durba\PycharmProjects\plp\master_calib\igrins\ohlines.dat'
     elements = [
         # 'Xe',
-        # 'Hg',
+        'Hg',
         # 'Ar',
         # 'Kr',
         # 'Ne',
         # 'HgAr',
         # 'XeHgAr',
         # 'XeHgArKr',
-        'arc'
+        # 'arc',
+        # 'cals-yj',
+        # 'cals-hk',
+        # 'sun',
     ]
     elements_dict = {
         'Xe': 'xenon',
@@ -1424,7 +1504,10 @@ if __name__ == '__main__':
         'XeHgAr': 'xenon-mercury-argon',
         # 'XeHgArKr': 'xenon-argon-krypton-mercury',
         'XeHgArKr': 'xenon-mercury-argon-krypton',
-        'arc': 'xenon-mercury-argon-krypton'
+        'arc': 'xenon-mercury-argon-krypton',
+        'cals-yj': 'cals-yj',
+        'cals-hk': 'cals-hk',
+        'sun': 'sun'
     }
     elements_str = ''.join(elements)
     # elements_str = 'Kr'
@@ -1437,7 +1520,7 @@ if __name__ == '__main__':
     spectrum = r'..\indata\{}\{}-micron-grism-reduced\{}.{}.fits'.format(
         observation_date, slit_width, element, spectral_band)
     spectrum_type = 'arc' + '.' + elements_str
-    ohline_dat = r'..\master_calib\rimas\{}_lines.dat'.format(elements_str)
+    ohline_dat = r'..\master_calib\rimas\{}\{}_lines.dat'.format(observation_date, elements_str)
     element_dats = [r'..\master_calib\rimas\{}_lines.dat'.format(e) for e in elements]
     combine_dats = [r'..\master_calib\rimas\{}_lines.dat'.format(e) for e in ['Xe', 'Ar']]
     # combine_lines_dat(combine_dats, ohline_dat)
@@ -1458,7 +1541,6 @@ if __name__ == '__main__':
     # wavemap = 'deveny_wavemap.fits'  # TODO
     # spectrum = '20210506.0014.fits'
     # ohline_dat = 'CdArNeHg_lines.dat'  # TODO
-
 
     # output_dir = os.path.join(output_dir, 'pickle_fit__no_repeats')
     if not os.path.isdir(output_dir):
@@ -1503,10 +1585,18 @@ if __name__ == '__main__':
         'YJ': r'rimas_h4rg_80_micron\YJ.Ar_echellogram_multiple_id_lines_curvefit_peaks_fit_wvlsol__p3_o3.p'
     }
     fit_wvlsol_pickle_init_filename = fit_wvlsol_pickle_init_dict[spectral_band]
+    plot_wvlsol_pickle_dict = {
+        # 'HK': None,
+        # 'YJ': None,
+        'HK': r'C:\PycharmProjects\plp\master_calib\rimas\20230726\HK.XeHgArKr_echellogram_multiple_id_lines_curvefit_peaks_fit_wvlsol__p3_o3.p',
+        'YJ': r'C:\PycharmProjects\plp\master_calib\rimas\20230726\YJ.XeHgArKr_echellogram_multiple_id_lines_curvefit_peaks_fit_wvlsol__p3_o3.p'
+    }
+    plot_wvlsol_pickle_filename = plot_wvlsol_pickle_dict[spectral_band]
     # p_init_pickle_filename = p_init_pickle_filename.format(pix_deg, order_deg)
     # p_init_pickle_filename = p_init_pickle_filename.replace('.XeHgArKr', '')
     # file_overlay(order_map, spectrum)
-    # file_overlay(wavemap, spectrum)
+    # file_overlay(wave
+    # map, spectrum)
     # file_overlay(order_map, wavemap)
 
     # gen_even_spaced_lines_dat_file(even_spaced_dat, spacing=10)
@@ -1516,6 +1606,8 @@ if __name__ == '__main__':
         reduce_dir = r'..\indata\{}'.format(data_date)
         recipe_dir = r'..\recipe_logs'
         recipe_reduce(os.path.join(recipe_dir, data_date+'.recipes'), reduce_dir)
+    if run_show_twod_spec:
+        show_twod_spec(spectrum, 0, 500)
     if run_gen_oned_spec:
         gen_oned_spec(order_map, spectrum, skyline_output_filename, 0)
         # gen_oned_spec(order_map, flat_spectrum, flat_output_filename, 0)
@@ -1592,11 +1684,15 @@ if __name__ == '__main__':
             print(oned)
             id_lines = identified_lines_output_format.format('arc.{}'.format(element), spectral_band)
             plot_oned_spec(
-                oned, id_lines, fit_wvlsol_pickle_output_filename,
-                '{} gas lamps'.format(spectral_band), pixel_domain_start=pixel_start, pixel_domain_end=pixel_end
+                oned, id_lines, plot_wvlsol_pickle_filename,
+                '{} {} gas lamps'.format(elements_str, spectral_band), pixel_domain_start=pixel_start, pixel_domain_end=pixel_end
             )
         # plot_oned_spec(
         #     flat_output_filename, identified_lines_output_filename, fit_wvlsol_pickle_output_filename,
         #     '{} flat'.format(spectral_band), pixel_domain_start=pixel_start, pixel_domain_end=pixel_end
         # )
-    # plt_resolving_power(identified_lines_output_filename)
+    if run_plot_resolving_power:
+        plt_resolving_power(identified_lines_output_filename)
+    # plot_ref_spec(skyline_output_filename, element, spectral_band)
+
+
